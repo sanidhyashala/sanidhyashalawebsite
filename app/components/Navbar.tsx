@@ -44,38 +44,71 @@ return ( <nav className="border-b bg-white shadow-sm"> <div className="mx-auto f
 
   {/* Mobile Dropdown */}
   {menuOpen && (
-    <div className="border-t bg-white md:hidden">
-      <div className="flex flex-col px-6 py-4 text-sm font-medium">
-        <Link href="/" className="py-2">
-          Home
-        </Link>
 
-        <Link href="/about" className="py-2">
-          About
-        </Link>
+  <div className="border-t bg-white md:hidden">
+    <div className="flex flex-col px-6 py-4 text-sm font-medium">
+      <Link
+        href="/"
+        className="py-2"
+        onClick={() => setMenuOpen(false)}
+      >
+        Home
+      </Link>
 
-        <Link href="/learning" className="py-2">
-          Learning
-        </Link>
+```
+  <Link
+    href="/about"
+    className="py-2"
+    onClick={() => setMenuOpen(false)}
+  >
+    About
+  </Link>
 
-        <Link href="/teaching" className="py-2">
-          Teaching
-        </Link>
+  <Link
+    href="/learning"
+    className="py-2"
+    onClick={() => setMenuOpen(false)}
+  >
+    Learning
+  </Link>
 
-        <Link href="/reflection" className="py-2">
-          Reflection
-        </Link>
+  <Link
+    href="/teaching"
+    className="py-2"
+    onClick={() => setMenuOpen(false)}
+  >
+    Teaching
+  </Link>
 
-        <Link href="/journal" className="py-2">
-          Journal
-        </Link>
+  <Link
+    href="/reflection"
+    className="py-2"
+    onClick={() => setMenuOpen(false)}
+  >
+    Reflection
+  </Link>
 
-        <Link href="/contact" className="py-2">
-          Contact
-        </Link>
-      </div>
-    </div>
-  )}
+  <Link
+    href="/journal"
+    className="py-2"
+    onClick={() => setMenuOpen(false)}
+  >
+    Journal
+  </Link>
+
+  <Link
+    href="/contact"
+    className="py-2"
+    onClick={() => setMenuOpen(false)}
+  >
+    Contact
+  </Link>
+</div>
+```
+
+  </div>
+)}
+
 </nav>
 
 

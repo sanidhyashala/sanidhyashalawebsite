@@ -55,7 +55,6 @@ return ( <nav className="border-b bg-white shadow-sm"> <div className="mx-auto f
         Home
       </Link>
 
-```
   <Link
     href="/about"
     className="py-2"
@@ -104,7 +103,7 @@ return ( <nav className="border-b bg-white shadow-sm"> <div className="mx-auto f
     Contact
   </Link>
 </div>
-```
+
 
   </div>
 )}

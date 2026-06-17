@@ -139,7 +139,7 @@ export default function ArticlePage() {
         </p>
 
         <p>
-          At <strong>Saanidhyashala</strong>, mathematics is not viewed merely
+          At <strong>Sanidhyashala</strong>, mathematics is not viewed merely
           as a path toward examinations or careers.
         </p>
 

@@ -79,7 +79,7 @@ return ( <main> <section className="bg-slate-50 px-6 py-24 text-center"> <div cl
       </h2>
 
       <p className="mx-auto max-w-2xl text-lg leading-8 text-slate-700">
-        Saanidhyashala is a journey of learning, teaching and reflection.
+        Sanidhyashala is a journey of learning, teaching and reflection.
         It exists for those who believe that education is not merely about
         passing examinations, but about understanding reality, cultivating
         wisdom and developing clarity of thought.

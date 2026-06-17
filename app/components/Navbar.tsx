@@ -7,7 +7,7 @@ export default function Navbar() {
       <Link href="/" className="flex items-center gap-3">
         <Image
           src="/logo.png"
-          alt="Saanidhyashala Logo"
+          alt="Sanidhyashala Logo"
           width={50}
           height={50}
           priority

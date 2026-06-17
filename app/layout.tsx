@@ -15,9 +15,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Saanidhyashala",
-  description:
-    "Learning deeply. Teaching thoughtfully. Reflecting honestly.",
+title: "सानिध्यशाला | From Clarity to Mastery",
+description:
+"A space to learn, teach and reflect. Mathematics, education, philosophy and thoughtful learning.",
 };
 
 export default function RootLayout({

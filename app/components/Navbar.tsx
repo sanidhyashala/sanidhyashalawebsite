@@ -16,7 +16,7 @@ return ( <nav className="border-b bg-white shadow-sm"> <div className="mx-auto f
          priority
        />
 
-```
+
       <span className="text-xl font-bold text-blue-900">
         सानिध्यशाला
       </span>

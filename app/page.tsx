@@ -4,7 +4,7 @@ export default function Home() {
 return ( <main> <section className="bg-slate-50 px-6 py-24 text-center"> <div className="mx-auto max-w-4xl"> <h1 className="mb-4 text-6xl font-bold text-blue-900">
 सानिध्यशाला </h1>
 
-```
+
       <p className="mb-4 text-xl font-medium text-slate-600">
         स्पष्टता से सिद्धि तक
       </p>

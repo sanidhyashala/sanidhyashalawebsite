@@ -2,7 +2,7 @@ export default function AboutPage() {
 return ( <main className="max-w-4xl mx-auto px-6 py-16"> <h1 className="text-4xl font-bold mb-8 text-blue-900">
 About Sanidhyashala </h1>
 
-```
+
   <p className="text-lg leading-8 mb-6">
     Sanidhyashala is more than a website. It is a space dedicated to
     learning, teaching and reflection.

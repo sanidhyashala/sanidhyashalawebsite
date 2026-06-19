@@ -9,6 +9,12 @@ export default function JournalPage() {
       slug: "why-mathematics-is-more-than-numbers",
     },
     {
+      title: "When the Language of the Universe Falls Silent",
+      description:
+        "Is mathematics discovered or invented? A journey through philosophy, science and the search for truth.",
+      slug: "when-the-language-of-the-universe-falls-silent",
+    },
+    {
       title: "Learning and Swadharma",
       description:
         "Can education help us discover our true path in life?",
@@ -47,7 +53,7 @@ export default function JournalPage() {
             </p>
 
             <Link
-              href="/journal/why-mathematics-is-more-than-numbers"
+              href={`/journal/${post.slug}`}
               className="font-medium text-blue-900 hover:underline"
             >
               Read Article →

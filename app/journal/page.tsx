@@ -13,6 +13,7 @@ export default function JournalPage() {
       description:
         "Is mathematics discovered or invented? A journey through philosophy, science and the search for truth.",
       slug: "when-the-language-of-the-universe-falls-silent",
+      languages: ["English", "Hindi"],
     },
     {
       title: "Learning and Swadharma",
@@ -51,6 +52,20 @@ export default function JournalPage() {
             <p className="mb-4 text-slate-600">
               {post.description}
             </p>
+
+            <div className="mb-4 flex gap-2">
+  {post.languages?.includes("English") && (
+    <span className="rounded-full bg-blue-100 px-3 py-1 text-sm text-blue-800">
+      🇬🇧 English
+    </span>
+  )}
+
+  {post.languages?.includes("Hindi") && (
+    <span className="rounded-full bg-orange-100 px-3 py-1 text-sm text-orange-800">
+      🇮🇳 हिन्दी
+    </span>
+  )}
+</div>
 
             <Link
               href={`/journal/${post.slug}`}

@@ -23,8 +23,8 @@ export default function ArticleLayout({
         )}
 
         <div className="text-xl leading-10 text-slate-700">
-          {children}
-        </div>
+  {children}
+</div>
       </article>
     </main>
   );

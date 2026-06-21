@@ -48,7 +48,7 @@ return ( <main> <section className="bg-slate-50 px-6 py-24 text-center"> <div cl
     href="/about"
     className="rounded-lg border border-slate-300 bg-white px-6 py-3 text-slate-700 transition hover:bg-slate-100"
   >
-    About Sanidhyashala
+    About the Founder
   </Link>
 </div>
     </div>
@@ -57,19 +57,27 @@ return ( <main> <section className="bg-slate-50 px-6 py-24 text-center"> <div cl
   <section className="px-6 py-20">
     <div className="mx-auto max-w-4xl">
       <h2 className="mb-6 text-4xl font-bold text-blue-900">
-        What is Sanidhyashala?
-      </h2>
+  What is Sanidhyashala?
+</h2>
 
-      <p className="text-lg leading-8 text-slate-700">
-        Sanidhyashala is not merely a platform for mathematics. It is an
-        invitation to think deeply, learn sincerely and reflect honestly.
-      </p>
+<p className="text-lg leading-8 text-slate-700">
+  Sanidhyashala is more than a mathematics website. It is a space dedicated
+  to learning, teaching, reflection, and the pursuit of clarity.
+</p>
 
-      <p className="mt-6 text-lg leading-8 text-slate-700">
-        We believe that learning is not only about examinations, marks or
-        careers. It is also about understanding reality, developing clarity
-        of thought and discovering one's own path.
-      </p>
+<p className="mt-6 text-lg leading-8 text-slate-700">
+  In a world where education is often reduced to examinations, marks, and
+  competition, Sanidhyashala seeks to return to a simpler question:
+  <em> What does it truly mean to learn? </em>
+</p>
+
+<p className="mt-6 text-lg leading-8 text-slate-700">
+  Through mathematics, education, philosophy, and thoughtful writing,
+  Sanidhyashala explores ideas that help us understand the world more
+  clearly and think more deeply.
+</p>
+
+
     </div>
   </section>
 
@@ -116,27 +124,44 @@ return ( <main> <section className="bg-slate-50 px-6 py-24 text-center"> <div cl
     </div>
   </section>
 
-  <section className="px-6 py-20">
-    <div className="mx-auto max-w-4xl text-center">
+  <section className="bg-slate-50 px-6 py-20">
+    <div className="mx-auto max-w-4xl rounded-3xl bg-white p-12 text-center shadow-sm">
       <h2 className="mb-6 text-4xl font-bold text-blue-900">
-  Founder’s Note
+  संस्थापक की ओर से
 </h2>
 
-      <p className="mx-auto max-w-2xl text-lg leading-8 text-slate-700">
-  Sanidhyashala began as a simple desire — to make mathematics
-  more meaningful and learning more thoughtful.
-
-  Over time, it became something larger: a place to explore
-  ideas, reflect deeply, and share insights that extend beyond
-  textbooks and examinations.
-
-  Whether you arrive here as a student, a teacher, or simply a
-  curious thinker, I hope you find something that helps you see
-  reality with greater clarity.
+<p className="mx-auto max-w-2xl text-lg leading-8 text-slate-700">
+  सानिध्यशाला की शुरुआत एक वेबसाइट के रूप में नहीं हुई थी।
 </p>
+
+<p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-700">
+  यह एक विचार के रूप में आरम्भ हुई थी — कि शिक्षा का उद्देश्य केवल
+  परीक्षाओं में सफलता प्राप्त करना नहीं, बल्कि विचारों में स्पष्टता
+  और जीवन में समझ विकसित करना भी है।
+</p>
+
+<p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-700">
+  गणित ने मुझे केवल सूत्र और समीकरण नहीं सिखाए। उसने मुझे धैर्य,
+  तर्क, ईमानदारी और गहरे प्रश्न पूछने का साहस दिया। समय के साथ
+  मैंने अनुभव किया कि सीखना किसी पाठ्यक्रम, कक्षा या प्रमाणपत्र
+  तक सीमित नहीं होता; यह जीवन भर चलने वाली एक यात्रा है।
+</p>
+
+<p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-700">
+  सानिध्यशाला उसी विश्वास का एक छोटा सा प्रयास है — एक ऐसा स्थान
+  जहाँ गणित, शिक्षा, चिंतन और जिज्ञासा एक साथ आ सकें; जहाँ प्रश्नों
+  का स्वागत हो और समझ को स्मरण से अधिक महत्व दिया जाए।
+</p>
+
+<p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-700">
+  यदि आप यहाँ एक विद्यार्थी, एक शिक्षक, या केवल एक जिज्ञासु पथिक
+  के रूप में आए हैं, तो आपका हार्दिक स्वागत है।
+</p>
+
 <p className="mt-8 text-lg font-semibold text-blue-900">
-  — Manas
+  — मानस
 </p>
+
     </div>
   </section>
 </main>

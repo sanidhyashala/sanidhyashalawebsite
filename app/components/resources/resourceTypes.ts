@@ -1,14 +1,14 @@
 export type ResourceStatus =
   | "available"
-  | "in-progress"
-  | "not-published";
+  | "coming-soon"
+  | "locked";
 
 export interface ResourceItem {
   title: string;
 
   slug: string;
 
-  status: "available" | "coming-soon" | "locked";
+  status: ResourceStatus;
 
   pdf?: string;
 
@@ -23,8 +23,32 @@ export interface ResourceItem {
 
 export interface ResourcePageProps {
   title: string;
+
   description: string;
-  category: "notes" | "mcq" | "pyq" | "subjective" | "case-based";
+
+  category:
+    | "notes"
+    | "mcq"
+    | "pyq"
+    | "subjective"
+    | "case-based";
+
   className: string;
+
   resources: ResourceItem[];
+}
+
+export interface ResourceCardProps {
+  resource: ResourceItem;
+
+  index: number;
+
+  category:
+    | "notes"
+    | "mcq"
+    | "pyq"
+    | "subjective"
+    | "case-based";
+
+  className: string;
 }

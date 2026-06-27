@@ -1,7 +1,4 @@
-import { ResourceItem } from "@/app/components/resources/resourceTypes";
-
-export const class12Resources = {
-  notes: [
+[
   {
     "title": "Relations and Functions",
     "slug": "relations-and-functions",
@@ -132,13 +129,4 @@ export const class12Resources = {
     "premium": false,
     "status": "available"
   }
-],
-
-  mcq: [],
-
-  pyq: [],
-
-  subjective: [],
-
-  caseBased: [],
-};
+]

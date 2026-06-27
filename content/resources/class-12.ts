@@ -1,6 +1,12 @@
 import { ResourceItem } from "@/app/components/resources/resourceTypes";
 
-export const class12Resources = {
+export const class12Resources: {
+  notes: ResourceItem[];
+  mcq: ResourceItem[];
+  pyq: ResourceItem[];
+  subjective: ResourceItem[];
+  caseBased: ResourceItem[];
+} = {
   notes: [
   {
     "title": "Relations and Functions",

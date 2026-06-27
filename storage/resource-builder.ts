@@ -113,7 +113,13 @@ function generateResourceFile(
 
   const output = `import { ResourceItem } from "@/app/components/resources/resourceTypes";
 
-export const ${variableName} = {
+export const ${variableName}: {
+  notes: ResourceItem[];
+  mcq: ResourceItem[];
+  pyq: ResourceItem[];
+  subjective: ResourceItem[];
+  caseBased: ResourceItem[];
+} = {
   notes: ${JSON.stringify(data.notes, null, 2)},
 
   mcq: ${JSON.stringify(data.mcq, null, 2)},

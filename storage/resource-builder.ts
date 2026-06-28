@@ -1,5 +1,17 @@
 import fs from "fs";
 import path from "path";
+import { sortResources } from "./utils/sort-resources";
+
+interface ResourceItem {
+  title: string;
+  slug: string;
+  pdf: string;
+  pages: number;
+  language: string;
+  updated: string;
+  premium: boolean;
+  status: "available" | "coming-soon" | "locked";
+}
 
 const STORAGE_DIR = path.join(process.cwd(), "storage");
 const METADATA_DIR = path.join(STORAGE_DIR, "metadata");
@@ -50,7 +62,7 @@ function fileExists(filePath: string) {
 function loadCategory(
   className: string,
   category: ResourceCategory
-): unknown[] {
+): ResourceItem[] {
   const filePath = path.join(
     METADATA_DIR,
     className,
@@ -61,7 +73,7 @@ function loadCategory(
     return [];
   }
 
-  const data = readJSON<unknown[]>(filePath);
+  const data = readJSON<ResourceItem[]>(filePath);
 
   if (!Array.isArray(data)) {
     console.warn(
@@ -76,8 +88,10 @@ function loadCategory(
 /**
  * Read every category automatically.
  */
-function loadAllCategories(className: string) {
-  const result: Record<ResourceCategory, unknown[]> = {
+function loadAllCategories(
+  className: string
+): Record<ResourceCategory, ResourceItem[]> {
+  const result: Record<ResourceCategory, ResourceItem[]> = {
     notes: [],
     mcq: [],
     pyq: [],
@@ -105,7 +119,7 @@ function getVariableName(className: string) {
  */
 function generateResourceFile(
   className: string,
-  data: Record<ResourceCategory, unknown[]>
+  data: Record<ResourceCategory, ResourceItem[]>
 ) {
   ensureDirectory(OUTPUT_DIR);
 
@@ -154,6 +168,22 @@ export function buildResources(className: string) {
   }
 
   const data = loadAllCategories(className);
+
+  data.notes = sortResources(className, data.notes);
+
+data.mcq = sortResources(className, data.mcq);
+
+data.pyq = sortResources(className, data.pyq);
+
+data.subjective = sortResources(
+  className,
+  data.subjective
+);
+
+data["case-based"] = sortResources(
+  className,
+  data["case-based"]
+);
 
   generateResourceFile(className, data);
 

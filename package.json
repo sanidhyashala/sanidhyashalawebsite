@@ -7,13 +7,18 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "resources": "tsx scripts/build-resources.ts"
+    "resources": "tsx scripts/build-resources.ts",
+    "scan": "tsx scripts/scan-metadata.ts",
+    "registry": "tsx scripts/build-registry.ts",
+    "scan:pdf": "tsx scripts/scan-pdfs.ts",
+    "content:build": "tsx scripts/content-build.ts",
+    "test:pdflib": "tsx scripts/test-pdf-lib.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.5.9",
     "@tailwindcss/typography": "^0.5.20",
     "next": "16.2.9",
-    "pdf-parse": "^2.4.5",
+    "pdf-lib": "^1.17.1",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },

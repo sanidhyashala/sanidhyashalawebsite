@@ -68,7 +68,7 @@ return ( <main className="mx-auto max-w-4xl px-6 py-16"> <p className="mb-3 text
   </p>
 
   <p className="mb-12 text-lg leading-8">
-    The name "Sanidhyashala" reflects a simple aspiration: to create a
+    The name &quot;Sanidhyashala&quot; reflects a simple aspiration: to create a
     space where learners, teachers, and seekers can come closer to
     knowledge, wisdom, and ultimately to themselves.
   </p>
@@ -103,8 +103,8 @@ return ( <main className="mx-auto max-w-4xl px-6 py-16"> <p className="mb-3 text
 
   <div className="mt-20 rounded-xl bg-slate-50 p-8">
     <p className="text-2xl italic leading-10 text-slate-700">
-      "Education is not the pursuit of answers alone. It is the pursuit
-      of clarity."
+      &quot;Education is not the pursuit of answers alone. It is the pursuit
+of clarity.&quot;
     </p>
 
     <p className="mt-6 font-semibold text-blue-900">

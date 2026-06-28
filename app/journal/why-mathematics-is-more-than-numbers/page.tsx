@@ -38,7 +38,7 @@ export default function ArticlePage() {
         </p>
 
         <p>
-          It is one of humanity's deepest attempts to understand reality.
+          It is one of humanity&apos;s deepest attempts to understand reality.
         </p>
 
         <p>
@@ -165,7 +165,7 @@ export default function ArticlePage() {
         <h3>गणित : सत्य का सार्वभौमिक व्याकरण</h3>
 
         <p>
-          जब हम "गणित" शब्द सुनते हैं, तो हमारे मन में प्रायः संख्याएँ,
+          जब हम &quot;गणित&quot; शब्द सुनते हैं..., तो हमारे मन में प्रायः संख्याएँ,
           सूत्र, परीक्षाएँ और अंक आते हैं।
         </p>
 

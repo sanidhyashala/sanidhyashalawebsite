@@ -6,6 +6,8 @@ import Image from "next/image";
 
 import AuthButtons from "./ui/AuthButtons";
 
+import SearchBar from "./search/SearchBar";
+
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -54,6 +56,10 @@ export default function Navbar() {
 
           </div>
 
+          <div className="w-72">
+  <SearchBar />
+</div>
+
           <AuthButtons />
 
         </div>
@@ -76,6 +82,8 @@ export default function Navbar() {
         <div className="border-t bg-white md:hidden">
 
           <div className="flex flex-col gap-3 px-6 py-4">
+
+            <SearchBar />
 
             <Link href="/" onClick={() => setMenuOpen(false)}>
               Home

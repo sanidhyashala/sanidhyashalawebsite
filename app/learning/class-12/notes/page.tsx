@@ -8,8 +8,7 @@ export default function NotesPage() {
 if (!resources) {
   throw new Error("Resources not found");
 }
-  console.log("NOTES DATA:", resources.notes);
-  console.log("IS ARRAY:", Array.isArray(resources.notes));
+  
 
   return (
     <ProtectedRoute>

@@ -7,7 +7,7 @@ export default function ResourceCard({
   category,
   className,
 }: ResourceCardProps) {
-  const apiLink = `/api/files/${category}/${className}/${resource.pdf}`;
+  const readerLink = `/reader/${className}/${category}/${resource.slug}`;
 
   return (
     <div
@@ -26,7 +26,7 @@ export default function ResourceCard({
     >
       <div className="flex items-start justify-between gap-6">
         <div className="flex-1">
-          <p className="text-sm text-slate-500 mb-1">
+          <p className="mb-1 text-sm text-slate-500">
             Chapter {index + 1}
           </p>
 
@@ -63,20 +63,19 @@ export default function ResourceCard({
               </span>
 
               <Link
-                href={apiLink}
-                target="_blank"
+                href={readerLink}
                 className="
                 rounded-xl
                 bg-blue-900
                 px-5
                 py-2.5
-                text-white
                 font-medium
+                text-white
                 transition
                 hover:bg-blue-800
               "
               >
-                📖 Open
+                📖 Read
               </Link>
             </>
           )}

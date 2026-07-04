@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 
 interface Resource {
   title: string;
@@ -23,11 +24,16 @@ export default function ContinueLearning({
   return (
     <section className="mt-12">
 
-      <h2 className="mb-6 text-2xl font-bold text-slate-900">
-        Continue Learning
-      </h2>
+      <div className="mb-8">
+        <h2 className="text-2xl md:text-3xl font-bold text-slate-900">
+          Continue Learning
+        </h2>
+        <p className="mt-2 text-sm md:text-base text-slate-500">
+          Continue your mathematics journey with the next available learning resources.
+        </p>
+      </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
 
         {resources.map((resource) => (
 
@@ -35,26 +41,40 @@ export default function ContinueLearning({
             key={resource.slug}
             href={`/reader/${className}/${category}/${resource.slug}`}
             className="
-              rounded-xl
+              flex
+              flex-col
+              justify-between
+              min-h-[170px]
+              rounded-2xl
               border
               border-slate-200
               bg-white
-              p-5
+              p-5 md:p-6
               shadow-sm
-              transition
+              transition-all duration-300
               hover:-translate-y-1
               hover:border-blue-300
-              hover:shadow-lg
+              hover:shadow-xl
+              focus-visible:ring-2
+              focus-visible:ring-blue-400
+              focus-visible:ring-offset-2
             "
           >
 
-            <p className="mb-2 text-sm text-slate-500">
-              Next Chapter
-            </p>
+            <div>
+              <p className="mb-2 text-xs uppercase tracking-wide text-slate-400">
+                Continue Learning
+              </p>
 
-            <h3 className="font-semibold text-blue-900">
-              {resource.title}
-            </h3>
+              <h3 className="text-lg font-semibold text-slate-900">
+                {resource.title}
+              </h3>
+            </div>
+
+            <div className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-blue-700">
+              <span>Continue</span>
+              <ArrowRight className="h-4 w-4" />
+            </div>
 
           </Link>
 

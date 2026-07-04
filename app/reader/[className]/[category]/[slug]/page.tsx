@@ -6,6 +6,8 @@ import ContinueLearning from "@/app/components/resources/ContinueLearning";
 import {
   getClassResources,
   getRelatedResources,
+  isClassName,
+  isResourceCategory,
 } from "@/lib/resources";
 
 interface ReaderPageProps {
@@ -21,7 +23,15 @@ export default async function ReaderPage({
 }: ReaderPageProps) {
   const { className, category, slug } = await params;
 
-  const resources = getClassResources(className);
+if (!isClassName(className)) {
+  notFound();
+}
+
+if (!isResourceCategory(category)) {
+  notFound();
+}
+
+const resources = getClassResources(className);
 
   if (!resources) {
     notFound();
@@ -55,14 +65,16 @@ export default async function ReaderPage({
   );
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto w-full max-w-6xl px-3 sm:px-6">
 
-      <PDFViewerClient
-        title={resource.title}
-        pdfUrl={pdfUrl}
-      />
+      <div className="mb-8">
+  <PDFViewerClient
+    title={resource.title}
+    pdfUrl={pdfUrl}
+  />
+</div>
 
-      <ContinueLearning
+<ContinueLearning
         className={className}
         category={category}
         resources={relatedResources}

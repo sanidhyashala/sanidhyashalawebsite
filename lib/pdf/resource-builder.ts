@@ -3,12 +3,14 @@ import { getPdfMetadata } from "./metadata";
 import { ResourceItem } from "@/app/components/resources/resourceTypes";
 
 interface BuildResourceOptions {
-  title: string;
-  slug: string;
-  pdf: string;
-  status?: "available" | "coming-soon" | "locked";
-  language?: string;
-  premium?: boolean;
+  readonly title: string;
+  readonly slug: string;
+  readonly pdf: string;
+  readonly className: string;
+  readonly category: string;
+  readonly status?: "available" | "coming-soon" | "locked";
+  readonly language?: string;
+  readonly premium?: boolean;
 }
 
 export async function buildResource(
@@ -18,14 +20,20 @@ export async function buildResource(
     process.cwd(),
     "public",
     "resources",
-    "notes",
-    "class-12",
+    options.category,
+    options.className,
     options.pdf
   );
 
   const metadata = await getPdfMetadata(pdfPath);
 
-  return {
+  if (!(metadata.pages > 0)) {
+    throw new Error(
+      `Invalid metadata for resource "${options.slug}": pages must be greater than 0.`
+    );
+  }
+
+  return Object.freeze({
     title: options.title,
     slug: options.slug,
     pdf: options.pdf,
@@ -39,5 +47,5 @@ export async function buildResource(
     language: options.language ?? "English",
 
     premium: options.premium ?? false,
-  };
+  });
 }

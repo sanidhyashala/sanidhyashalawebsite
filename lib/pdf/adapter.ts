@@ -1,7 +1,7 @@
 import { PDFDocument } from "pdf-lib";
 
-export const PDFAdapter = {
+export const PDFAdapter = Object.freeze({
   PDFDocument,
-};
+});
 
 export type PDFDocumentType = PDFDocument;

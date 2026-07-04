@@ -2,8 +2,8 @@ import fs from "fs/promises";
 import { PDFAdapter, PDFDocumentType } from "./adapter";
 
 export interface ParsedPDF {
-  document: PDFDocumentType;
-  bytes: Uint8Array;
+  readonly document: PDFDocumentType;
+  readonly bytes: Uint8Array;
 }
 
 export async function parsePDF(
@@ -14,16 +14,18 @@ export async function parsePDF(
 
     const bytes = new Uint8Array(file);
 
+    if (bytes.length === 0) {
+      throw new Error("Cannot parse PDF: file is empty.");
+    }
+
     const document =
       await PDFAdapter.PDFDocument.load(bytes);
 
-    return {
+    return Object.freeze({
       document,
       bytes,
-    };
+    });
   } catch (error) {
-    throw new Error(
-      `Unable to parse PDF: ${filePath}\n${error}`
-    );
+    throw new Error("Failed to parse PDF document.", { cause: error });
   }
 }

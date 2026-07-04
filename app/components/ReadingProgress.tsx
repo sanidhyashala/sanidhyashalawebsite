@@ -1,36 +1,49 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function ReadingProgress() {
   const [width, setWidth] = useState(0);
+  const rafId = useRef<number | null>(null);
 
   useEffect(() => {
     const handleScroll = () => {
-      const scrollTop = window.scrollY;
+      if (rafId.current !== null) return;
 
-      const docHeight =
-        document.documentElement.scrollHeight -
-        document.documentElement.clientHeight;
+      rafId.current = requestAnimationFrame(() => {
+        const scrollTop = window.scrollY;
 
-      const progress =
-        docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+        const docHeight =
+          document.documentElement.scrollHeight -
+          document.documentElement.clientHeight;
 
-      setWidth(progress);
+        const rawProgress =
+          docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+
+        const progress = Math.min(100, Math.max(0, rawProgress));
+
+        setWidth(progress);
+        rafId.current = null;
+      });
     };
 
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
 
     handleScroll();
 
-    return () =>
+    return () => {
       window.removeEventListener("scroll", handleScroll);
+      if (rafId.current !== null) {
+        cancelAnimationFrame(rafId.current);
+        rafId.current = null;
+      }
+    };
   }, []);
 
   return (
     <div className="fixed left-0 top-0 z-50 h-1 w-full bg-transparent">
       <div
-        className="h-full bg-gradient-to-r from-blue-800 to-blue-500 transition-all"
+        className="h-full bg-gradient-to-r from-blue-800 to-blue-500 transition-[width] duration-150 ease-out"
         style={{ width: `${width}%` }}
       />
     </div>

@@ -11,26 +11,43 @@ export function useSearch(query: string) {
   useEffect(() => {
     if (!query.trim()) {
       setResults([]);
+      setLoading(false);
       return;
     }
+
+    const controller = new AbortController();
 
     const timer = setTimeout(async () => {
       setLoading(true);
 
       try {
         const res = await fetch(
-          `/api/search?q=${encodeURIComponent(query)}`
+          `/api/search?q=${encodeURIComponent(query)}`,
+          { signal: controller.signal }
         );
 
         const data = await res.json();
 
-        setResults(data.results ?? []);
+        if (!controller.signal.aborted) {
+          setResults(data.results ?? []);
+        }
+      } catch (err) {
+        if (err instanceof Error && err.name === "AbortError") {
+          // request was cancelled, ignore
+        } else {
+          console.error("useSearch fetch error:", err);
+        }
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
       }
     }, 250);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
   }, [query]);
 
   return {

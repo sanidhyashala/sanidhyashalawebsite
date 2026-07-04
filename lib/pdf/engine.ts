@@ -1,15 +1,25 @@
 import { parsePDF } from "./parser";
 
 export interface PDFInfo {
-  pages: number;
+  readonly pages: number;
 }
 
 export async function getPDFInfo(
   filePath: string
 ): Promise<PDFInfo> {
-  const pdf = await parsePDF(filePath);
+  let pages: number;
+  try {
+    const pdf = await parsePDF(filePath);
+    pages = pdf.document.getPageCount();
+  } catch (error) {
+    throw new Error("Failed to read PDF metadata.", { cause: error });
+  }
 
-  return {
-    pages: pdf.document.getPageCount(),
-  };
+  if (pages <= 0) {
+    throw new Error("Invalid PDF: page count must be greater than zero.");
+  }
+
+  return Object.freeze({
+    pages,
+  });
 }

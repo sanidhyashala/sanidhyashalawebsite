@@ -1,25 +1,22 @@
 "use client";
-
+import {
+  ChevronLeft,
+  ChevronRight,
+  ZoomIn,
+  ZoomOut,
+  Download,
+} from "lucide-react";
 interface PDFToolbarProps {
   title: string;
-
   currentPage: number;
-
   totalPages: number;
-
   onPrevious: () => void;
-
   onNext: () => void;
-
   zoom: number;
-
   onZoomIn: () => void;
-
   onZoomOut: () => void;
-
   onDownload: () => void;
 }
-
 export default function PDFToolbar({
   title,
   currentPage,
@@ -32,67 +29,75 @@ export default function PDFToolbar({
   onDownload,
 }: PDFToolbarProps) {
   return (
-    <div className="mb-6 flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:flex-row md:items-center md:justify-between">
-
-      <div>
-        <h1 className="text-xl font-bold text-slate-900">
+    <div className="sticky top-16 md:top-[72px] z-30 mb-5 rounded-xl border border-slate-200 bg-white/95 p-4 shadow-sm backdrop-blur">
+      {/* Header */}
+      <div className="mb-4">
+        <h1 className="truncate text-lg font-bold text-slate-900 md:text-xl">
           {title}
         </h1>
-
-        <p className="text-sm text-slate-500">
-          Page {currentPage} of {totalPages || "--"}
+        <p className="mt-1 text-sm text-slate-500">
+          Page <span className="font-semibold">{currentPage}</span> of{" "}
+          <span className="font-semibold">
+            {totalPages || "--"}
+          </span>
         </p>
       </div>
-
-      <div className="flex flex-wrap items-center gap-3">
-
-        <button
-          onClick={onPrevious}
-          disabled={currentPage <= 1}
-          className="rounded-lg border border-slate-300 px-4 py-2 text-sm transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          ← Previous
-        </button>
-
-        <div className="flex items-center gap-2 rounded-lg border border-slate-300 px-2 py-1">
-
+      {/* Controls */}
+      <div className="flex flex-wrap items-center gap-4 md:flex-nowrap md:justify-between">
+        {/* Navigation */}
+        <div className="flex w-full gap-3 md:w-auto md:flex-1">
           <button
-            onClick={onZoomOut}
-            className="px-2 text-lg hover:text-blue-700"
+            type="button"
+            onClick={onPrevious}
+            disabled={currentPage <= 1}
+            className="flex h-11 flex-1 items-center justify-center gap-1.5 rounded-lg border border-slate-300 bg-white px-4 text-sm font-medium transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40 md:flex-none"
           >
-            −
+            <ChevronLeft className="h-4 w-4 shrink-0" />
+            <span>Prev</span>
           </button>
-
-          <span className="min-w-[60px] text-center text-sm font-medium">
-            {zoom}%
-          </span>
-
           <button
-            onClick={onZoomIn}
-            className="px-2 text-lg hover:text-blue-700"
+            type="button"
+            onClick={onNext}
+            disabled={currentPage >= totalPages}
+            className="flex h-11 flex-1 items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-4 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40 md:flex-none"
           >
-            +
+            <span>Next</span>
+            <ChevronRight className="h-4 w-4 shrink-0" />
           </button>
-
         </div>
-
-        <button
-          onClick={onDownload}
-          className="rounded-lg border border-blue-600 px-4 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-50"
-        >
-          📥 Download
-        </button>
-
-        <button
-          onClick={onNext}
-          disabled={currentPage >= totalPages}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Next →
-        </button>
-
+        {/* Zoom + Download wrapper */}
+        <div className="flex w-full gap-3 md:w-auto md:flex-none">
+          {/* Zoom */}
+          <div className="flex h-11 flex-1 items-center justify-center rounded-lg border border-slate-300 md:flex-none">
+            <button
+              type="button"
+              onClick={onZoomOut}
+              className="flex h-11 w-11 shrink-0 items-center justify-center transition hover:bg-slate-100"
+            >
+              <ZoomOut className="h-4 w-4" />
+            </button>
+            <span className="min-w-[64px] text-center text-sm font-semibold">
+              {zoom}%
+            </span>
+            <button
+              type="button"
+              onClick={onZoomIn}
+              className="flex h-11 w-11 shrink-0 items-center justify-center transition hover:bg-slate-100"
+            >
+              <ZoomIn className="h-4 w-4" />
+            </button>
+          </div>
+          {/* Download */}
+          <button
+            type="button"
+            onClick={onDownload}
+            className="flex h-11 flex-1 items-center justify-center gap-2 rounded-lg border border-blue-600 px-4 text-sm font-medium text-blue-700 transition hover:bg-blue-50 md:flex-none"
+          >
+            <Download className="h-4 w-4" />
+            <span>Download</span>
+          </button>
+        </div>
       </div>
-
     </div>
   );
 }

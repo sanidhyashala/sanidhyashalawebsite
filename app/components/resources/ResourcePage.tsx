@@ -11,11 +11,11 @@ export default function ResourcePage({
   return (
     <main className="px-6 py-16">
       <div className="mx-auto max-w-5xl">
-        <h1 className="mb-4 text-5xl font-bold text-blue-900">
+        <h1 className="mb-4 text-5xl font-bold text-blue-900 dark:text-blue-400">
           {title}
         </h1>
 
-        <p className="mb-12 text-lg text-slate-600">
+        <p className="mb-12 text-lg text-slate-600 dark:text-slate-400">
           {description}
         </p>
 

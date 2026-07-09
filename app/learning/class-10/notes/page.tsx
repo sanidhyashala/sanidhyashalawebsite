@@ -1,5 +1,3 @@
-
-
 const chapters = [
   { name: "Real Numbers", status: "available" },
   { name: "Polynomials", status: "not-published" },
@@ -21,11 +19,11 @@ export default function NotesPage() {
   return (
     <main className="px-6 py-16">
       <div className="mx-auto max-w-5xl">
-        <h1 className="mb-4 text-5xl font-bold text-blue-900">
-          Class 10 Notes
+        <h1 className="mb-4 text-5xl font-bold text-blue-900 dark:text-blue-400">
+          Class X Notes
         </h1>
 
-        <p className="mb-12 text-lg text-slate-600">
+        <p className="mb-12 text-lg text-slate-600 dark:text-slate-400">
           Chapter-wise notes designed to build conceptual clarity and
           mathematical understanding.
         </p>
@@ -45,33 +43,39 @@ export default function NotesPage() {
                 hover:-translate-y-1
                 hover:shadow-md
                 hover:border-blue-200
+                dark:bg-slate-900
+                dark:border-slate-800
+                dark:shadow-none
+                dark:hover:border-slate-700
+                dark:hover:shadow-lg
+                dark:hover:shadow-black/30
               "
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
                     Chapter {index + 1}
                   </p>
 
-                  <h2 className="text-xl font-semibold text-blue-900">
+                  <h2 className="text-xl font-semibold text-blue-900 dark:text-blue-400">
                     {chapter.name}
                   </h2>
                 </div>
 
                 {chapter.status === "available" && (
-                  <span className="rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-700">
+                  <span className="rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-700 dark:bg-green-500/10 dark:text-green-400">
                     🟢 Available
                   </span>
                 )}
 
                 {chapter.status === "in-progress" && (
-                  <span className="rounded-full bg-yellow-100 px-3 py-1 text-sm font-medium text-yellow-700">
+                  <span className="rounded-full bg-yellow-100 px-3 py-1 text-sm font-medium text-yellow-700 dark:bg-yellow-500/10 dark:text-yellow-400">
                     🟡 In Progress
                   </span>
                 )}
 
                 {chapter.status === "not-published" && (
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-600">
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                     ⚪ Not Published
                   </span>
                 )}

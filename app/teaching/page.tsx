@@ -19,7 +19,7 @@ export default function TeachingPage() {
         {/* English Sections */}
         {englishSections.map((section) => (
           <section key={section.heading}>
-            <h2 className="mb-8 mt-16 text-4xl font-bold text-blue-900">
+            <h2 className="mb-8 mt-16 text-4xl font-bold text-blue-900 dark:text-blue-400">
               {section.heading}
             </h2>
 
@@ -33,21 +33,21 @@ export default function TeachingPage() {
 
         {/* Divider */}
 <div className="my-24 flex items-center">
-  <div className="h-px flex-1 bg-slate-300"></div>
+  <div className="h-px flex-1 bg-slate-300 dark:bg-slate-700"></div>
 
-  <span className="mx-6 text-sm font-medium tracking-widest text-slate-500 uppercase">
+  <span className="mx-6 text-sm font-medium tracking-widest text-slate-500 dark:text-slate-400 uppercase">
     Hindi Edition
   </span>
 
-  <div className="h-px flex-1 bg-slate-300"></div>
+  <div className="h-px flex-1 bg-slate-300 dark:bg-slate-700"></div>
 </div>
 
 <div className="mb-16 text-center">
-  <h2 className="text-4xl font-bold text-blue-900">
+  <h2 className="text-4xl font-bold text-blue-900 dark:text-blue-400">
     हिन्दी संस्करण
   </h2>
 
-  <p className="mt-3 text-slate-600">
+  <p className="mt-3 text-slate-600 dark:text-slate-400">
     Teaching in Hindi
   </p>
 </div>
@@ -55,7 +55,7 @@ export default function TeachingPage() {
         {/* Hindi Sections */}
         {hindiSections.map((section) => (
           <section key={section.heading}>
-            <h2 className="mb-8 mt-16 text-4xl font-bold text-blue-900">
+            <h2 className="mb-8 mt-16 text-4xl font-bold text-blue-900 dark:text-blue-400">
               {section.heading}
             </h2>
 

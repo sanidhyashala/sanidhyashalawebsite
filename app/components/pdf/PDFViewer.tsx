@@ -76,26 +76,25 @@ export default function PDFViewer({ title, pdfUrl }: PDFViewerProps) {
     [pdfUrl]
   );
 
-
   useEffect(() => {
-  function handleResize() {
-    if (!containerRef.current) return;
+    function handleResize() {
+      if (!containerRef.current) return;
 
-    if (window.innerWidth >= 768) {
-      setContainerWidth(MAX_DESKTOP_WIDTH);
-    } else {
-      setContainerWidth(containerRef.current.clientWidth);
+      if (window.innerWidth >= 768) {
+        setContainerWidth(MAX_DESKTOP_WIDTH);
+      } else {
+        setContainerWidth(containerRef.current.clientWidth);
+      }
     }
-  }
 
-  handleResize();   // 
+    handleResize();
 
-  window.addEventListener("resize", handleResize);
+    window.addEventListener("resize", handleResize);
 
-  return () => {
-    window.removeEventListener("resize", handleResize);
-  };
-}, []);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
 
   // Reset viewer when a different PDF is opened
   useEffect(() => {
@@ -119,7 +118,7 @@ export default function PDFViewer({ title, pdfUrl }: PDFViewerProps) {
       : 2;
 
   return (
-    <div className="mx-auto max-w-6xl px-3 sm:px-6 py-6 sm:py-10 w-full select-none">
+    <div className="mx-auto max-w-6xl px-3 sm:px-6 py-6 sm:py-10 w-full select-none dark:text-slate-100">
       <div className="w-full overflow-x-auto md:overflow-x-visible mb-4 pb-1 scrollbar-none [webkit-overflow-scrolling:touch]">
         <div className="min-w-[340px] sm:min-w-full">
           <PDFToolbar
@@ -138,32 +137,32 @@ export default function PDFViewer({ title, pdfUrl }: PDFViewerProps) {
 
       <div
         ref={containerRef}
-        className="flex justify-center overflow-x-auto overflow-y-hidden rounded-xl border border-slate-200 bg-white p-1.5 sm:p-6 shadow-sm w-full scrollbar-none [webkit-overflow-scrolling:touch] [overscroll-behavior-x:contain] [touch-action:auto]"
+        className="flex justify-center overflow-x-auto overflow-y-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-1.5 sm:p-6 shadow-sm dark:shadow-slate-900/50 w-full scrollbar-none [webkit-overflow-scrolling:touch] [overscroll-behavior-x:contain] [touch-action:auto]"
       >
         <Document
-  key={pdfUrl}
-  file={pdfUrl}
-  loading={<PDFLoading />}
-  error={<PDFError />}
-  onLoadSuccess={handleDocumentLoadSuccess}
-  className="flex flex-col items-center max-w-full"
->
-  {numPages > 0 && initialPageLoaded && (
-    <div className="flex w-full justify-center">
-      <div className="transition-all duration-300 ease-out">
-        <Page
-          pageNumber={pageNumber}
-          width={pageWidth}
-          devicePixelRatio={pixelRatio}
-          className="max-w-full h-auto transition-all duration-200 ease-out select-text"
-          renderTextLayer
-          renderAnnotationLayer
+          key={pdfUrl}
+          file={pdfUrl}
           loading={<PDFLoading />}
-        />
-      </div>
-    </div>
-  )}
-</Document>
+          error={<PDFError />}
+          onLoadSuccess={handleDocumentLoadSuccess}
+          className="flex flex-col items-center max-w-full"
+        >
+          {numPages > 0 && initialPageLoaded && (
+            <div className="flex w-full justify-center">
+              <div className="transition-all duration-300 ease-out">
+                <Page
+                  pageNumber={pageNumber}
+                  width={pageWidth}
+                  devicePixelRatio={pixelRatio}
+                  className="max-w-full h-auto transition-all duration-200 ease-out select-text"
+                  renderTextLayer
+                  renderAnnotationLayer
+                  loading={<PDFLoading />}
+                />
+              </div>
+            </div>
+          )}
+        </Document>
       </div>
     </div>
   );

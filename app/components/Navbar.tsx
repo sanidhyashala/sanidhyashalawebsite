@@ -9,6 +9,8 @@ import { Menu, X, Search } from "lucide-react";
 import AuthButtons from "./ui/AuthButtons";
 import SearchBar from "./search/SearchBar";
 
+import ThemeToggle from "./ThemeToggle";
+
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -81,13 +83,13 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="sticky top-0 z-50 w-full border-b border-slate-200/80 bg-white/80 shadow-sm backdrop-blur-xl transition-all duration-300">
+      <nav className="sticky top-0 z-50 w-full border-b border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/80 shadow-sm dark:shadow-slate-900/10 backdrop-blur-xl transition-all duration-300">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 py-3.5">
           
           {/* Brand Logo & Name */}
           <Link 
             href="/" 
-            className="flex items-center gap-2 sm:gap-3 rounded-lg p-1 outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+            className="flex items-center gap-2 sm:gap-3 rounded-lg p-1 outline-none focus-visible:ring-2 focus-visible:ring-blue-600 dark:focus-visible:ring-blue-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
             onClick={closeAll}
           >
             <Image
@@ -98,7 +100,7 @@ export default function Navbar() {
               priority
               className="h-9 w-9 sm:h-10 sm:w-10 object-contain"
             />
-            <span className="text-lg sm:text-xl font-bold tracking-wide text-slate-900 select-none">
+            <span className="text-lg sm:text-xl font-bold tracking-wide text-slate-900 dark:text-slate-100 select-none">
               सानिध्यशाला
             </span>
           </Link>
@@ -113,10 +115,10 @@ export default function Navbar() {
                     key={link.href}
                     href={link.href}
                     aria-current={isActive ? "page" : undefined}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-blue-600 ${
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-blue-600 dark:focus-visible:ring-blue-400 ${
                       isActive 
-                        ? "text-blue-600 bg-blue-50/60 font-semibold border-b-2 border-blue-600" 
-                        : "text-slate-600 hover:text-blue-600 hover:bg-slate-50 border-b-2 border-transparent"
+                        ? "text-blue-600 bg-blue-50/60 font-semibold border-b-2 border-blue-600 dark:text-blue-400 dark:bg-blue-500/10 dark:border-blue-400" 
+                        : "text-slate-600 hover:text-blue-600 hover:bg-slate-50 border-b-2 border-transparent dark:text-slate-300 dark:hover:text-blue-400 dark:hover:bg-slate-800/50"
                     }`}
                   >
                     {link.name}
@@ -141,8 +143,10 @@ export default function Navbar() {
               aria-expanded={searchOpen}
               aria-controls="mobile-search-dropdown"
               aria-label="Toggle search panel"
-              className={`flex h-11 w-11 items-center justify-center rounded-xl transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-blue-600 touch-manipulation ${
-                searchOpen ? "bg-blue-50 text-blue-600" : "text-slate-600 hover:bg-slate-50"
+              className={`flex h-11 w-11 items-center justify-center rounded-xl transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-blue-600 dark:focus-visible:ring-blue-400 touch-manipulation ${
+                searchOpen 
+                  ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400" 
+                  : "text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800/50"
               }`}
               onClick={toggleSearch}
             >
@@ -155,8 +159,10 @@ export default function Navbar() {
               aria-expanded={menuOpen}
               aria-controls="mobile-navigation-menu"
               aria-label="Toggle navigation menu"
-              className={`flex h-11 w-11 items-center justify-center rounded-xl transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-blue-600 touch-manipulation ${
-                menuOpen ? "bg-slate-100 text-slate-900" : "text-slate-600 hover:bg-slate-50"
+              className={`flex h-11 w-11 items-center justify-center rounded-xl transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-blue-600 dark:focus-visible:ring-blue-400 touch-manipulation ${
+                menuOpen 
+                  ? "bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-slate-100" 
+                  : "text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800/50"
               }`}
               onClick={toggleMenu}
             >
@@ -169,7 +175,7 @@ export default function Navbar() {
         <div
           id="mobile-search-dropdown"
           role="search"
-          className={`absolute top-full left-0 w-full border-b border-slate-200/60 bg-white/95 backdrop-blur-xl px-4 sm:px-6 py-4 shadow-md lg:hidden z-50 origin-top transition-all duration-300 ease-out transform ${
+          className={`absolute top-full left-0 w-full border-b border-slate-200/60 dark:border-slate-800/60 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl px-4 sm:px-6 py-4 shadow-md dark:shadow-slate-900/50 lg:hidden z-50 origin-top transition-all duration-300 ease-out transform ${
             searchOpen 
               ? "opacity-100 translate-y-0 scale-100 pointer-events-auto" 
               : "opacity-0 -translate-y-2 scale-95 pointer-events-none"
@@ -186,7 +192,7 @@ export default function Navbar() {
           role="dialog"
           aria-modal="true"
           aria-label="Navigation menu"
-          className={`absolute top-full left-0 w-full border-b border-slate-200/60 bg-white/95 backdrop-blur-xl shadow-xl lg:hidden z-50 origin-top transition-all duration-300 ease-out transform ${
+          className={`absolute top-full left-0 w-full border-b border-slate-200/60 dark:border-slate-800/60 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-xl dark:shadow-slate-900/50 lg:hidden z-50 origin-top transition-all duration-300 ease-out transform ${
             menuOpen 
               ? "opacity-100 translate-y-0 scale-100 pointer-events-auto" 
               : "opacity-0 -translate-y-2 scale-95 pointer-events-none"
@@ -200,10 +206,10 @@ export default function Navbar() {
                   key={link.href}
                   href={link.href}
                   aria-current={isActive ? "page" : undefined}
-                  className={`flex h-12 items-center px-4 rounded-xl text-base font-medium transition-all duration-150 outline-none focus-visible:ring-2 focus-visible:ring-blue-600 ${
+                  className={`flex h-12 items-center px-4 rounded-xl text-base font-medium transition-all duration-150 outline-none focus-visible:ring-2 focus-visible:ring-blue-600 dark:focus-visible:ring-blue-400 ${
                     isActive 
-                      ? "bg-blue-50 text-blue-600 font-bold border-l-4 border-blue-600" 
-                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                      ? "bg-blue-50 text-blue-600 font-bold border-l-4 border-blue-600 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-400" 
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800/50 dark:hover:text-slate-100"
                   }`}
                 >
                   {link.name}
@@ -211,8 +217,14 @@ export default function Navbar() {
               );
             })}
 
-            <div className="mt-2 border-t border-slate-100 pt-4 pb-2 px-2">
-              <AuthButtons />
+            <div className="mt-2 border-t border-slate-100 dark:border-slate-800 pt-4">
+              <div className="mb-4 px-2">
+                <ThemeToggle />
+              </div>
+
+              <div className="px-2 pb-2">
+                <AuthButtons />
+              </div>
             </div>
           </div>
         </div>
@@ -221,7 +233,7 @@ export default function Navbar() {
       {/* Global Interactive Animated Backdrop Overlay */}
       <div 
         onClick={closeAll}
-        className={`fixed inset-0 z-40 bg-black/20 backdrop-blur-sm lg:hidden transition-opacity duration-300 ${
+        className={`fixed inset-0 z-40 bg-black/20 dark:bg-black/40 backdrop-blur-sm lg:hidden transition-opacity duration-300 ${
           menuOpen || searchOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
         aria-hidden="true"

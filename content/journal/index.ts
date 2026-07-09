@@ -1,0 +1,1 @@
+export { journalArticles } from "./journal-articles";

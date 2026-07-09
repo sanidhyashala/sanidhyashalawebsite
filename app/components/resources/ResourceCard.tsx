@@ -34,15 +34,21 @@ export default function ResourceCard({
       focus-within:ring-2
       focus-within:ring-blue-300
       focus-within:ring-offset-2
+      dark:bg-slate-900
+      dark:border-slate-800
+      dark:shadow-none
+      dark:hover:border-slate-700
+      dark:hover:shadow-lg
+      dark:hover:shadow-black/30
     "
     >
       <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
         <div className="flex-1">
-          <p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-400">
+          <p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">
             Chapter {index + 1}
           </p>
 
-          <h2 className="text-xl md:text-2xl font-semibold text-slate-900">
+          <h2 className="text-xl md:text-2xl font-semibold text-slate-900 dark:text-blue-400">
             {resource.title}
           </h2>
 
@@ -60,6 +66,9 @@ export default function ResourceCard({
                 px-3
                 py-1
                 text-slate-600
+                dark:border-slate-700
+                dark:bg-slate-800
+                dark:text-slate-300
               "
               >
                 <FileText className="h-3.5 w-3.5" />
@@ -80,6 +89,9 @@ export default function ResourceCard({
                 px-3
                 py-1
                 text-slate-600
+                dark:border-slate-700
+                dark:bg-slate-800
+                dark:text-slate-300
               "
               >
                 <Languages className="h-3.5 w-3.5" />
@@ -100,6 +112,9 @@ export default function ResourceCard({
                 px-3
                 py-1
                 text-slate-600
+                dark:border-slate-700
+                dark:bg-slate-800
+                dark:text-slate-300
               "
               >
                 <CalendarDays className="h-3.5 w-3.5" />
@@ -124,6 +139,8 @@ export default function ResourceCard({
                 text-sm
                 font-medium
                 text-green-700
+                dark:bg-green-500/10
+                dark:text-green-400
               "
               >
                 <CheckCircle2 className="h-3.5 w-3.5" />
@@ -151,6 +168,8 @@ export default function ResourceCard({
                 focus-visible:ring-2
                 focus-visible:ring-blue-400
                 focus-visible:ring-offset-2
+                dark:bg-blue-600
+                dark:hover:bg-blue-500
               "
               >
                 <BookOpen className="h-4 w-4" />
@@ -172,6 +191,8 @@ export default function ResourceCard({
               text-sm
               font-medium
               text-amber-700
+              dark:bg-yellow-500/10
+              dark:text-yellow-400
             "
             >
               <Clock3 className="h-3.5 w-3.5" />
@@ -192,6 +213,8 @@ export default function ResourceCard({
               text-sm
               font-medium
               text-red-700
+              dark:bg-red-500/10
+              dark:text-red-400
             "
             >
               <Lock className="h-3.5 w-3.5" />

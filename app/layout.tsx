@@ -6,6 +6,9 @@ import "./globals.css";
 
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import ScrollButtons from "./components/ScrollButtons";
+
+import ThemeProvider from "./providers/ThemeProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,21 +32,26 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-  <html
-    lang="en"
-    className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-  >
-    <body className="min-h-full flex flex-col">
-      <ClerkProvider>
-        <Navbar />
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+    >
+      <body className="min-h-full flex flex-col">
+        <ClerkProvider>
+          <ThemeProvider>
+            <Navbar />
 
-        <main className="flex-1">
-          {children}
-        </main>
+            <main className="flex-1">
+              {children}
+            </main>
 
-        <Footer />
-      </ClerkProvider>
-    </body>
-  </html>
-);
+            <Footer />
+
+            <ScrollButtons />
+          </ThemeProvider>
+        </ClerkProvider>
+      </body>
+    </html>
+  );
 }

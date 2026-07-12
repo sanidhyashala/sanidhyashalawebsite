@@ -14,6 +14,14 @@ import {
   articleHindi as universeHindi,
 } from "./when-the-language-of-the-universe-falls-silent-hi";
 
+import {
+  article as learningAndSwadharma,
+} from "./learning-and-swadharma";
+
+import {
+  articleHindi as learningAndSwadharmaHindi,
+} from "./learning-and-swadharma-hi";
+
 import type { JournalEntry } from "./types";
 
 export const journalArticles: Record<
@@ -102,6 +110,48 @@ export const journalArticles: Record<
 
       seoDescription:
         "Is mathematics discovered or invented? A journey through philosophy, science and the search for truth.",
+    },
+  },
+
+  "learning-and-swadharma": {
+    article: learningAndSwadharma,
+
+    articleHindi: learningAndSwadharmaHindi,
+
+    meta: {
+      title:
+        "Learning and Swadharma",
+
+      description:
+        "A reflection on learning, inner calling, education and the relationship between knowledge and Swadharma.",
+
+      readingTime: "30 min read",
+
+      featured: false,
+
+      languages: [
+        "English",
+        "Hindi",
+      ],
+
+      categories: [
+        "Education",
+        "Philosophy",
+      ],
+
+      tags: [
+        "Learning",
+        "Swadharma",
+        "Education",
+        "Consciousness",
+        "Self-Discovery",
+      ],
+
+      seoTitle:
+        "Learning and Swadharma | Sanidhyashala",
+
+      seoDescription:
+        "An exploration of learning, purpose, education and Swadharma through the lens of consciousness and self-discovery.",
     },
   },
 };

@@ -24,6 +24,11 @@ import {
 
 import type { JournalEntry } from "./types";
 
+import {
+  getReadingTime,
+  getLanguages,
+} from "./utils";
+
 export const journalArticles: Record<
   string,
   JournalEntry
@@ -40,14 +45,13 @@ export const journalArticles: Record<
       description:
         "Exploring how mathematics teaches us to think, question and discover patterns in life.",
 
-      readingTime: "10 min read",
+      readingTime: getReadingTime(mathematics),
 
-      featured: false,
+placements: ["most-curious"],
 
-      languages: [
-  "English",
-  "Hindi",
-],
+languages: getLanguages(
+  mathematicsHindi !== null
+),
 
       categories: [
         "Mathematics",
@@ -82,14 +86,13 @@ export const journalArticles: Record<
       description:
         "Is mathematics discovered or invented? A journey through philosophy, science and the search for truth.",
 
-      readingTime: "18 min read",
+      readingTime: getReadingTime(universe),
 
-      featured: true,
+placements: ["featured"],
 
-      languages: [
-        "English",
-        "Hindi",
-      ],
+languages: getLanguages(
+  universeHindi !== null
+),
 
       categories: [
         "Mathematics",
@@ -125,14 +128,15 @@ export const journalArticles: Record<
       description:
         "A reflection on learning, inner calling, education and the relationship between knowledge and Swadharma.",
 
-      readingTime: "30 min read",
+      readingTime: getReadingTime(
+  learningAndSwadharma
+),
 
-      featured: false,
+placements: ["editors-choice"],
 
-      languages: [
-        "English",
-        "Hindi",
-      ],
+languages: getLanguages(
+  learningAndSwadharmaHindi !== null
+),
 
       categories: [
         "Education",

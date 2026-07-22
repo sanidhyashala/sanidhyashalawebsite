@@ -1,6 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useState,
+  useCallback,
+} from "react";
 import { getSignInUrl } from "@/lib/auth-redirect";
 
 interface Props {
@@ -14,13 +18,15 @@ export default function ReactionButton({
   const [reacted, setReacted] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  async function loadCount() {
+  const loadCount = useCallback(
+  async () => {
     try {
       const response = await fetch(
         `/api/journal/reaction-count?articleSlug=${articleSlug}`
       );
 
-      const data = await response.json();
+      const data =
+        await response.json();
 
       setCount(data.count || 0);
     } catch (error) {
@@ -29,24 +35,30 @@ export default function ReactionButton({
         error
       );
     }
-  }
+  },
+  [articleSlug]
+);
 
-  async function loadReactionStatus() {
+  const loadReactionStatus =
+  useCallback(async () => {
     try {
       const response = await fetch(
         `/api/journal/reaction-status?articleSlug=${articleSlug}`
       );
 
-      const data = await response.json();
+      const data =
+        await response.json();
 
-      setReacted(data.reacted || false);
+      setReacted(
+        data.reacted || false
+      );
     } catch (error) {
       console.error(
         "Failed to load reaction status:",
         error
       );
     }
-  }
+  }, [articleSlug]);
 
   async function handleReaction() {
     if (loading) return;
@@ -90,9 +102,12 @@ export default function ReactionButton({
   }
 
   useEffect(() => {
-    loadCount();
-    loadReactionStatus();
-  }, [articleSlug]);
+  loadCount();
+  loadReactionStatus();
+}, [
+  loadCount,
+  loadReactionStatus,
+]);
 
   const baseClasses =
     "flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-slate-700 transition-all hover:bg-slate-50 hover:border-blue-300 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:border-blue-500";

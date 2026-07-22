@@ -1,6 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useState,
+  useCallback,
+} from "react";
 import { getSignInUrl } from "@/lib/auth-redirect";
 
 interface Props {
@@ -22,7 +26,8 @@ export default function BookmarkButton({
   const [loading, setLoading] =
     useState(false);
 
-  async function loadBookmarkStatus() {
+  const loadBookmarkStatus =
+  useCallback(async () => {
     try {
       const response = await fetch(
         `/api/journal/bookmark-status?articleSlug=${articleSlug}`
@@ -40,7 +45,7 @@ export default function BookmarkButton({
         error
       );
     }
-  }
+  }, [articleSlug]);
 
   async function handleBookmark() {
     if (loading) return;
@@ -81,8 +86,8 @@ export default function BookmarkButton({
   }
 
   useEffect(() => {
-    loadBookmarkStatus();
-  }, [articleSlug]);
+  loadBookmarkStatus();
+}, [loadBookmarkStatus]);
 
   const buttonClassName = bookmarked
     ? `${baseClasses} ${savedClasses}`

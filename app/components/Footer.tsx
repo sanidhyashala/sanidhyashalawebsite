@@ -1,4 +1,17 @@
+"use client";
+
+import { usePathname } from "next/navigation";
+
 export default function Footer() {
+
+  const pathname = usePathname();
+
+const isAdmin = pathname.startsWith("/admin");
+
+if (isAdmin) {
+  return null;
+}
+
   return (
     <footer
       className="

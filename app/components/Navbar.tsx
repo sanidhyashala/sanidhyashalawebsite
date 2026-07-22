@@ -15,6 +15,7 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const pathname = usePathname();
+  const isAdmin = pathname.startsWith("/admin");
 
   // Navigation routes configuration
   const navLinks = useMemo(
@@ -30,11 +31,7 @@ export default function Navbar() {
     []
   );
 
-  // Auto-close overlay elements on route changes
-  useEffect(() => {
-    setMenuOpen(false);
-    setSearchOpen(false);
-  }, [pathname]);
+ 
 
   // Handle body scroll locking when mobile navigation overlay is open
   useEffect(() => {
@@ -81,6 +78,10 @@ export default function Navbar() {
     setSearchOpen(false);
   }, []);
 
+  if (isAdmin) {
+  return null;
+}
+
   return (
     <>
       <nav className="sticky top-0 z-50 w-full border-b border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/80 shadow-sm dark:shadow-slate-900/10 backdrop-blur-xl transition-all duration-300">
@@ -114,6 +115,7 @@ export default function Navbar() {
                   <Link
                     key={link.href}
                     href={link.href}
+                    onClick={closeAll}
                     aria-current={isActive ? "page" : undefined}
                     className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-blue-600 dark:focus-visible:ring-blue-400 ${
                       isActive 
@@ -205,6 +207,7 @@ export default function Navbar() {
                 <Link
                   key={link.href}
                   href={link.href}
+                  onClick={closeAll}
                   aria-current={isActive ? "page" : undefined}
                   className={`flex h-12 items-center px-4 rounded-xl text-base font-medium transition-all duration-150 outline-none focus-visible:ring-2 focus-visible:ring-blue-600 dark:focus-visible:ring-blue-400 ${
                     isActive 

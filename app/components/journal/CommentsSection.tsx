@@ -1,6 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useState,
+  useCallback,
+} from "react";
 import { useUser } from "@clerk/nextjs";
 
 import CommentsForm from "./CommentsForm";
@@ -26,19 +30,21 @@ export default function CommentsSection({ articleSlug }: Props) {
   const [editValue, setEditValue] = useState<string>("");
   const [isSaving, setIsSaving] = useState<boolean>(false);
 
-  async function loadComments(): Promise<void> {
+  const loadComments =
+  useCallback(async (): Promise<void> => {
     try {
       const response = await fetch(
         `/api/journal/comments?articleSlug=${articleSlug}`
       );
 
-      const data = await response.json();
+      const data =
+        await response.json();
 
       setComments(data || []);
     } catch (error) {
       console.error(error);
     }
-  }
+  }, [articleSlug]);
 
   async function deleteComment(commentId: number): Promise<void> {
     const confirmed = window.confirm("Delete this reflection?");
@@ -119,8 +125,8 @@ export default function CommentsSection({ articleSlug }: Props) {
   }
 
   useEffect(() => {
-    loadComments();
-  }, [articleSlug]);
+  loadComments();
+}, [loadComments]);
 
   return (
     <div className="mt-20">

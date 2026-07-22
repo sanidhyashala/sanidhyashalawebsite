@@ -16,7 +16,7 @@ export function searchJournal(
   }
 
   return Object.entries(journalArticles)
-    .filter(([_, data]) => {
+    .filter(([, data]) => {
       const title =
         data.article.title.toLowerCase();
 

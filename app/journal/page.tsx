@@ -56,9 +56,7 @@ const highlightedArticles = placementSections
   })
   .filter(Boolean);
 
-const highlightedSlugs = highlightedArticles.map(
-  (item) => item!.article[0]
-);
+
 
 const remainingPosts = posts.filter(
   ([slug]) => {

@@ -124,12 +124,12 @@ export default function SavedArticlesDrawer() {
                   saved reflections.
                 </p>
 
-                <a
-                  href="/sign-in"
-                  className="mt-4 inline-flex rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-                >
-                  Sign In
-                </a>
+                <Link
+  href="/sign-in"
+  className="mt-4 inline-flex rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+>
+  Sign In
+</Link>
               </div>
             ) : savedSlugs.length ===
               0 ? (

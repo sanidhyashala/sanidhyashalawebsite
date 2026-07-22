@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
 import {
   ChevronUp,
@@ -10,6 +11,10 @@ import {
 import ThemeToggle from "./ThemeToggle";
 
 export default function ScrollButtons() {
+  const pathname = usePathname();
+
+const isAdmin =
+  pathname.startsWith("/admin");
   const [showTop, setShowTop] =
     useState(false);
 
@@ -51,6 +56,10 @@ export default function ScrollButtons() {
         handleScroll
       );
   }, []);
+
+  if (isAdmin) {
+  return null;
+}
 
   return (
     <>

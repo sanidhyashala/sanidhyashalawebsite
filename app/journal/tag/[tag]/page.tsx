@@ -38,7 +38,8 @@ export default async function TagPage({
       </h1>
 
       <p className="mb-12 text-slate-600">
-        Articles related to "{decodedTag}"
+        Articles related to &quot;{decodedTag}&quot;
+
       </p>
 
       <div className="space-y-6">

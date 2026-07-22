@@ -19,7 +19,7 @@ const CATEGORY_CONFIG = [
 ] as const;
 
 type CategoryKey = (typeof CATEGORY_CONFIG)[number]["key"];
-type CategoryLabel = (typeof CATEGORY_CONFIG)[number]["category"];
+
 
 // Shape every per-class resource module must conform to.
 type ClassSource = {

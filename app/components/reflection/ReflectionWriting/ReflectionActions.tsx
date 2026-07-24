@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
-import { SignInButton } from "@clerk/nextjs";
+import { SignInButton, useAuth } from "@clerk/nextjs";
 
 import { publishReflection } from "@/app/actions/reflection.actions";
 
@@ -27,12 +27,18 @@ export default function ReflectionActions({
     useState("");
 
   const router = useRouter();
+  const { isSignedIn } = useAuth();
 
   const handlePublish = () => {
-    if (disabled || isPending) return;
+  setError("");
+  setSuccess("");
 
-    setError("");
-    setSuccess("");
+  if (!isSignedIn) {
+    setError("signin");
+    return;
+  }
+
+  if (disabled || isPending) return;
 
     startTransition(async () => {
       try {

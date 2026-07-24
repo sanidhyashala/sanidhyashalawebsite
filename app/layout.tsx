@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 
@@ -22,8 +22,31 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "सानिध्यशाला | From Clarity to Mastery",
+
   description:
     "A space to learn, teach and reflect. Mathematics, education, philosophy and thoughtful learning.",
+
+  applicationName: "Sanidhyashala",
+
+  manifest: "/site.webmanifest",
+
+  icons: {
+    icon: [
+      {
+        url: "/favicon.ico",
+      },
+      {
+        url: "/favicon.svg",
+        type: "image/svg+xml",
+      },
+    ],
+
+    apple: "/apple-touch-icon.png",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#1E40AF",
 };
 
 export default function RootLayout({

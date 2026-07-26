@@ -8,11 +8,28 @@ function mapPrompt(
 ): ReflectionPrompt {
   return {
     id: row.id as string,
+
     title: row.title as string,
+
     description: row.description as string,
+
     isActive: row.is_active as boolean,
+
     createdAt: row.created_at as string,
+
     updatedAt: row.updated_at as string,
+
+    notificationSentAt:
+      row.notification_sent_at as string | null,
+
+      notificationRecipients:
+  row.notification_recipients as number | null,
+
+notificationDelivered:
+  row.notification_delivered as number | null,
+
+notificationFailed:
+  row.notification_failed as number | null,
   };
 }
 
@@ -199,6 +216,34 @@ async getPromptPosition(
       is_active: true,
     })
     .eq("id", id);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+},
+async markNotificationSent(
+  id: string,
+  recipients: number,
+  delivered: number,
+  failed: number
+): Promise<void> {
+  const { error } =
+    await supabaseServer
+      .from("reflection_prompts")
+      .update({
+        notification_sent_at:
+          new Date().toISOString(),
+
+        notification_recipients:
+          recipients,
+
+        notification_delivered:
+          delivered,
+
+        notification_failed:
+          failed,
+      })
+      .eq("id", id);
 
   if (error) {
     throw new Error(error.message);

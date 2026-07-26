@@ -4,10 +4,17 @@ import {
   createPrompt,
   activatePromptAction,
 } from "@/app/lib/prompt/prompt-actions";
-import { getAllPrompts } from "@/app/lib/prompt/prompt-service";
+import {
+  getAllPrompts,
+  getNotificationDashboard,
+} from "@/app/lib/prompt/prompt-service";
+
+import NotifyCommunityCard from "../components/NotifyCommunityCard";
 
 export default async function PromptManagementPage() {
   const prompts = await getAllPrompts();
+  const dashboard =
+  await getNotificationDashboard();
 
   return (
     <AdminPage
@@ -90,6 +97,19 @@ export default async function PromptManagementPage() {
           </button>
         </div>
       </form>
+
+      <NotifyCommunityCard
+  promptTitle={dashboard.prompt.title}
+  promptDescription={dashboard.prompt.description}
+  subscriberCount={dashboard.subscriberCount}
+  notificationRecipients={
+  dashboard.prompt.notificationRecipients
+}
+  notificationSent={dashboard.notificationSent}
+  sentAt={dashboard.prompt.notificationSentAt}
+  delivered={dashboard.delivered}
+  failed={dashboard.failed}
+/>
 
       {/* Prompt List */}
 

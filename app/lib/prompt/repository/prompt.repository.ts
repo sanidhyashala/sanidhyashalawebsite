@@ -21,6 +21,13 @@ export interface PromptRepository {
     id: string
   ): Promise<void>;
 
+  markNotificationSent(
+  id: string,
+  recipients: number,
+  delivered: number,
+  failed: number
+): Promise<void>;
+
   getById(
   id: string
 ): Promise<ReflectionPrompt | null>;

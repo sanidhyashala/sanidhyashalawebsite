@@ -10,4 +10,12 @@ export interface ReflectionPrompt {
   createdAt: string;
 
   updatedAt: string;
+
+  notificationSentAt: string | null;
+
+  notificationRecipients: number | null;
+
+notificationDelivered: number | null;
+
+notificationFailed: number | null;
 }

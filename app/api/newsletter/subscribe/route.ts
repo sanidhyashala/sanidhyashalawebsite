@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 
 import { supabase } from "@/lib/supabase";
 
+import { sendWelcomeEmail } from "@/app/lib/email/sendWelcomeEmail";
+
 export async function POST(
   request: Request
 ) {
@@ -21,26 +23,6 @@ export async function POST(
     const normalizedEmail =
       email.trim().toLowerCase();
 
-    const { data: existing } =
-      await supabase
-        .from(
-          "newsletter_subscribers"
-        )
-        .select("id")
-        .eq(
-          "email",
-          normalizedEmail
-        )
-        .single();
-
-    if (existing) {
-      return NextResponse.json({
-        success: true,
-        message:
-          "Already subscribed",
-      });
-    }
-
     const { error } =
       await supabase
         .from(
@@ -51,15 +33,59 @@ export async function POST(
         });
 
     if (error) {
+      if (error.code === "23505") {
+  return NextResponse.json({
+    success: true,
+    message:
+      "You're already part of the SanidhyaShala journey 🌿",
+  });
+}
+
       throw error;
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Send Welcome Email
+    |--------------------------------------------------------------------------
+    |
+    | The subscriber has already been saved successfully.
+    | Even if email delivery fails, we don't want to lose
+    | the subscriber.
+    |
+    */
+
+    try {
+      await sendWelcomeEmail({
+        email: normalizedEmail,
+      });
+    } catch (error) {
+      console.error(
+        "[Newsletter] Failed to send welcome email",
+        {
+          email: normalizedEmail,
+          error,
+          time:
+            new Date().toISOString(),
+        }
+      );
+    }
+
     return NextResponse.json({
-      success: true,
-      message:
-        "Successfully subscribed",
-    });
-  } catch {
+  success: true,
+  message:
+    "You're in. Welcome to SanidhyaShala. Please check your inbox for a welcome message.",
+});
+  } catch (error) {
+    console.error(
+      "[Newsletter] Subscription failed",
+      {
+        error,
+        time:
+          new Date().toISOString(),
+      }
+    );
+
     return NextResponse.json(
       {
         error:

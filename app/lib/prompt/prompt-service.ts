@@ -1,5 +1,7 @@
 import { promptRepository } from "./supabase/prompt.supabase";
 
+import { supabaseServer } from "@/app/lib/reflection/supabase/server";
+
 export async function getActivePrompt() {
   return promptRepository.getActive();
 }
@@ -105,4 +107,41 @@ export async function getPromptPosition(
   return promptRepository.getPromptPosition(
     id
   );
+}
+export async function getNotificationDashboard() {
+  const activePrompt =
+    await promptRepository.getActive();
+
+  
+
+  const { count, error } =
+  await supabaseServer
+    .from("newsletter_subscribers")
+      .select("*", {
+        count: "exact",
+        head: true,
+      });
+
+  if (error) {
+    throw error;
+  }
+
+  return {
+    prompt: activePrompt,
+
+    subscriberCount: count ?? 0,
+
+    notificationSent:
+      activePrompt.notificationSentAt !==
+      null,
+
+    sentAt:
+      activePrompt.notificationSentAt,
+
+    delivered:
+      activePrompt.notificationDelivered,
+
+    failed:
+      activePrompt.notificationFailed,
+  };
 }

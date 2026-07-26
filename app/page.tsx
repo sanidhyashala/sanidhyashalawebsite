@@ -1,4 +1,5 @@
 import Link from "next/link";
+import NewsletterForm from "@/app/components/newsletter/NewsletterForm";
 
 export default function Home() {
   return (
@@ -123,6 +124,16 @@ export default function Home() {
               Read Featured Essay →
             </Link>
           </div>
+        </div>
+      </section>
+
+      <section className="bg-slate-50 dark:bg-slate-900 px-6 py-20">
+        <div className="mx-auto max-w-5xl">
+          <NewsletterForm
+            title="Stay close to the journey."
+            description="Learning is not a race—it unfolds slowly through curiosity, reflection, and clarity. Join the SanidhyaShala newsletter to receive journal essays, reflections, and thoughtful updates, shared only when there is something truly worth your time."
+            buttonText="Join SanidhyaShala"
+          />
         </div>
       </section>
 

@@ -1,40 +1,37 @@
-import { promises as fs } from "fs";
-import path from "path";
-
-import {
-  ensureLegacyNotificationRegistry,
-} from "./ensureLegacyNotificationRegistry";
-
 import type {
   LegacyNotificationRecord,
 } from "@/app/lib/journal/legacy/types";
 
+import { supabaseServer } from "@/lib/supabase-server";
+
 export async function writeLegacyNotificationRegistry(
-  registry: Record<
-    string,
-    LegacyNotificationRecord
-  >
+  registry: Record<string, LegacyNotificationRecord>
 ): Promise<void> {
-  const registryPath =
-    await ensureLegacyNotificationRegistry();
-
-  const tempPath = path.join(
-    path.dirname(registryPath),
-    "legacy-notification-registry.tmp"
+  const records = Object.entries(registry).map(
+    ([slug, record]) => ({
+      slug,
+      notification_sent_at:
+        record.notificationSentAt,
+      recipients: record.recipients,
+      delivered: record.delivered,
+      failed: record.failed,
+      updated_at: new Date().toISOString(),
+    })
   );
 
-  await fs.writeFile(
-    tempPath,
-    JSON.stringify(
-      registry,
-      null,
-      2
-    ),
-    "utf8"
-  );
+  if (records.length === 0) {
+    return;
+  }
 
-  await fs.rename(
-    tempPath,
-    registryPath
-  );
+  const { error } = await supabaseServer
+    .from("legacy_notification_history")
+    .upsert(records, {
+      onConflict: "slug",
+    });
+
+  if (error) {
+    throw new Error(
+      `Failed to write legacy notification history: ${error.message}`
+    );
+  }
 }

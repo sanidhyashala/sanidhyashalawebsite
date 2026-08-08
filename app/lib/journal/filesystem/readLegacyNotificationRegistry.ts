@@ -1,40 +1,38 @@
-import { promises as fs } from "fs";
-
-import {
-  ensureLegacyNotificationRegistry,
-} from "./ensureLegacyNotificationRegistry";
-
 import type {
   LegacyNotificationRecord,
 } from "@/app/lib/journal/legacy/types";
 
+import { supabaseServer } from "@/lib/supabase-server";
+
 export async function readLegacyNotificationRegistry(): Promise<
   Record<string, LegacyNotificationRecord>
 > {
-  const registryPath =
-    await ensureLegacyNotificationRegistry();
-
-  const source =
-    await fs.readFile(
-      registryPath,
-      "utf8"
+  const { data, error } = await supabaseServer
+    .from("legacy_notification_history")
+    .select(
+      "slug, notification_sent_at, recipients, delivered, failed"
     );
 
-  try {
-    return JSON.parse(
-      source
-    ) as Record<
-      string,
-      LegacyNotificationRecord
-    >;
-  } catch {
+  if (error) {
     throw new Error(
-      [
-        "Invalid JSON found in:",
-        registryPath,
-        "",
-        "Please fix the JSON file and run the command again.",
-      ].join("\n")
+      `Failed to read legacy notification history: ${error.message}`
     );
   }
+
+  const registry: Record<
+    string,
+    LegacyNotificationRecord
+  > = {};
+
+  for (const record of data ?? []) {
+    registry[record.slug] = {
+      notificationSentAt:
+        record.notification_sent_at,
+      recipients: record.recipients,
+      delivered: record.delivered,
+      failed: record.failed,
+    };
+  }
+
+  return registry;
 }

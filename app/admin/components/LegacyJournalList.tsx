@@ -42,15 +42,18 @@ export default async function LegacyJournalList() {
           ([slug, journal]) => (
 
             <LegacyJournalCard
-              key={slug}
-              slug={slug}
-              journal={journal}
-              notification={
-                notificationRegistry[
-                  slug
-                ]
-              }
-            />
+  key={slug}
+  slug={slug}
+  journal={journal}
+  notification={
+    notificationRegistry[slug] ?? {
+      notificationSentAt: null,
+      recipients: 0,
+      delivered: 0,
+      failed: 0,
+    }
+  }
+/>
 
           )
         )}

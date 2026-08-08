@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { journalArticles } from "@/content/journal";
+import { loadAllJournalArticles } from "@/content/journal";
 
 interface Props {
   params: Promise<{
@@ -16,6 +16,9 @@ export default async function TagPage({
 
   const decodedTag =
     decodeURIComponent(tag);
+
+  const journalArticles =
+    loadAllJournalArticles();
 
   const posts = Object.entries(
     journalArticles
@@ -39,7 +42,6 @@ export default async function TagPage({
 
       <p className="mb-12 text-slate-600">
         Articles related to &quot;{decodedTag}&quot;
-
       </p>
 
       <div className="space-y-6">

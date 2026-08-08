@@ -1,45 +1,53 @@
 import { MetadataRoute } from "next";
 
-import { journalArticles } from "@/content/journal/journal-articles";
+import { loadAllJournalArticles } from "@/content/journal";
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl =
+const baseUrl =
   process.env.NEXT_PUBLIC_SITE_URL ??
   "https://sanidhyashala.com";
 
-  const journalPages = Object.keys(
-    journalArticles
-  ).map((slug) => ({
-    url: `${baseUrl}/journal/${slug}`,
+export default function sitemap(): MetadataRoute.Sitemap {
+  const articles =
+    loadAllJournalArticles();
 
-    lastModified: new Date(),
+  const journalPages: MetadataRoute.Sitemap =
+    Object.keys(articles).map(
+      (slug) => ({
+        url: `${baseUrl}/journal/${slug}`,
 
-    changeFrequency: "monthly" as const,
+        changeFrequency:
+          "monthly",
 
-    priority: 0.8,
-  }));
+        priority: 0.8,
+      })
+    );
+
+  const staticRoutes = [
+    "/",
+    "/journal",
+    "/about",
+    "/contact",
+    "/learning",
+    "/reflection",
+  ] as const;
+
+  const staticPages: MetadataRoute.Sitemap =
+    staticRoutes.map((route) => ({
+      url: `${baseUrl}${route}`,
+
+      changeFrequency:
+        route === "/"
+          ? "weekly"
+          : "monthly",
+
+      priority:
+        route === "/"
+          ? 1
+          : 0.9,
+    }));
 
   return [
-    {
-      url: baseUrl,
-
-      lastModified: new Date(),
-
-      changeFrequency: "weekly",
-
-      priority: 1,
-    },
-
-    {
-      url: `${baseUrl}/journal`,
-
-      lastModified: new Date(),
-
-      changeFrequency: "weekly",
-
-      priority: 0.9,
-    },
-
+    ...staticPages,
     ...journalPages,
   ];
 }

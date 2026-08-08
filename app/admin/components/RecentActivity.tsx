@@ -5,6 +5,9 @@ import {
   Users,
 } from "lucide-react";
 
+// Temporary placeholder.
+// Will be replaced by live admin activity feed in Version 2.
+
 const activities = [
   {
     title: "Reflection submitted",

@@ -12,6 +12,7 @@
     "registry": "tsx scripts/build-registry.ts",
     "scan:pdf": "tsx scripts/scan-pdfs.ts",
     "content:build": "tsx scripts/content-build.ts",
+    "content:legacy": "tsx scripts/legacy-build.ts",
     "test:pdflib": "tsx scripts/test-pdf-lib.ts"
   },
   "dependencies": {

@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-import { journalArticles } from "@/content/journal";
+import { loadAllJournalArticles } from "@/content/journal";
 
 export const size = {
   width: 1200,
@@ -19,6 +19,9 @@ export default async function Image({
   params,
 }: Props) {
   const { slug } = await params;
+
+  const journalArticles =
+    loadAllJournalArticles();
 
   const article =
     journalArticles[

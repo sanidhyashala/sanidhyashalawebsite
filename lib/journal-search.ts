@@ -1,15 +1,22 @@
-import { journalArticles } from "@/content/journal/journal-articles";
+import { loadAllJournalArticles } from "@/content/journal";
 
 export interface JournalSearchResult {
   slug: string;
+
   title: string;
+
   subtitle: string;
 }
 
 export function searchJournal(
   query: string
 ): JournalSearchResult[] {
-  const q = query.trim().toLowerCase();
+
+  const journalArticles =
+    loadAllJournalArticles();
+
+  const q =
+    query.trim().toLowerCase();
 
   if (!q) {
     return [];
@@ -17,6 +24,7 @@ export function searchJournal(
 
   return Object.entries(journalArticles)
     .filter(([, data]) => {
+
       const title =
         data.article.title.toLowerCase();
 
@@ -25,14 +33,18 @@ export function searchJournal(
 
       const headings =
         data.article.sections
-          .map((section) => section.heading)
+          .map(
+            (section) =>
+              section.heading
+          )
           .join(" ")
           .toLowerCase();
 
       const paragraphs =
         data.article.sections
           .flatMap(
-            (section) => section.paragraphs
+            (section) =>
+              section.paragraphs
           )
           .join(" ")
           .toLowerCase();
@@ -46,7 +58,11 @@ export function searchJournal(
     })
     .map(([slug, data]) => ({
       slug,
-      title: data.article.title,
-      subtitle: data.article.subtitle,
+
+      title:
+        data.article.title,
+
+      subtitle:
+        data.article.subtitle,
     }));
 }

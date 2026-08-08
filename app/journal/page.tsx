@@ -1,14 +1,20 @@
 import Link from "next/link";
 
-import { journalArticles } from "@/content/journal";
+import { loadAllJournalArticles } from "@/app/lib/journal/loader/loadAllJournalArticles";
 import JournalSearch from "@/app/components/journal/JournalSearch";
 
 import NewsletterForm from "@/app/components/newsletter/NewsletterForm";
 
 import SavedArticlesDrawer from "@/app/components/journal/SavedArticlesDrawer";
 
+import type {
+  JournalEntry,
+} from "@/content/journal/types";
+
 export default function JournalPage() {
-  const posts = Object.entries(journalArticles);
+  const posts = Object.entries(
+  loadAllJournalArticles()
+) as [string, JournalEntry][];
 
   const placementSections = [
   {

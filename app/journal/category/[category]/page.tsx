@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { journalArticles } from "@/content/journal";
+import { loadAllJournalArticles } from "@/content/journal";
 
 interface Props {
   params: Promise<{
@@ -14,6 +14,9 @@ export default async function CategoryPage({
 }: Props) {
   const { category } =
     await params;
+
+  const journalArticles =
+    loadAllJournalArticles();
 
   const articles = Object.entries(
     journalArticles

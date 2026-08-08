@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { journalArticles } from "@/content/journal";
+import { loadAllJournalArticles } from "@/content/journal";
 
 interface Props {
   currentSlug: string;
@@ -9,6 +9,10 @@ interface Props {
 export default function ArticleNavigation({
   currentSlug,
 }: Props) {
+
+  const journalArticles =
+    loadAllJournalArticles();
+
   const slugs = Object.keys(
     journalArticles
   );
@@ -36,6 +40,7 @@ export default function ArticleNavigation({
   return (
     <section className="mt-20 border-t border-slate-200 dark:border-slate-800 pt-10">
       <div className="grid gap-4 md:grid-cols-2">
+
         {previousSlug ? (
           <Link
             href={`/journal/${previousSlug}`}
@@ -77,6 +82,7 @@ export default function ArticleNavigation({
         ) : (
           <div />
         )}
+
       </div>
     </section>
   );

@@ -47,6 +47,8 @@ export const journalArticles: Record<
 
       readingTime: getReadingTime(mathematics),
 
+      status: "published",
+
 placements: ["most-curious"],
 
 languages: getLanguages(
@@ -87,6 +89,8 @@ languages: getLanguages(
         "Is mathematics discovered or invented? A journey through philosophy, science and the search for truth.",
 
       readingTime: getReadingTime(universe),
+
+      status: "published",
 
 placements: ["featured"],
 
@@ -131,6 +135,8 @@ languages: getLanguages(
       readingTime: getReadingTime(
   learningAndSwadharma
 ),
+
+status: "published",
 
 placements: ["editors-choice"],
 

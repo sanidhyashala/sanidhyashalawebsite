@@ -5,6 +5,9 @@ import {
 
 import type { Reflection } from "@/app/lib/reflection/reflection-types";
 
+import { journalRegistry } from "@/app/content/journal/journalRegistry";
+import { journalArticles } from "@/content/journal/journal-articles";
+
 export interface DashboardData {
   stats: {
     reflections: {
@@ -16,7 +19,11 @@ export interface DashboardData {
     };
 
     journal: {
-      articles: number;
+      generated: number;
+      published: number;
+      archived: number;
+      legacy: number;
+      total: number;
     };
 
     learning: {
@@ -36,6 +43,33 @@ export interface DashboardData {
 }
 
 export async function getDashboardData(): Promise<DashboardData> {
+  const generatedJournalCount =
+    journalRegistry.filter(
+      (journal) =>
+        journal.status === "generated"
+    ).length;
+
+  const publishedJournalCount =
+    journalRegistry.filter(
+      (journal) =>
+        journal.status === "published"
+    ).length;
+
+  const archivedJournalCount =
+    journalRegistry.filter(
+      (journal) =>
+        journal.status === "archived"
+    ).length;
+
+  const legacyJournalCount =
+    Object.keys(journalArticles).length;
+
+  const totalJournalCount =
+    generatedJournalCount +
+    publishedJournalCount +
+    archivedJournalCount +
+    legacyJournalCount;
+
   const [
     pendingCount,
     publishedCount,
@@ -65,7 +99,11 @@ export async function getDashboardData(): Promise<DashboardData> {
       },
 
       journal: {
-        articles: 0,
+        generated: generatedJournalCount,
+        published: publishedJournalCount,
+        archived: archivedJournalCount,
+        legacy: legacyJournalCount,
+        total: totalJournalCount,
       },
 
       learning: {

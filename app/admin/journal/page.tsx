@@ -1,10 +1,27 @@
-import ComingSoon from "../components/ComingSoon";
+import AdminPage from "../components/layout/AdminPage";
 
-export default function AdminJournalPage() {
+import PublishingStudio from "../components/publishing/PublishingStudio";
+
+import PublishedJournalList from "../components/PublishedJournalList";
+
+import LegacyJournalList from "../components/LegacyJournalList";
+
+export default function JournalAdminPage() {
   return (
-    <ComingSoon
-      title="Journal Management"
-      description="Create, edit and publish journal articles from a dedicated editorial workspace. This module is currently under development."
-    />
+    <AdminPage
+      title="Publishing Studio"
+      description="Create and publish SanidhyaShala journals."
+      sectionTitle="Publishing Studio"
+    >
+      <div className="space-y-12">
+
+        <PublishingStudio />
+
+        <PublishedJournalList />
+
+        <LegacyJournalList />
+
+      </div>
+    </AdminPage>
   );
 }

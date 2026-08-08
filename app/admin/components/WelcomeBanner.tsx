@@ -75,7 +75,7 @@ export default function WelcomeBanner() {
 
               <PenSquare size={20} />
 
-              <span>Create Prompt</span>
+              <span>Create Reflection Prompt</span>
 
             </div>
 
@@ -84,7 +84,7 @@ export default function WelcomeBanner() {
           </Link>
 
           <Link
-            href="/journal"
+  href="/admin/journal"
             className="
               flex
               items-center
@@ -108,7 +108,7 @@ export default function WelcomeBanner() {
               <BookPlus size={20} />
 
               <span>
-                Create Journal Article
+                Journal Publishing Studio
               </span>
 
             </div>

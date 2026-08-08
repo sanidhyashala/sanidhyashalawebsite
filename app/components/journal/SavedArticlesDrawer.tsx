@@ -3,38 +3,23 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
-import { journalArticles } from "@/content/journal";
+// 👇 Change 1: Updated import
+import { loadAllJournalArticles } from "@/content/journal";
 
 export default function SavedArticlesDrawer() {
   const [open, setOpen] = useState(false);
-
-  const [savedSlugs, setSavedSlugs] =
-    useState<string[]>([]);
-
-  const [signedIn, setSignedIn] =
-    useState(true);
-
-  const [loading, setLoading] =
-    useState(true);
+  const [savedSlugs, setSavedSlugs] = useState<string[]>([]);
+  const [signedIn, setSignedIn] = useState(true);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadSavedArticles() {
       try {
-        const response =
-          await fetch(
-            "/api/journal/saved-articles"
-          );
+        const response = await fetch("/api/journal/saved-articles");
+        const data = await response.json();
 
-        const data =
-          await response.json();
-
-        setSignedIn(
-          data.signedIn ?? true
-        );
-
-        setSavedSlugs(
-          data.articles || []
-        );
+        setSignedIn(data.signedIn ?? true);
+        setSavedSlugs(data.articles || []);
       } catch (error) {
         console.error(error);
       } finally {
@@ -45,19 +30,29 @@ export default function SavedArticlesDrawer() {
     loadSavedArticles();
   }, []);
 
+  // 👇 Change 2: Added function call right before the return
+  const journalArticles = loadAllJournalArticles();
+  const visibleSavedArticles =
+  savedSlugs
+    .map((slug) => ({
+      slug,
+      article: journalArticles[slug],
+    }))
+    .filter(
+      (item) => item.article
+    );
+
   return (
     <>
       <button
-        onClick={() =>
-          setOpen(true)
-        }
+        onClick={() => setOpen(true)}
         className="flex h-[52px] min-w-[130px] items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 text-sm font-medium text-slate-700 transition-all duration-200 hover:border-blue-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-blue-500 dark:hover:bg-slate-800"
       >
         🔖 Saved
 
         {!loading && (
           <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
-            {savedSlugs.length}
+            {visibleSavedArticles.length}
           </span>
         )}
       </button>
@@ -65,9 +60,7 @@ export default function SavedArticlesDrawer() {
       {open && (
         <>
           <div
-            onClick={() =>
-              setOpen(false)
-            }
+            onClick={() => setOpen(false)}
             className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm transition-opacity duration-300"
           />
 
@@ -93,18 +86,14 @@ export default function SavedArticlesDrawer() {
 
                 {!loading && (
                   <p className="mt-1 text-sm text-slate-500">
-                    {savedSlugs.length} article
-                    {savedSlugs.length !== 1
-                      ? "s"
-                      : ""}
+                    {visibleSavedArticles.length} article
+                    {visibleSavedArticles.length !== 1 ? "s" : ""}
                   </p>
                 )}
               </div>
 
               <button
-                onClick={() =>
-                  setOpen(false)
-                }
+                onClick={() => setOpen(false)}
                 className="text-xl transition hover:rotate-90"
               >
                 ✕
@@ -125,14 +114,13 @@ export default function SavedArticlesDrawer() {
                 </p>
 
                 <Link
-  href="/sign-in"
-  className="mt-4 inline-flex rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
->
-  Sign In
-</Link>
+                  href="/sign-in"
+                  className="mt-4 inline-flex rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                >
+                  Sign In
+                </Link>
               </div>
-            ) : savedSlugs.length ===
-              0 ? (
+            ) : visibleSavedArticles.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-slate-300 p-6 text-center dark:border-slate-700">
                 <p className="font-medium">
                   No saved articles yet
@@ -145,73 +133,47 @@ export default function SavedArticlesDrawer() {
               </div>
             ) : (
               <div className="space-y-3">
-                {savedSlugs.map(
-                  (slug) => {
-                    const article =
-                      journalArticles[
-                        slug
-                      ];
+                {visibleSavedArticles.map(
+  ({ slug, article }) => (
+    <Link
+      key={slug}
+      href={`/journal/${slug}`}
+      onClick={() => setOpen(false)}
+      className="
+        group block
+        rounded-2xl
+        border border-slate-200
+        p-4
 
-                    if (
-                      !article
-                    )
-                      return null;
+        transition-all
+        duration-200
 
-                    return (
-                      <Link
-                        key={
-                          slug
-                        }
-                        href={`/journal/${slug}`}
-                        onClick={() =>
-                          setOpen(
-                            false
-                          )
-                        }
-                        className="
-                          group block
-                          rounded-2xl
-                          border border-slate-200
-                          p-4
+        hover:-translate-y-0.5
+        hover:border-blue-200
+        hover:bg-blue-50
+        hover:shadow-md
 
-                          transition-all
-                          duration-200
+        dark:border-slate-800
+        dark:hover:border-blue-800
+        dark:hover:bg-slate-900
+      "
+    >
+      <div className="flex items-center justify-between">
+        <h3 className="font-medium text-slate-900 dark:text-slate-100">
+          {article.meta.title}
+        </h3>
 
-                          hover:-translate-y-0.5
-                          hover:border-blue-200
-                          hover:bg-blue-50
-                          hover:shadow-md
+        <span className="transition group-hover:translate-x-1">
+          →
+        </span>
+      </div>
 
-                          dark:border-slate-800
-                          dark:hover:border-blue-800
-                          dark:hover:bg-slate-900
-                        "
-                      >
-                        <div className="flex items-center justify-between">
-                          <h3 className="font-medium text-slate-900 dark:text-slate-100">
-                            {
-                              article
-                                .meta
-                                .title
-                            }
-                          </h3>
-
-                          <span className="transition group-hover:translate-x-1">
-                            →
-                          </span>
-                        </div>
-
-                        <p className="mt-2 text-sm text-slate-500">
-                          {
-                            article
-                              .meta
-                              .readingTime
-                          }
-                        </p>
-                      </Link>
-                    );
-                  }
-                )}
+      <p className="mt-2 text-sm text-slate-500">
+        {article.meta.readingTime}
+      </p>
+    </Link>
+  )
+)}
               </div>
             )}
           </div>

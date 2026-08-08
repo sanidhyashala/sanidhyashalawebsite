@@ -9,12 +9,19 @@ export type ArticlePlacement =
   | "staff-pick"
   | "recommended";
 
+export type ArticleStatus =
+  | "generated"
+  | "published"
+  | "archived";
+
 export interface JournalMeta {
   title: string;
 
   description: string;
 
   readingTime: string;
+
+  status: ArticleStatus;
 
   placements?: ArticlePlacement[];
 

@@ -1,36 +1,231 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SanidhyaShala
 
-## Getting Started
+> **From Clarity to Mastery**
 
-First, run the development server:
+SanidhyaShala is a thoughtfully designed educational platform that combines mathematics, reflective writing, and meaningful learning into a single experience. It is built for students, teachers, and lifelong learners who value clarity, curiosity, and depth over distraction.
 
-bash
+Unlike traditional educational platforms, SanidhyaShala is not focused on endless content consumption. It is designed to encourage careful reading, thoughtful reflection, and genuine understanding.
+
+---
+
+# ✨ Features
+
+## Journal
+
+- Modern Journal CMS
+- Legacy Journal Support
+- Bilingual Articles (English & Hindi)
+- Article Publishing Workflow
+- Draft → Publish → Notify Community
+- Categories & Tags
+- Related Articles
+- Reading Progress
+- Reading Time
+- Search
+- Open Graph Images
+- SEO Optimized
+
+## Community
+
+- Comments
+- Likes
+- Bookmarks
+- View Counter
+- Newsletter Subscription
+
+## Reflection
+
+- Reflection Dashboard
+- Reflection Feed
+- Reflection Archive
+- Reflection Editor
+
+## Learning
+
+- Learning Resources
+- Class-wise Content
+- Notes
+- MCQs
+- Subjective Questions
+- Case-Based Questions
+- Previous Year Questions
+
+---
+
+# 🚀 Technology Stack
+
+- Next.js 16
+- React 19
+- TypeScript
+- Tailwind CSS v4
+- Clerk Authentication
+- Supabase
+- Resend
+- PDF-Lib
+
+---
+
+# 📁 Project Structure
+
+```
+app/
+content/
+public/
+scripts/
+supabase/
+```
+
+---
+
+# ⚙️ Installation
+
+Clone the repository
+
+```bash
+git clone <repository-url>
+```
+
+Install dependencies
+
+```bash
+npm install
+```
+
+Run the development server
+
+```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```
 
+Open
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+```
+http://localhost:3000
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# 🛠 Available Scripts
 
-## Learn More
+```bash
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+Starts the development server.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm run build
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Creates a production build.
 
-## Deploy on Vercel
+```bash
+npm run lint
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Runs ESLint.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npx tsc --noEmit
+```
+
+Runs TypeScript type checking.
+
+```bash
+npm run content:legacy
+```
+
+Synchronizes the Legacy Journal notification registry.
+
+---
+
+# 🔐 Environment Variables
+
+Create a `.env.local` file.
+
+```env
+NEXT_PUBLIC_SITE_URL=
+
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
+CLERK_SECRET_KEY=
+
+RESEND_API_KEY=
+```
+
+---
+
+# 🌐 SEO
+
+SanidhyaShala includes modern SEO practices:
+
+- Dynamic Metadata
+- Canonical URLs
+- Open Graph Images
+- Twitter Cards
+- JSON-LD Structured Data
+- XML Sitemap
+- Robots.txt
+- Rich Preview Support
+
+---
+
+# 📬 Newsletter
+
+The platform supports email notifications for newly published journal articles using Resend.
+
+---
+
+# 🌙 User Experience
+
+- Responsive Design
+- Dark Mode
+- Smooth Scrolling
+- Accessible Navigation
+- Reading Progress Indicator
+
+---
+
+# 📌 Current Status
+
+**Version:** 1.0
+
+Current modules include:
+
+- ✅ Journal CMS
+- ✅ Legacy Journal System
+- ✅ Reflection System
+- ✅ Learning Platform
+- ✅ Newsletter
+- ✅ Search
+- ✅ Comments
+- ✅ Bookmarks
+- ✅ Reactions
+- ✅ SEO
+- ✅ Dark Mode
+
+---
+
+# 🤝 Contributing
+
+This project is currently maintained privately.
+
+---
+
+# 📄 License
+
+Private Repository
+
+All rights reserved.
+
+---
+
+# About
+
+SanidhyaShala is an independent educational initiative created to make learning more thoughtful, reflective, and intellectually honest.
+
+Rather than optimizing for attention, it is designed to cultivate understanding.
+
+**From Clarity to Mastery.**

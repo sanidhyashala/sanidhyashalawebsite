@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { journalArticles } from "@/content/journal";
+import { loadAllJournalArticles } from "@/content/journal";
 
 interface Props {
   currentSlug: string;
@@ -9,6 +9,10 @@ interface Props {
 export default function RelatedArticles({
   currentSlug,
 }: Props) {
+
+  const journalArticles =
+  loadAllJournalArticles();
+  
   const currentArticle =
     journalArticles[
       currentSlug as keyof typeof journalArticles

@@ -9,15 +9,12 @@ import ReactionButton from "@/app/components/journal/ReactionButton";
 import BookmarkButton from "@/app/components/journal/BookmarkButton";
 import CommentsSection from "@/app/components/journal/CommentsSection";
 
-import { journalArticles } from "@/content/journal/journal-articles";
+import { loadAllJournalArticles } from "@/content/journal";
 import type { JournalEntry } from "@/content/journal/types";
 
 import ArticleNavigation from "@/app/components/journal/ArticleNavigation";
-
 import ViewCounter from "@/app/components/journal/ViewCounter";
-
 import RelatedArticles from "@/app/components/journal/RelatedArticles";
-
 import NewsletterForm from "@/app/components/newsletter/NewsletterForm";
 import JournalContent from "@/app/components/journal/JournalContent";
 
@@ -33,7 +30,11 @@ const SITE_URL =
 function getArticleData(
   slug: string
 ): JournalEntry | undefined {
-  return journalArticles[slug];
+  const articles = loadAllJournalArticles();
+
+  return articles[
+    slug as keyof typeof articles
+  ];
 }
 
 export async function generateMetadata(
@@ -53,9 +54,7 @@ export async function generateMetadata(
 
   return {
     title: meta.seoTitle,
-
     description: meta.seoDescription,
-
     keywords: [
       ...meta.tags,
       ...meta.categories,
@@ -63,38 +62,27 @@ export async function generateMetadata(
       "Education",
       "Mathematics",
     ],
-
     alternates: {
       canonical: `${SITE_URL}/journal/${slug}`,
     },
-
     openGraph: {
       title: meta.seoTitle,
-
       description: meta.seoDescription,
-
       type: "article",
-
+      authors: ["Sanidhyashala"],
       images: [
         {
           url: `${SITE_URL}/journal/${slug}/opengraph-image`,
-
           width: 1200,
-
           height: 630,
-
           alt: article.title,
         },
       ],
     },
-
     twitter: {
       card: "summary_large_image",
-
       title: meta.seoTitle,
-
       description: meta.seoDescription,
-
       images: [
         `${SITE_URL}/journal/${slug}/opengraph-image`,
       ],
@@ -119,12 +107,60 @@ export default async function ArticlePage({
     meta,
   } = articleData;
 
-  const jsonLd = {
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: SITE_URL,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Journal",
+        item: `${SITE_URL}/journal`,
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: article.title,
+        item: `${SITE_URL}/journal/${slug}`,
+      },
+    ],
+  };
+
+  const articleLd = {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
     headline: article.title,
     description: meta.seoDescription,
     keywords: meta.tags.join(", "),
+    image: `${SITE_URL}/journal/${slug}/opengraph-image`,
+
+// ⭐ Article is publicly accessible
+isAccessibleForFree: true,
+
+// ⭐ Bilingual Language Support
+inLanguage: ["en", "hi"],
+
+// ⭐ Contextual Article Section
+articleSection: meta.categories,
+    
+    // ⭐ Granular 'about' properties
+    about: meta.tags.map((tag) => ({
+      "@type": "Thing",
+      name: tag,
+    })),
+    
+    // ⭐ Niche Educational Audience
+    audience: {
+      "@type": "EducationalAudience",
+      educationalRole: ["Student", "Teacher", "Learner"],
+    },
+
     author: {
       "@type": "Organization",
       name: "Sanidhyashala",
@@ -132,6 +168,10 @@ export default async function ArticlePage({
     publisher: {
       "@type": "Organization",
       name: "Sanidhyashala",
+      logo: {
+        "@type": "ImageObject",
+        url: `${SITE_URL}/favicon.ico`, 
+      }
     },
     mainEntityOfPage: {
       "@type": "WebPage",
@@ -144,7 +184,13 @@ export default async function ArticlePage({
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(jsonLd),
+          __html: JSON.stringify(articleLd),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(breadcrumbLd),
         }}
       />
 

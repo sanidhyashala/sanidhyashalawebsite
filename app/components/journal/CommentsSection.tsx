@@ -30,21 +30,30 @@ export default function CommentsSection({ articleSlug }: Props) {
   const [editValue, setEditValue] = useState<string>("");
   const [isSaving, setIsSaving] = useState<boolean>(false);
 
+  // 👇 Ye raha aapka updated aur safe loadComments function
   const loadComments =
-  useCallback(async (): Promise<void> => {
-    try {
-      const response = await fetch(
-        `/api/journal/comments?articleSlug=${articleSlug}`
-      );
+    useCallback(async (): Promise<void> => {
+      try {
+        const response = await fetch(
+          `/api/journal/comments?articleSlug=${articleSlug}`
+        );
 
-      const data =
-        await response.json();
+        if (!response.ok) {
+          setComments([]);
+          return;
+        }
 
-      setComments(data || []);
-    } catch (error) {
-      console.error(error);
-    }
-  }, [articleSlug]);
+        const data = await response.json();
+
+        setComments(
+          Array.isArray(data) ? data : []
+        );
+      } catch (error) {
+        console.error(error);
+
+        setComments([]);
+      }
+    }, [articleSlug]);
 
   async function deleteComment(commentId: number): Promise<void> {
     const confirmed = window.confirm("Delete this reflection?");
@@ -125,8 +134,8 @@ export default function CommentsSection({ articleSlug }: Props) {
   }
 
   useEffect(() => {
-  loadComments();
-}, [loadComments]);
+    loadComments();
+  }, [loadComments]);
 
   return (
     <div className="mt-20">

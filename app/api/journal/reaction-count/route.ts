@@ -7,13 +7,14 @@ export async function GET(request: Request) {
   const articleSlug =
     searchParams.get("articleSlug");
 
-  const { count } = await supabaseServer
-    .from("reactions")
-    .select("*", {
-      count: "exact",
-      head: true,
-    })
-    .eq("article_slug", articleSlug);
+  const { count } =
+    await supabaseServer
+      .from("reactions")
+      .select("*", {
+        count: "exact",
+        head: true,
+      })
+      .eq("article_slug", articleSlug);
 
   return NextResponse.json({
     count: count || 0,

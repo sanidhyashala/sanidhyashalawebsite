@@ -172,7 +172,8 @@ export default function AdminSidebar() {
 
         <div className="flex items-center gap-3">
 
-          <div className="rounded-full border border-slate-200 dark:border-slate-700">
+          {/* 👇 Is wrapper div me flex aur alignment add kiya hai taaki UserButton hil na sake */}
+          <div className="flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200 dark:border-slate-700">
             <UserButton
               appearance={{
                 elements: {
@@ -182,7 +183,7 @@ export default function AdminSidebar() {
             />
           </div>
 
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
               Founder
             </p>

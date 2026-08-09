@@ -23,13 +23,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
     );
 
   const staticRoutes = [
-    "/",
-    "/journal",
-    "/about",
-    "/contact",
-    "/learning",
-    "/reflection",
-  ] as const;
+  "/",
+  "/journal",
+  "/about",
+  "/contact",
+  "/learning",
+  "/teaching",
+  "/reflection",
+] as const;
 
   const staticPages: MetadataRoute.Sitemap =
     staticRoutes.map((route) => ({

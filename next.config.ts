@@ -13,8 +13,8 @@ const nextConfig: NextConfig = {
   ],
 
   outputFileTracingIncludes: {
-    "/learning/results/*/pdf": [
-      "./node_modules/@sparticuz/chromium/bin/**",
+    "/learning/results/[attemptId]/pdf": [
+      "./node_modules/@sparticuz/chromium/bin/**/*",
     ],
   },
 };

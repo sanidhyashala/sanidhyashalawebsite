@@ -7,7 +7,16 @@ const nextConfig: NextConfig = {
     },
   },
 
-  serverExternalPackages: ["@sparticuz/chromium"],
+  serverExternalPackages: [
+    "@sparticuz/chromium",
+    "puppeteer-core",
+  ],
+
+  outputFileTracingIncludes: {
+    "/learning/results/*/pdf": [
+      "./node_modules/@sparticuz/chromium/bin/**",
+    ],
+  },
 };
 
 export default nextConfig;

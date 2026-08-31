@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import chromium from "@sparticuz/chromium";
+import chromium from "@sparticuz/chromium-min";
 import puppeteer from "puppeteer-core";
 
 import { mathjax } from "mathjax-full/js/mathjax.js";
@@ -1160,22 +1160,12 @@ function buildResultHtml(
 
 async function launchBrowser() {
   const isProduction =
-    process.env.NODE_ENV ===
-    "production";
+    process.env.NODE_ENV === "production";
 
-  /*
-   * Production / Vercel
-   *
-   * @sparticuz/chromium provides:
-   * - args
-   * - executablePath()
-   *
-   * We intentionally define viewport/headless ourselves
-   * instead of using chromium.defaultViewport/headless,
-   * because those properties are not exposed by the
-   * installed package typings.
-   */
   if (isProduction) {
+    const remoteExecutablePath =
+      "https://github.com/Sparticuz/chromium/releases/download/v149.0.0/chromium-v149.0.0-pack.x64.tar";
+
     return puppeteer.launch({
       args: [
         ...chromium.args,
@@ -1184,7 +1174,9 @@ async function launchBrowser() {
       ],
 
       executablePath:
-        await chromium.executablePath(),
+        await chromium.executablePath(
+          remoteExecutablePath
+        ),
 
       defaultViewport: {
         width: 1240,
@@ -1192,16 +1184,10 @@ async function launchBrowser() {
         deviceScaleFactor: 1,
       },
 
-      headless: true,
+      headless: "shell",
     });
   }
 
-  /*
-   * Local development
-   *
-   * Set CHROME_EXECUTABLE_PATH in .env.local if
-   * Puppeteer cannot automatically find Chrome.
-   */
   const executablePath =
     process.env.CHROME_EXECUTABLE_PATH;
 
@@ -1224,9 +1210,6 @@ async function launchBrowser() {
     });
   }
 
-  /*
-   * Let Puppeteer find the locally installed Chrome.
-   */
   return puppeteer.launch({
     channel: "chrome",
 

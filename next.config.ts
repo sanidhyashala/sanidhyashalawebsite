@@ -8,15 +8,9 @@ const nextConfig: NextConfig = {
   },
 
   serverExternalPackages: [
-    "@sparticuz/chromium",
+    "@sparticuz/chromium-min",
     "puppeteer-core",
   ],
-
-  outputFileTracingIncludes: {
-    "/learning/results/[attemptId]/pdf": [
-      "./node_modules/@sparticuz/chromium/bin/**/*",
-    ],
-  },
 
   allowedDevOrigins: ["192.168.43.25"],
 };

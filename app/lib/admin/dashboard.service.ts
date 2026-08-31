@@ -8,6 +8,9 @@ import type { Reflection } from "@/app/lib/reflection/reflection-types";
 import { journalRegistry } from "@/app/content/journal/journalRegistry";
 import { journalArticles } from "@/content/journal/journal-articles";
 
+// 👇 नया import ऐड किया गया है
+import { createAdminSupabaseClient } from "@/app/lib/admin/supabase-admin";
+
 export interface DashboardData {
   stats: {
     reflections: {
@@ -70,19 +73,35 @@ export async function getDashboardData(): Promise<DashboardData> {
     archivedJournalCount +
     legacyJournalCount;
 
+  // 👇 Supabase Client और learning resources प्रॉमिस 
+  const supabase = createAdminSupabaseClient();
+
+  const learningResourcesPromise = supabase
+    .from("resources")
+    .select("id", { count: "exact", head: true });
+
   const [
     pendingCount,
     publishedCount,
     rejectedCount,
     archivedCount,
     recentPendingReflections,
+    learningResourcesResult, // 👇 प्रॉमिस रिजल्ट
   ] = await Promise.all([
     getReflectionCountByStatus("pending"),
     getReflectionCountByStatus("published"),
     getReflectionCountByStatus("rejected"),
     getReflectionCountByStatus("archived"),
     getRecentPendingReflections(5),
+    learningResourcesPromise, // 👇 प्रॉमिस कॉल
   ]);
+
+  // 👇 नया safety check
+  if (learningResourcesResult.error) {
+    throw new Error(
+      `Failed to load learning resource count: ${learningResourcesResult.error.message}`
+    );
+  }
 
   return {
     stats: {
@@ -107,7 +126,8 @@ export async function getDashboardData(): Promise<DashboardData> {
       },
 
       learning: {
-        resources: 0,
+        // 👇 Hard-coded 0 को डायनामिक काउंट से रिप्लेस किया गया
+        resources: learningResourcesResult.count ?? 0,
       },
 
       students: {

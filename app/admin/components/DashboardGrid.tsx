@@ -27,9 +27,9 @@ export default function DashboardGrid() {
         />
 
         <DashboardCard
-          title="Question Bank"
+          title="MCQ Bank"
           description="Manage MCQs, PYQs and practice papers."
-          href="/admin/question-bank"
+          href="/admin/mcq-bank"
           icon="📝"
         />
 

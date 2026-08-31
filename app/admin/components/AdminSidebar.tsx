@@ -29,9 +29,9 @@ const navigation = [
     icon: PenSquare,
   },
   {
-  title: "Reflection Prompts",
-  href: "/admin/prompts",
-  icon: PenSquare,
+    title: "Reflection Prompts",
+    href: "/admin/prompts",
+    icon: PenSquare,
   },
   {
     title: "Journal",
@@ -44,8 +44,8 @@ const navigation = [
     icon: GraduationCap,
   },
   {
-    title: "Question Bank",
-    href: "/admin/question-bank",
+    title: "MCQ Bank",
+    href: "/admin/mcq-bank",
     icon: FileQuestion,
   },
   {
@@ -104,17 +104,17 @@ export default function AdminSidebar() {
       {/* Navigation */}
 
       <nav
-  className="
-    flex-1
-    overflow-y-auto
-    px-4
-    py-6
+        className="
+          flex-1
+          overflow-y-auto
+          px-4
+          py-6
 
-    scrollbar-thin
-    scrollbar-thumb-slate-300
-    dark:scrollbar-thumb-slate-700
-  "
->
+          scrollbar-thin
+          scrollbar-thumb-slate-300
+          dark:scrollbar-thumb-slate-700
+        "
+      >
 
         {navigation.map((item) => {
 
@@ -158,17 +158,17 @@ export default function AdminSidebar() {
         })}
       </nav>
 
-            {/* Bottom Section */}
+      {/* Bottom Section */}
 
       <div
-  className="
-    shrink-0
-    border-t
-    border-slate-200
-    p-6
-    dark:border-slate-800
-  "
->
+        className="
+          shrink-0
+          border-t
+          border-slate-200
+          p-6
+          dark:border-slate-800
+        "
+      >
 
         <div className="flex items-center gap-3">
 

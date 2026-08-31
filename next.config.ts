@@ -17,6 +17,8 @@ const nextConfig: NextConfig = {
       "./node_modules/@sparticuz/chromium/bin/**/*",
     ],
   },
+
+  allowedDevOrigins: ["192.168.43.25"],
 };
 
 export default nextConfig;

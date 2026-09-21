@@ -306,9 +306,7 @@ const sections = [
           </div>
         </div>
 
-        <p>
-          We do not sell learner information to third parties.
-        </p>
+        <p>We do not sell learner information to third parties.</p>
       </>
     ),
   },
@@ -446,7 +444,9 @@ const sections = [
             deletion of information where deletion is legally and
             operationally possible;
           </li>
-          <li>questions about how submitted learning work is processed; or</li>
+          <li>
+            questions about how submitted learning work is processed; or
+          </li>
           <li>
             questions about third-party service providers involved in the
             platform.
@@ -517,14 +517,16 @@ const sections = [
           SanidhyaShala, please contact us.
         </p>
 
-        <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-5">
-          <p className="font-medium text-slate-900">SanidhyaShala</p>
+        <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-900/70">
+          <p className="font-medium text-slate-900 dark:text-slate-100">
+            SanidhyaShala
+          </p>
 
-          <p className="mt-2 text-slate-600">
+          <p className="mt-2 text-slate-600 dark:text-slate-300">
             Email:{" "}
             <a
               href="mailto:sanidhyashala.official@gmail.com"
-              className="text-blue-700 underline underline-offset-4"
+              className="text-blue-700 underline underline-offset-4 dark:text-blue-400"
             >
               sanidhyashala.official@gmail.com
             </a>
@@ -537,7 +539,7 @@ const sections = [
 
 export default function PrivacyPage() {
   return (
-    <main className="relative isolate overflow-hidden bg-white">
+    <main className="relative isolate overflow-hidden bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100">
       {/* Subtle background atmosphere */}
       <div
         aria-hidden="true"
@@ -553,7 +555,7 @@ export default function PrivacyPage() {
             fill="none"
             stroke="currentColor"
             strokeWidth="1"
-            className="text-blue-100"
+            className="text-blue-100 dark:text-blue-950/70"
           />
 
           <path
@@ -561,7 +563,7 @@ export default function PrivacyPage() {
             fill="none"
             stroke="currentColor"
             strokeWidth="1"
-            className="text-slate-100"
+            className="text-slate-100 dark:text-slate-800"
           />
         </svg>
       </div>
@@ -569,27 +571,27 @@ export default function PrivacyPage() {
       <section className="mx-auto max-w-5xl px-5 pb-20 pt-16 sm:px-8 sm:pt-20 lg:px-10">
         {/* Header */}
         <div className="max-w-3xl">
-          <p className="text-sm font-medium tracking-wide text-blue-700">
+          <p className="text-sm font-medium tracking-wide text-blue-700 dark:text-blue-400">
             Legal & Privacy
           </p>
 
-          <h1 className="mt-4 text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl">
+          <h1 className="mt-4 text-4xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 sm:text-5xl">
             Privacy Policy
           </h1>
 
-          <p className="mt-6 text-lg leading-8 text-slate-600">
+          <p className="mt-6 text-lg leading-8 text-slate-600 dark:text-slate-300">
             How SanidhyaShala collects, uses, stores, and protects information
             while providing a thoughtful learning environment.
           </p>
 
-          <p className="mt-5 text-sm text-slate-500">
+          <p className="mt-5 text-sm text-slate-500 dark:text-slate-400">
             Last updated: September 15, 2026
           </p>
         </div>
 
         {/* Intro notice */}
-        <div className="mt-10 rounded-2xl border border-blue-100 bg-blue-50/60 p-5 sm:p-6">
-          <p className="text-sm leading-7 text-slate-700">
+        <div className="mt-10 rounded-2xl border border-blue-100 bg-blue-50/60 p-5 dark:border-blue-900/60 dark:bg-blue-950/30 sm:p-6">
+          <p className="text-sm leading-7 text-slate-700 dark:text-slate-300">
             We believe privacy should be explained clearly rather than hidden
             behind complicated language. This Policy describes the information
             that SanidhyaShala may collect and process to provide, secure,
@@ -601,9 +603,9 @@ export default function PrivacyPage() {
         {/* Table of contents */}
         <nav
           aria-label="Privacy Policy sections"
-          className="mt-10 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6"
+          className="mt-10 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900/70 sm:p-6"
         >
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
             On this page
           </h2>
 
@@ -612,7 +614,7 @@ export default function PrivacyPage() {
               <a
                 key={section.id}
                 href={`#${section.id}`}
-                className="rounded-lg px-2 py-2 text-sm text-slate-600 transition hover:bg-slate-50 hover:text-blue-700"
+                className="rounded-lg px-2 py-2 text-sm text-slate-600 transition hover:bg-slate-50 hover:text-blue-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-blue-400"
               >
                 {section.title}
               </a>
@@ -626,13 +628,33 @@ export default function PrivacyPage() {
             <section
               key={section.id}
               id={section.id}
-              className="scroll-mt-24 border-b border-slate-200 pb-12 last:border-b-0"
+              className="scroll-mt-24 border-b border-slate-200 pb-12 last:border-b-0 dark:border-slate-800"
             >
-              <h2 className="text-2xl font-semibold tracking-tight text-slate-900">
+              <h2 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
                 {section.title}
               </h2>
 
-              <div className="mt-5 space-y-5 text-[15px] leading-7 text-slate-600 [&_h3]:pt-2 [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:text-slate-900 [&_li]:ml-5 [&_li]:pl-1 [&_li]:marker:text-slate-400 [&_ul]:list-disc [&_ul]:space-y-2">
+              <div
+                className="
+                  mt-5
+                  space-y-5
+                  text-[15px]
+                  leading-7
+                  text-slate-600
+                  dark:text-slate-300
+                  [&_h3]:pt-2
+                  [&_h3]:text-lg
+                  [&_h3]:font-semibold
+                  [&_h3]:text-slate-900
+                  dark:[&_h3]:text-slate-100
+                  [&_li]:ml-5
+                  [&_li]:pl-1
+                  [&_li]:marker:text-slate-400
+                  dark:[&_li]:marker:text-slate-500
+                  [&_ul]:list-disc
+                  [&_ul]:space-y-2
+                "
+              >
                 {section.content}
               </div>
             </section>
@@ -640,10 +662,10 @@ export default function PrivacyPage() {
         </div>
 
         {/* Bottom navigation */}
-        <div className="mt-4 flex flex-col gap-3 border-t border-slate-200 pt-8 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-4 flex flex-col gap-3 border-t border-slate-200 pt-8 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
           <Link
             href="/"
-            className="text-sm font-medium text-slate-600 transition hover:text-blue-700"
+            className="text-sm font-medium text-slate-600 transition hover:text-blue-700 dark:text-slate-300 dark:hover:text-blue-400"
           >
             ← Back to SanidhyaShala
           </Link>
@@ -651,21 +673,21 @@ export default function PrivacyPage() {
           <div className="flex flex-wrap gap-4 text-sm">
             <Link
               href="/terms"
-              className="text-slate-600 transition hover:text-blue-700"
+              className="text-slate-600 transition hover:text-blue-700 dark:text-slate-300 dark:hover:text-blue-400"
             >
               Terms & Conditions
             </Link>
 
             <Link
               href="/refund-policy"
-              className="text-slate-600 transition hover:text-blue-700"
+              className="text-slate-600 transition hover:text-blue-700 dark:text-slate-300 dark:hover:text-blue-400"
             >
               Refund & Cancellation
             </Link>
 
             <Link
               href="/contact"
-              className="text-slate-600 transition hover:text-blue-700"
+              className="text-slate-600 transition hover:text-blue-700 dark:text-slate-300 dark:hover:text-blue-400"
             >
               Contact
             </Link>

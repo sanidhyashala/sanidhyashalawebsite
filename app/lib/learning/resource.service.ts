@@ -14,7 +14,17 @@ export type StudentMcqResource = {
 
   description: string | null;
 
-  accessType: string;
+  /**
+   * IMPORTANT:
+   *
+   * Resource-level access is authoritative.
+   * Student access must be derived from:
+   *
+   *   resources.access_type
+   *
+   * and NOT from tests.access_type.
+   */
+  accessType: "FREE" | "PREMIUM";
 
   setNumber: number | null;
 
@@ -47,6 +57,7 @@ export type StudentMcqResource = {
 
 export type StudentMcqPracticeOption = {
   optionKey: string;
+
   optionText: string;
 };
 
@@ -107,11 +118,16 @@ export async function getStudentMcqResource(
     return null;
   }
 
-  const supabase = createAdminSupabaseClient();
+  const supabase =
+    createAdminSupabaseClient();
 
-  const profile = await getStudentProfile();
+  const profile =
+    await getStudentProfile();
 
-  if (!profile.exists || !profile.program_id) {
+  if (
+    !profile.exists ||
+    !profile.program_id
+  ) {
     return null;
   }
 
@@ -135,9 +151,18 @@ export async function getStudentMcqResource(
         set_number
       `
     )
-    .eq("id", normalizedResourceId)
-    .eq("resource_type", "MCQ")
-    .eq("status", "PUBLISHED")
+    .eq(
+      "id",
+      normalizedResourceId
+    )
+    .eq(
+      "resource_type",
+      "MCQ"
+    )
+    .eq(
+      "status",
+      "PUBLISHED"
+    )
     .maybeSingle();
 
   if (resourceError) {
@@ -169,13 +194,21 @@ export async function getStudentMcqResource(
         passing_percentage,
         shuffle_questions,
         shuffle_options,
-        status,
-        access_type
+        status
       `
     )
-    .eq("resource_id", resource.id)
-    .eq("test_type", "MCQ")
-    .eq("status", "PUBLISHED")
+    .eq(
+      "resource_id",
+      resource.id
+    )
+    .eq(
+      "test_type",
+      "MCQ"
+    )
+    .eq(
+      "status",
+      "PUBLISHED"
+    )
     .maybeSingle();
 
   if (testError) {
@@ -197,8 +230,13 @@ export async function getStudentMcqResource(
     error: questionRowsError,
   } = await supabase
     .from("test_questions")
-    .select("question_id")
-    .eq("test_id", test.id);
+    .select(
+      "question_id"
+    )
+    .eq(
+      "test_id",
+      test.id
+    );
 
   if (questionRowsError) {
     throw new Error(
@@ -206,7 +244,8 @@ export async function getStudentMcqResource(
     );
   }
 
-  const questionCount = questionRows?.length ?? 0;
+  const questionCount =
+    questionRows?.length ?? 0;
 
   if (questionCount <= 0) {
     return null;
@@ -220,9 +259,16 @@ export async function getStudentMcqResource(
     data: curriculumMapping,
     error: curriculumMappingError,
   } = await supabase
-    .from("resource_curriculum_nodes")
-    .select("curriculum_node_id")
-    .eq("resource_id", resource.id)
+    .from(
+      "resource_curriculum_nodes"
+    )
+    .select(
+      "curriculum_node_id"
+    )
+    .eq(
+      "resource_id",
+      resource.id
+    )
     .maybeSingle();
 
   if (curriculumMappingError) {
@@ -231,13 +277,21 @@ export async function getStudentMcqResource(
     );
   }
 
-  let chapterName: string | null = null;
+  let chapterName:
+    | string
+    | null = null;
 
-  let chapterSequence: number | null = null;
+  let chapterSequence:
+    | number
+    | null = null;
 
-  let session: string | null = null;
+  let session:
+    | string
+    | null = null;
 
-  let className: string | null = null;
+  let className:
+    | string
+    | null = null;
 
   /* -------------------------------------------------------
    * 5. Chapter → Version → Program
@@ -248,7 +302,9 @@ export async function getStudentMcqResource(
       data: chapter,
       error: chapterError,
     } = await supabase
-      .from("curriculum_nodes")
+      .from(
+        "curriculum_nodes"
+      )
       .select(
         `
           id,
@@ -257,7 +313,10 @@ export async function getStudentMcqResource(
           curriculum_version_id
         `
       )
-      .eq("id", curriculumMapping.curriculum_node_id)
+      .eq(
+        "id",
+        curriculumMapping.curriculum_node_id
+      )
       .maybeSingle();
 
     if (chapterError) {
@@ -267,15 +326,19 @@ export async function getStudentMcqResource(
     }
 
     if (chapter) {
-      chapterName = chapter.display_name;
+      chapterName =
+        chapter.display_name;
 
-      chapterSequence = chapter.sequence_order;
+      chapterSequence =
+        chapter.sequence_order;
 
       const {
         data: version,
         error: versionError,
       } = await supabase
-        .from("curriculum_versions")
+        .from(
+          "curriculum_versions"
+        )
         .select(
           `
             id,
@@ -283,7 +346,10 @@ export async function getStudentMcqResource(
             program_id
           `
         )
-        .eq("id", chapter.curriculum_version_id)
+        .eq(
+          "id",
+          chapter.curriculum_version_id
+        )
         .maybeSingle();
 
       if (versionError) {
@@ -293,19 +359,28 @@ export async function getStudentMcqResource(
       }
 
       if (version) {
-        if (version.program_id !== profile.program_id) {
+        if (
+          version.program_id !==
+          profile.program_id
+        ) {
           return null;
         }
 
-        session = version.session;
+        session =
+          version.session;
 
         const {
           data: program,
           error: programError,
         } = await supabase
           .from("programs")
-          .select("id, name")
-          .eq("id", version.program_id)
+          .select(
+            "id, name"
+          )
+          .eq(
+            "id",
+            version.program_id
+          )
           .maybeSingle();
 
         if (programError) {
@@ -315,7 +390,8 @@ export async function getStudentMcqResource(
         }
 
         if (program) {
-          className = program.name;
+          className =
+            program.name;
         }
       }
     }
@@ -323,22 +399,36 @@ export async function getStudentMcqResource(
 
   /* -------------------------------------------------------
    * 6. Return normalized resource
+   *
+   * IMPORTANT:
+   *
+   * resources.access_type is the ONLY authoritative
+   * resource access value.
+   *
+   * We intentionally do NOT use tests.access_type here.
    * ------------------------------------------------------- */
 
   return {
-    resourceId: resource.id,
+    resourceId:
+      resource.id,
 
-    title: resource.title,
+    title:
+      resource.title,
 
-    description: resource.description,
+    description:
+      resource.description,
 
     accessType:
-      test.access_type ??
-      resource.access_type,
+      resource.access_type ===
+      "PREMIUM"
+        ? "PREMIUM"
+        : "FREE",
 
-    setNumber: resource.set_number,
+    setNumber:
+      resource.set_number,
 
-    testId: test.id,
+    testId:
+      test.id,
 
     durationMinutes:
       test.duration_minutes,
@@ -393,13 +483,15 @@ export async function getStudentMcqResource(
 export async function getStudentMcqPractice(
   resourceId: string
 ): Promise<StudentMcqPractice | null> {
-  const normalizedResourceId = resourceId.trim();
+  const normalizedResourceId =
+    resourceId.trim();
 
   if (!normalizedResourceId) {
     return null;
   }
 
-  const supabase = createAdminSupabaseClient();
+  const supabase =
+    createAdminSupabaseClient();
 
   /* -------------------------------------------------------
    * 1. Published MCQ resource
@@ -421,9 +513,18 @@ export async function getStudentMcqPractice(
         status
       `
     )
-    .eq("id", normalizedResourceId)
-    .eq("resource_type", "MCQ")
-    .eq("status", "PUBLISHED")
+    .eq(
+      "id",
+      normalizedResourceId
+    )
+    .eq(
+      "resource_type",
+      "MCQ"
+    )
+    .eq(
+      "status",
+      "PUBLISHED"
+    )
     .maybeSingle();
 
   if (resourceError) {
@@ -455,13 +556,21 @@ export async function getStudentMcqPractice(
         passing_percentage,
         shuffle_questions,
         shuffle_options,
-        status,
-        access_type
+        status
       `
     )
-    .eq("resource_id", resource.id)
-    .eq("test_type", "MCQ")
-    .eq("status", "PUBLISHED")
+    .eq(
+      "resource_id",
+      resource.id
+    )
+    .eq(
+      "test_type",
+      "MCQ"
+    )
+    .eq(
+      "status",
+      "PUBLISHED"
+    )
     .maybeSingle();
 
   if (testError) {
@@ -491,10 +600,16 @@ export async function getStudentMcqPractice(
         marks
       `
     )
-    .eq("test_id", test.id)
-    .order("question_order", {
-      ascending: true,
-    });
+    .eq(
+      "test_id",
+      test.id
+    )
+    .order(
+      "question_order",
+      {
+        ascending: true,
+      }
+    );
 
   if (testQuestionsError) {
     throw new Error(
@@ -502,7 +617,10 @@ export async function getStudentMcqPractice(
     );
   }
 
-  if (!testQuestions || testQuestions.length === 0) {
+  if (
+    !testQuestions ||
+    testQuestions.length === 0
+  ) {
     return null;
   }
 
@@ -510,9 +628,11 @@ export async function getStudentMcqPractice(
    * 4. Collect exact revision IDs
    * ------------------------------------------------------- */
 
-  const revisionIds = testQuestions.map(
-    (row) => row.question_revision_id
-  );
+  const revisionIds =
+    testQuestions.map(
+      (row) =>
+        row.question_revision_id
+    );
 
   /* -------------------------------------------------------
    * 5. Load exact published revisions
@@ -532,8 +652,14 @@ export async function getStudentMcqPractice(
         status
       `
     )
-    .in("id", revisionIds)
-    .eq("status", "PUBLISHED");
+    .in(
+      "id",
+      revisionIds
+    )
+    .eq(
+      "status",
+      "PUBLISHED"
+    );
 
   if (revisionsError) {
     throw new Error(
@@ -549,7 +675,9 @@ export async function getStudentMcqPractice(
     data: revisionOptions,
     error: revisionOptionsError,
   } = await supabase
-    .from("question_revision_options")
+    .from(
+      "question_revision_options"
+    )
     .select(
       `
         revision_id,
@@ -558,10 +686,16 @@ export async function getStudentMcqPractice(
         display_order
       `
     )
-    .in("revision_id", revisionIds)
-    .order("display_order", {
-      ascending: true,
-    });
+    .in(
+      "revision_id",
+      revisionIds
+    )
+    .order(
+      "display_order",
+      {
+        ascending: true,
+      }
+    );
 
   if (revisionOptionsError) {
     throw new Error(
@@ -575,16 +709,23 @@ export async function getStudentMcqPractice(
 
   type RevisionRow = {
     id: string;
+
     question_id: string;
+
     revision_number: number;
+
     question_text: string;
+
     status: string;
   };
 
   type OptionRow = {
     revision_id: string;
+
     option_key: string;
+
     option_text: string;
+
     display_order: number;
   };
 
@@ -599,7 +740,10 @@ export async function getStudentMcqPractice(
    * ------------------------------------------------------- */
 
   const revisionById =
-    new Map<string, RevisionRow>(
+    new Map<
+      string,
+      RevisionRow
+    >(
       typedRevisions.map(
         (revision) => [
           revision.id,
@@ -618,16 +762,20 @@ export async function getStudentMcqPractice(
       StudentMcqPracticeOption[]
     >();
 
-  for (const option of typedOptions) {
+  for (
+    const option of typedOptions
+  ) {
     const existing =
       optionsByRevisionId.get(
         option.revision_id
       ) ?? [];
 
     existing.push({
-      optionKey: option.option_key,
+      optionKey:
+        option.option_key,
 
-      optionText: option.option_text,
+      optionText:
+        option.option_text,
     });
 
     optionsByRevisionId.set(
@@ -640,9 +788,12 @@ export async function getStudentMcqPractice(
    * 10. Normalize test questions
    * ------------------------------------------------------- */
 
-  const normalizedQuestions: StudentMcqPracticeQuestion[] = [];
+  const normalizedQuestions:
+    StudentMcqPracticeQuestion[] = [];
 
-  for (const testQuestion of testQuestions) {
+  for (
+    const testQuestion of testQuestions
+  ) {
     const revision =
       revisionById.get(
         testQuestion.question_revision_id
@@ -701,9 +852,16 @@ export async function getStudentMcqPractice(
     data: curriculumMapping,
     error: curriculumMappingError,
   } = await supabase
-    .from("resource_curriculum_nodes")
-    .select("curriculum_node_id")
-    .eq("resource_id", resource.id)
+    .from(
+      "resource_curriculum_nodes"
+    )
+    .select(
+      "curriculum_node_id"
+    )
+    .eq(
+      "resource_id",
+      resource.id
+    )
     .maybeSingle();
 
   if (curriculumMappingError) {
@@ -712,13 +870,21 @@ export async function getStudentMcqPractice(
     );
   }
 
-  let chapterName: string | null = null;
+  let chapterName:
+    | string
+    | null = null;
 
-  let chapterSequence: number | null = null;
+  let chapterSequence:
+    | number
+    | null = null;
 
-  let session: string | null = null;
+  let session:
+    | string
+    | null = null;
 
-  let className: string | null = null;
+  let className:
+    | string
+    | null = null;
 
   /* -------------------------------------------------------
    * 12. Chapter → Version → Program
@@ -729,7 +895,9 @@ export async function getStudentMcqPractice(
       data: chapter,
       error: chapterError,
     } = await supabase
-      .from("curriculum_nodes")
+      .from(
+        "curriculum_nodes"
+      )
       .select(
         `
           id,
@@ -761,7 +929,9 @@ export async function getStudentMcqPractice(
         data: version,
         error: versionError,
       } = await supabase
-        .from("curriculum_versions")
+        .from(
+          "curriculum_versions"
+        )
         .select(
           `
             id,
@@ -790,7 +960,9 @@ export async function getStudentMcqPractice(
           error: programError,
         } = await supabase
           .from("programs")
-          .select("id, name")
+          .select(
+            "id, name"
+          )
           .eq(
             "id",
             version.program_id

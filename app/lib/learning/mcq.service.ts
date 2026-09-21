@@ -1,6 +1,8 @@
 import "server-only";
 
 import { createAdminSupabaseClient } from "@/app/lib/admin/supabase-admin";
+import { createLearningSupabaseClient } from "@/lib/learning/supabase-learning";
+import { requireLearningAuth } from "@/lib/learning/learning-auth";
 
 /* =========================================================
  * Types
@@ -8,16 +10,47 @@ import { createAdminSupabaseClient } from "@/app/lib/admin/supabase-admin";
 
 export type StudentMcqSet = {
   resourceId: string;
+
   title: string;
+
   description: string | null;
-  setNumber: number | null;
+
   accessType: string;
+
+  /*
+   * Student access state.
+   *
+   * FREE:
+   *   hasAccess = true
+   *
+   * PREMIUM:
+   *   true  = chapter/subject entitlement exists
+   *   false = student should see the set as locked
+   */
+  hasAccess: boolean;
+
+  /*
+   * Convenience flag for the UI.
+   *
+   * A set is locked only when it is PREMIUM
+   * and the current student does not have access.
+   */
+  isLocked: boolean;
+
+  setNumber: number | null;
+
   questionCount: number;
+
   chapterId: string;
+
   chapterName: string;
+
   chapterSequence: number | null;
+
   session: string;
+
   className: string;
+
   classSlug: string;
 };
 
@@ -40,6 +73,24 @@ export type StudentMcqSet = {
  *   ├── test_type = MCQ
  *   └── status = PUBLISHED
  *
+ * Access:
+ *
+ * FREE
+ *   → accessible
+ *
+ * PREMIUM
+ *   → accessible only when the authenticated student
+ *     has an active Chapter or Subject learning-product
+ *     entitlement.
+ *
+ * IMPORTANT:
+ *
+ * The admin client is used for trusted content reads.
+ *
+ * The authenticated learning client is used ONLY for
+ * the access resolver so that auth.jwt() represents the
+ * current Clerk/Supabase student session.
+ *
  * DRAFT resources are never returned.
  * ========================================================= */
 
@@ -53,8 +104,17 @@ export async function getStudentMcqSets(
     return [];
   }
 
+  /*
+   * The access resolver depends on the authenticated
+   * student's Supabase JWT.
+   */
+  await requireLearningAuth();
+
   const supabase =
     createAdminSupabaseClient();
+
+  const learningSupabase =
+    await createLearningSupabaseClient();
 
   /* -------------------------------------------------------
    * 1. Find published class/program
@@ -387,7 +447,98 @@ export async function getStudentMcqSets(
     );
 
   /* -------------------------------------------------------
-   * 9. Normalize student-facing data
+   * 9. Resolve student access
+   * -------------------------------------------------------
+   *
+   * IMPORTANT:
+   *
+   * The access resolver:
+   *
+   *   user_has_learning_product_access(resource_id)
+   *
+   * reads the authenticated Clerk/Supabase user from:
+   *
+   *   auth.jwt()->>'sub'
+   *
+   * Therefore the RPC MUST use the authenticated
+   * learning Supabase client.
+   *
+   * The admin client must NOT be used here.
+   * ------------------------------------------------------- */
+
+  const accessByResourceId =
+    new Map<
+      string,
+      boolean
+    >();
+
+  for (
+    const resource of resources
+  ) {
+    /* -----------------------------------------------------
+     * FREE
+     * ----------------------------------------------------- */
+
+    if (
+      resource.access_type ===
+      "FREE"
+    ) {
+      accessByResourceId.set(
+        resource.id,
+        true
+      );
+
+      continue;
+    }
+
+    /* -----------------------------------------------------
+     * PREMIUM
+     * ----------------------------------------------------- */
+
+    if (
+      resource.access_type ===
+      "PREMIUM"
+    ) {
+      const {
+        data: hasAccess,
+        error: accessError,
+      } = await learningSupabase.rpc(
+        "user_has_learning_product_access",
+        {
+          p_resource_id:
+            resource.id,
+        }
+      );
+
+      if (accessError) {
+        throw new Error(
+          `Failed to resolve MCQ access: ${accessError.message}`
+        );
+      }
+
+      accessByResourceId.set(
+        resource.id,
+        hasAccess === true
+      );
+
+      continue;
+    }
+
+    /* -----------------------------------------------------
+     * Defensive fallback
+     *
+     * Unknown access types must never become
+     * accidentally accessible.
+     * ----------------------------------------------------- */
+
+    accessByResourceId.set(
+      resource.id,
+      false
+    );
+  }
+
+  /* -------------------------------------------------------
+   * 10. Normalize student-facing data
    * ------------------------------------------------------- */
 
   return resources
@@ -430,6 +581,16 @@ export async function getStudentMcqSets(
           return null;
         }
 
+        const hasAccess =
+          accessByResourceId.get(
+            resource.id
+          ) ?? false;
+
+        const isLocked =
+          resource.access_type ===
+            "PREMIUM" &&
+          !hasAccess;
+
         return {
           resourceId:
             resource.id,
@@ -440,11 +601,15 @@ export async function getStudentMcqSets(
           description:
             resource.description,
 
-          setNumber:
-            resource.set_number,
-
           accessType:
             resource.access_type,
+
+          hasAccess,
+
+          isLocked,
+
+          setNumber:
+            resource.set_number,
 
           questionCount,
 
@@ -507,6 +672,17 @@ export async function getStudentMcqSets(
  * requested class's currently published curriculum.
  *
  * Only then are MCQ resources for that chapter loaded.
+ *
+ * Access:
+ *
+ * FREE
+ *   → accessible
+ *
+ * PREMIUM + entitlement
+ *   → accessible
+ *
+ * PREMIUM + no entitlement
+ *   → locked
  * ========================================================= */
 
 export async function getStudentMcqSetsByChapter(
@@ -526,8 +702,17 @@ export async function getStudentMcqSetsByChapter(
     return [];
   }
 
+  /*
+   * The access resolver depends on the authenticated
+   * student's Supabase JWT.
+   */
+  await requireLearningAuth();
+
   const supabase =
     createAdminSupabaseClient();
+
+  const learningSupabase =
+    await createLearningSupabaseClient();
 
   /* -------------------------------------------------------
    * 1. Find published class/program
@@ -833,7 +1018,79 @@ export async function getStudentMcqSetsByChapter(
   }
 
   /* -------------------------------------------------------
-   * 9. Normalize chapter MCQ sets
+   * 9. Resolve student access
+   * ------------------------------------------------------- */
+
+  const accessByResourceId =
+    new Map<
+      string,
+      boolean
+    >();
+
+  for (
+    const resource of resources
+  ) {
+    /* -----------------------------------------------------
+     * FREE
+     * ----------------------------------------------------- */
+
+    if (
+      resource.access_type ===
+      "FREE"
+    ) {
+      accessByResourceId.set(
+        resource.id,
+        true
+      );
+
+      continue;
+    }
+
+    /* -----------------------------------------------------
+     * PREMIUM
+     * ----------------------------------------------------- */
+
+    if (
+      resource.access_type ===
+      "PREMIUM"
+    ) {
+      const {
+        data: hasAccess,
+        error: accessError,
+      } = await learningSupabase.rpc(
+        "user_has_learning_product_access",
+        {
+          p_resource_id:
+            resource.id,
+        }
+      );
+
+      if (accessError) {
+        throw new Error(
+          `Failed to resolve MCQ access: ${accessError.message}`
+        );
+      }
+
+      accessByResourceId.set(
+        resource.id,
+        hasAccess === true
+      );
+
+      continue;
+    }
+
+    /* -----------------------------------------------------
+     * Defensive fallback
+     * ----------------------------------------------------- */
+
+    accessByResourceId.set(
+      resource.id,
+      false
+    );
+  }
+
+  /* -------------------------------------------------------
+   * 10. Normalize chapter MCQ sets
    * ------------------------------------------------------- */
 
   return resources
@@ -861,6 +1118,16 @@ export async function getStudentMcqSetsByChapter(
           return null;
         }
 
+        const hasAccess =
+          accessByResourceId.get(
+            resource.id
+          ) ?? false;
+
+        const isLocked =
+          resource.access_type ===
+            "PREMIUM" &&
+          !hasAccess;
+
         return {
           resourceId:
             resource.id,
@@ -871,11 +1138,15 @@ export async function getStudentMcqSetsByChapter(
           description:
             resource.description,
 
-          setNumber:
-            resource.set_number,
-
           accessType:
             resource.access_type,
+
+          hasAccess,
+
+          isLocked,
+
+          setNumber:
+            resource.set_number,
 
           questionCount,
 

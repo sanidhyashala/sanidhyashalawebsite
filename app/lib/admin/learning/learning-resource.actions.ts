@@ -6,15 +6,12 @@ import { redirect } from "next/navigation";
 import { requireAdmin } from "@/app/lib/auth/admin";
 import { createAdminSupabaseClient } from "@/app/lib/admin/supabase-admin";
 
-const RESOURCE_TYPES = [
-  "NOTE",
-  "MCQ",
-  "SUBJECTIVE",
-  "CASE_BASED",
-  "MOCK_TEST",
-] as const;
-
 const ACCESS_TYPES = ["FREE", "PREMIUM"] as const;
+
+const CONTENT_SOURCES = ["EDITOR", "PDF"] as const;
+
+type AccessType = (typeof ACCESS_TYPES)[number];
+type ContentSource = (typeof CONTENT_SOURCES)[number];
 
 function slugify(value: string) {
   return value
@@ -25,9 +22,7 @@ function slugify(value: string) {
     .replace(/-+/g, "-");
 }
 
-export async function createLearningResource(
-  formData: FormData
-) {
+export async function createLearningResource(formData: FormData) {
   /*
    * Only an authenticated admin can create
    * learning resources.
@@ -35,6 +30,18 @@ export async function createLearningResource(
   await requireAdmin();
 
   const supabase = createAdminSupabaseClient();
+
+  /*
+   * This creation pipeline is intentionally NOTE-only.
+   *
+   * MCQ, Subjective, Case-Based and Mock Test resources
+   * are created through their dedicated pipelines.
+   *
+   * Access starts as FREE and can be changed later
+   * from the Resource Editor.
+   */
+  const resourceType = "NOTE" as const;
+  const accessType = "FREE" as const;
 
   /*
    * Read form values.
@@ -47,14 +54,6 @@ export async function createLearningResource(
     formData.get("description") ?? ""
   ).trim();
 
-  const resourceType = String(
-    formData.get("resource_type") ?? ""
-  ).trim();
-
-  const accessType = String(
-    formData.get("access_type") ?? ""
-  ).trim();
-
   const curriculumNodeId = String(
     formData.get("curriculum_node_id") ?? ""
   ).trim();
@@ -63,35 +62,11 @@ export async function createLearningResource(
    * Basic validation.
    */
   if (!title) {
-    throw new Error(
-      "Resource title is required."
-    );
-  }
-
-  if (
-    !RESOURCE_TYPES.includes(
-      resourceType as (typeof RESOURCE_TYPES)[number]
-    )
-  ) {
-    throw new Error(
-      "Invalid resource type."
-    );
-  }
-
-  if (
-    !ACCESS_TYPES.includes(
-      accessType as (typeof ACCESS_TYPES)[number]
-    )
-  ) {
-    throw new Error(
-      "Invalid access type."
-    );
+    throw new Error("Resource title is required.");
   }
 
   if (!curriculumNodeId) {
-    throw new Error(
-      "Please select a curriculum chapter."
-    );
+    throw new Error("Please select a curriculum chapter.");
   }
 
   /*
@@ -101,6 +76,7 @@ export async function createLearningResource(
    *
    * curriculum_nodes contains the actual chapter entry.
    */
+
   const {
     data: curriculumNode,
     error: curriculumError,
@@ -148,6 +124,7 @@ export async function createLearningResource(
    * canonical_nodes contains the semantic identity
    * of the curriculum node.
    */
+
   const {
     data: canonicalNode,
     error: canonicalError,
@@ -195,6 +172,7 @@ export async function createLearningResource(
    * curriculum_nodes.curriculum_version_id
    * -> curriculum_versions.id
    */
+
   const {
     data: curriculumVersion,
     error: versionError,
@@ -230,9 +208,7 @@ export async function createLearningResource(
   /*
    * The curriculum version must be published.
    */
-  if (
-    curriculumVersion.status !== "PUBLISHED"
-  ) {
+  if (curriculumVersion.status !== "PUBLISHED") {
     throw new Error(
       "The selected curriculum version is not published."
     );
@@ -246,6 +222,7 @@ export async function createLearningResource(
    * curriculum_versions.program_id
    * -> programs.id
    */
+
   const {
     data: program,
     error: programError,
@@ -291,6 +268,7 @@ export async function createLearningResource(
    * 5. Generate a clean resource slug
    * --------------------------------------------------
    */
+
   const baseSlug = slugify(title);
 
   if (!baseSlug) {
@@ -307,6 +285,7 @@ export async function createLearningResource(
    * chapter-1-notes-2
    * chapter-1-notes-3
    */
+
   let slug = baseSlug;
   let suffix = 2;
 
@@ -342,6 +321,7 @@ export async function createLearningResource(
    * Resources belonging to the same chapter are
    * ordered independently.
    */
+
   const {
     data: existingMappings,
     error: mappingError,
@@ -369,8 +349,7 @@ export async function createLearningResource(
   const nextDisplayOrder =
     (existingMappings ?? []).reduce(
       (max, mapping) => {
-        const resource =
-          mapping.resources?.[0];
+        const resource = mapping.resources?.[0];
 
         return Math.max(
           max,
@@ -385,8 +364,15 @@ export async function createLearningResource(
    * 7. Create the resource
    * --------------------------------------------------
    *
-   * Every newly created resource starts as DRAFT.
+   * Every newly created Note starts as DRAFT.
+   *
+   * resource_type is always NOTE.
+   * access_type initially starts as FREE.
+   *
+   * Access can be changed later from the
+   * Resource Editor.
    */
+
   const {
     data: resource,
     error: resourceError,
@@ -395,8 +381,7 @@ export async function createLearningResource(
     .insert({
       title,
       slug,
-      description:
-        description || null,
+      description: description || null,
       resource_type: resourceType,
       access_type: accessType,
       status: "DRAFT",
@@ -419,14 +404,14 @@ export async function createLearningResource(
    * 8. Connect resource to curriculum chapter
    * --------------------------------------------------
    */
+
   const {
     error: resourceMappingError,
   } = await supabase
     .from("resource_curriculum_nodes")
     .insert({
       resource_id: resource.id,
-      curriculum_node_id:
-        curriculumNodeId,
+      curriculum_node_id: curriculumNodeId,
     });
 
   if (resourceMappingError) {
@@ -434,6 +419,7 @@ export async function createLearningResource(
      * Cleanup the resource if its curriculum
      * mapping could not be created.
      */
+
     await supabase
       .from("resources")
       .delete()
@@ -453,4 +439,176 @@ export async function createLearningResource(
    * Return to the resource list.
    */
   redirect("/admin/learning");
+}
+
+/*
+ * --------------------------------------------------
+ * Update Resource Content Source
+ * --------------------------------------------------
+ *
+ * Admin can switch the primary student-facing
+ * content source between EDITOR and PDF.
+ */
+
+export async function updateLearningResourceContentSource(
+  formData: FormData
+) {
+  await requireAdmin();
+
+  const supabase = createAdminSupabaseClient();
+
+  const resourceId = String(
+    formData.get("resource_id") ?? ""
+  ).trim();
+
+  const contentSource = String(
+    formData.get("content_source") ?? ""
+  ).trim() as ContentSource;
+
+  if (!resourceId) {
+    throw new Error("Resource ID is required.");
+  }
+
+  if (!CONTENT_SOURCES.includes(contentSource)) {
+    throw new Error("Invalid content source.");
+  }
+
+  const {
+    data: resource,
+    error: resourceError,
+  } = await supabase
+    .from("resources")
+    .select("id, content_source")
+    .eq("id", resourceId)
+    .maybeSingle();
+
+  if (resourceError) {
+    throw new Error(
+      `Failed to load learning resource: ${resourceError.message}`
+    );
+  }
+
+  if (!resource) {
+    throw new Error(
+      "Learning resource was not found."
+    );
+  }
+
+  if (resource.content_source === contentSource) {
+    return;
+  }
+
+  const {
+    error: updateError,
+  } = await supabase
+    .from("resources")
+    .update({
+      content_source: contentSource,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", resourceId);
+
+  if (updateError) {
+    throw new Error(
+      `Failed to update content source: ${updateError.message}`
+    );
+  }
+
+  revalidatePath(
+    `/admin/learning/${resourceId}`
+  );
+
+  revalidatePath("/admin/learning");
+}
+
+/*
+ * --------------------------------------------------
+ * Update Resource Access Type
+ * --------------------------------------------------
+ *
+ * Admin can switch a resource between:
+ *
+ * FREE
+ * PREMIUM
+ *
+ * This is intentionally a resource-level access
+ * setting. It does NOT create pricing, purchases,
+ * or entitlements.
+ */
+
+export async function updateLearningResourceAccessType(
+  formData: FormData
+) {
+  await requireAdmin();
+
+  const supabase = createAdminSupabaseClient();
+
+  const resourceId = String(
+    formData.get("resource_id") ?? ""
+  ).trim();
+
+  const accessType = String(
+    formData.get("access_type") ?? ""
+  ).trim() as AccessType;
+
+  if (!resourceId) {
+    throw new Error("Resource ID is required.");
+  }
+
+  if (!ACCESS_TYPES.includes(accessType)) {
+    throw new Error("Invalid access type.");
+  }
+
+  const {
+    data: resource,
+    error: resourceError,
+  } = await supabase
+    .from("resources")
+    .select(
+      `
+        id,
+        resource_type,
+        access_type
+      `
+    )
+    .eq("id", resourceId)
+    .maybeSingle();
+
+  if (resourceError) {
+    throw new Error(
+      `Failed to load learning resource: ${resourceError.message}`
+    );
+  }
+
+  if (!resource) {
+    throw new Error(
+      "Learning resource was not found."
+    );
+  }
+
+  if (resource.access_type === accessType) {
+    return;
+  }
+
+  const {
+    error: updateError,
+  } = await supabase
+    .from("resources")
+    .update({
+      access_type: accessType,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", resourceId);
+
+  if (updateError) {
+    throw new Error(
+      `Failed to update learning resource access type: ${updateError.message}`
+    );
+  }
+
+  revalidatePath(
+    `/admin/learning/${resourceId}`
+  );
+
+  revalidatePath("/admin/learning");
 }

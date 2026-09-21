@@ -11,10 +11,13 @@ import {
   BookOpen,
   GraduationCap,
   FileQuestion,
+  Brain,
+  ClipboardCheck,
   Users,
   Mail,
   ChartColumn,
   Settings,
+  Tag,
 } from "lucide-react";
 
 const navigation = [
@@ -44,9 +47,24 @@ const navigation = [
     icon: GraduationCap,
   },
   {
+    title: "Subjective Engine",
+    href: "/admin/subjective",
+    icon: Brain,
+  },
+  {
+    title: "Evaluation",
+    href: "/admin/subjective/evaluations",
+    icon: ClipboardCheck,
+  },
+  {
     title: "MCQ Bank",
     href: "/admin/mcq-bank",
     icon: FileQuestion,
+  },
+  {
+    title: "Access & Pricing",
+    href: "/admin/access-pricing",
+    icon: Tag,
   },
   {
     title: "Students",
@@ -90,7 +108,6 @@ export default function AdminSidebar() {
       {/* Logo */}
 
       <div className="border-b border-slate-200 px-8 py-8 dark:border-slate-800">
-
         <h1 className="text-xl font-bold tracking-[0.2em] text-slate-900 dark:text-white">
           SANIDHYASHALA
         </h1>
@@ -98,7 +115,6 @@ export default function AdminSidebar() {
         <p className="mt-2 text-sm text-slate-500">
           Founder Dashboard
         </p>
-
       </div>
 
       {/* Navigation */}
@@ -109,15 +125,12 @@ export default function AdminSidebar() {
           overflow-y-auto
           px-4
           py-6
-
           scrollbar-thin
           scrollbar-thumb-slate-300
           dark:scrollbar-thumb-slate-700
         "
       >
-
         {navigation.map((item) => {
-
           const Icon = item.icon;
 
           const active =
@@ -152,7 +165,6 @@ export default function AdminSidebar() {
               <Icon size={19} />
 
               <span>{item.title}</span>
-
             </Link>
           );
         })}
@@ -169,10 +181,7 @@ export default function AdminSidebar() {
           dark:border-slate-800
         "
       >
-
         <div className="flex items-center gap-3">
-
-          {/* 👇 Is wrapper div me flex aur alignment add kiya hai taaki UserButton hil na sake */}
           <div className="flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200 dark:border-slate-700">
             <UserButton
               appearance={{
@@ -192,19 +201,14 @@ export default function AdminSidebar() {
               SanidhyaShala Admin
             </p>
           </div>
-
         </div>
 
         <div className="mt-6 border-t border-slate-200 pt-4 dark:border-slate-800">
-
           <p className="text-center text-xs tracking-widest text-slate-400">
             VERSION 1.0
           </p>
-
         </div>
-
       </div>
-
     </aside>
   );
 }

@@ -9,6 +9,7 @@ import { getLearningResourcePdfVersions } from "@/app/lib/admin/learning/learnin
 import ResourceContentEditor from "@/components/learning/ResourceContentEditor";
 import ResourcePdfUpload from "@/components/learning/ResourcePdfUpload";
 import ResourceContentSourceSelector from "@/components/learning/ResourceContentSourceSelector";
+import ResourceAccessTypeControl from "@/components/learning/ResourceAccessTypeControl";
 
 type ResourceEditorPageProps = {
   params: Promise<{
@@ -104,9 +105,14 @@ export default async function ResourceEditorPage({
               Access
             </p>
 
-            <p className="mt-2 font-semibold text-slate-900 dark:text-white">
-              {resource.access_type}
-            </p>
+            <ResourceAccessTypeControl
+              resourceId={resource.id}
+              initialAccessType={
+                resource.access_type === "PREMIUM"
+                  ? "PREMIUM"
+                  : "FREE"
+              }
+            />
           </div>
 
           {/* Status */}

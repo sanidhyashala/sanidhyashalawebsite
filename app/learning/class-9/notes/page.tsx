@@ -1,13 +1,43 @@
 import Link from "next/link";
+
 import { getLearningCurriculum } from "@/lib/learning/curriculum";
 
+type NoteAccessResource = {
+  id: string;
+  title: string;
+  slug: string;
+  resource_type: string;
+  access_type: "FREE" | "PREMIUM";
+  status: string;
+  display_order: number | null;
+  content_source: string | null;
+  has_access?: boolean;
+};
+
+function normalizeResources(
+  resource:
+    | NoteAccessResource
+    | NoteAccessResource[]
+    | null
+    | undefined,
+): NoteAccessResource[] {
+  if (!resource) return [];
+
+  if (Array.isArray(resource)) {
+    return resource;
+  }
+
+  return [resource];
+}
+
 export default async function NotesPage() {
-  const chapters = await getLearningCurriculum("class-9");
+  const chapters = await getLearningCurriculum("class-9", {
+    includeLockedNotes: true,
+  });
 
   return (
     <main className="px-6 py-12 sm:px-8 sm:py-16">
       <div className="mx-auto max-w-5xl">
-
         {/* =====================================================
          * Back to Learning
          * ===================================================== */}
@@ -176,21 +206,31 @@ export default async function NotesPage() {
 
           <div className="grid gap-4">
             {chapters.map((chapter) => {
-              const noteResource =
-                chapter.resource_curriculum_nodes
-                  ?.flatMap(
-                    (mapping) => mapping.resources ?? []
-                  )
-                  .find(
-                    (resource) =>
-                      resource.resource_type === "NOTE"
-                  );
-
-              const isPublished =
-                noteResource?.status === "PUBLISHED";
-
-              const accessType =
-                noteResource?.access_type;
+              /*
+               * IMPORTANT:
+               * A chapter can have multiple NOTE resources.
+               *
+               * Example:
+               * Chapter 1
+               *   ├── Note A — FREE
+               *   ├── Note B — PREMIUM
+               *   └── Note C — PREMIUM
+               *
+               * Do NOT use .find() here.
+               * We collect every NOTE resource instead.
+               */
+              const noteResources = chapter.resource_curriculum_nodes
+                ?.flatMap((mapping) =>
+                  normalizeResources(mapping.resources),
+                )
+                .filter(
+                  (resource) => resource.resource_type === "NOTE",
+                )
+                .sort(
+                  (a, b) =>
+                    (a.display_order ?? Number.MAX_SAFE_INTEGER) -
+                    (b.display_order ?? Number.MAX_SAFE_INTEGER),
+                );
 
               return (
                 <article
@@ -216,9 +256,6 @@ export default async function NotesPage() {
                       flex
                       flex-col
                       gap-5
-                      sm:flex-row
-                      sm:items-center
-                      sm:justify-between
                     "
                   >
                     {/* =================================================
@@ -263,94 +300,202 @@ export default async function NotesPage() {
                           {chapter.description}
                         </p>
                       )}
-
-                      {/* =================================================
-                       * Resource Access Type
-                       * ================================================= */}
-
-                      {noteResource && accessType && (
-                        <div className="mt-3">
-                          <span
-                            className={`
-                              inline-flex
-                              rounded-full
-                              px-3
-                              py-1
-                              text-xs
-                              font-semibold
-                              ${
-                                accessType === "PREMIUM"
-                                  ? `
-                                    bg-amber-50
-                                    text-amber-700
-                                    dark:bg-amber-950/40
-                                    dark:text-amber-300
-                                  `
-                                  : `
-                                    bg-blue-50
-                                    text-blue-700
-                                    dark:bg-blue-950/40
-                                    dark:text-blue-300
-                                  `
-                              }
-                            `}
-                          >
-                            {accessType}
-                          </span>
-                        </div>
-                      )}
                     </div>
 
                     {/* =================================================
-                     * Chapter Action
+                     * Notes inside this Chapter
                      * ================================================= */}
 
-                    <div className="shrink-0">
-                      {isPublished && noteResource?.slug ? (
-                        <Link
-                          href={`/learning/class-9/notes/${noteResource.slug}`}
-                          className="
-                            inline-flex
-                            items-center
-                            justify-center
-                            rounded-full
-                            bg-blue-700
-                            px-5
-                            py-2.5
-                            text-sm
-                            font-semibold
-                            text-white
-                            shadow-sm
-                            transition
-                            hover:bg-blue-800
-                            hover:shadow
-                            dark:bg-blue-600
-                            dark:hover:bg-blue-500
-                          "
-                        >
-                          Explore →
-                        </Link>
-                      ) : (
-                        <span
-                          className="
-                            inline-flex
-                            items-center
-                            justify-center
-                            rounded-full
-                            bg-slate-100
-                            px-5
-                            py-2.5
-                            text-sm
-                            font-medium
-                            text-slate-600
-                            dark:bg-slate-800
-                            dark:text-slate-300
-                          "
-                        >
-                          Not Published
-                        </span>
-                      )}
-                    </div>
+                    {noteResources && noteResources.length > 0 ? (
+                      <div className="grid gap-3">
+                        {noteResources.map((noteResource) => {
+                          const isPublished =
+                            noteResource.status === "PUBLISHED";
+
+                          const accessType =
+                            noteResource.access_type;
+
+                          const hasAccess =
+                            noteResource.has_access === true;
+
+                          const isLocked =
+                            isPublished &&
+                            accessType === "PREMIUM" &&
+                            !hasAccess;
+
+                          return (
+                            <div
+                              key={noteResource.id}
+                              className="
+                                rounded-xl
+                                border
+                                border-slate-200
+                                bg-slate-50
+                                p-4
+                                dark:border-slate-700
+                                dark:bg-slate-800/60
+                              "
+                            >
+                              <div
+                                className="
+                                  flex
+                                  flex-col
+                                  gap-4
+                                  sm:flex-row
+                                  sm:items-center
+                                  sm:justify-between
+                                "
+                              >
+                                {/* =================================================
+                                 * Note Information
+                                 * ================================================= */}
+
+                                <div className="min-w-0">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <p
+                                      className="
+                                        text-sm
+                                        font-medium
+                                        text-slate-500
+                                        dark:text-slate-400
+                                      "
+                                    >
+                                      Note
+                                    </p>
+
+                                    <span
+                                      className={`
+                                        inline-flex
+                                        rounded-full
+                                        px-3
+                                        py-1
+                                        text-xs
+                                        font-semibold
+                                        ${
+                                          accessType === "PREMIUM"
+                                            ? `
+                                                bg-amber-50
+                                                text-amber-700
+                                                dark:bg-amber-950/40
+                                                dark:text-amber-300
+                                              `
+                                            : `
+                                                bg-blue-50
+                                                text-blue-700
+                                                dark:bg-blue-950/40
+                                                dark:text-blue-300
+                                              `
+                                        }
+                                      `}
+                                    >
+                                      {accessType}
+                                    </span>
+                                  </div>
+
+                                  <h4
+                                    className="
+                                      mt-1
+                                      text-lg
+                                      font-semibold
+                                      text-slate-900
+                                      dark:text-slate-100
+                                    "
+                                  >
+                                    {noteResource.title}
+                                  </h4>
+                                </div>
+
+                                {/* =================================================
+                                 * Note Action
+                                 * ================================================= */}
+
+                                <div className="shrink-0">
+                                  {isLocked ? (
+                                    <span
+                                      className="
+                                        inline-flex
+                                        items-center
+                                        justify-center
+                                        rounded-full
+                                        bg-amber-50
+                                        px-5
+                                        py-2.5
+                                        text-sm
+                                        font-semibold
+                                        text-amber-700
+                                        dark:bg-amber-950/40
+                                        dark:text-amber-300
+                                      "
+                                    >
+                                      🔒 Locked
+                                    </span>
+                                  ) : isPublished &&
+                                    noteResource.slug ? (
+                                    <Link
+                                      href={`/learning/class-9/notes/${noteResource.slug}`}
+                                      className="
+                                        inline-flex
+                                        items-center
+                                        justify-center
+                                        rounded-full
+                                        bg-blue-700
+                                        px-5
+                                        py-2.5
+                                        text-sm
+                                        font-semibold
+                                        text-white
+                                        shadow-sm
+                                        transition
+                                        hover:bg-blue-800
+                                        hover:shadow
+                                        dark:bg-blue-600
+                                        dark:hover:bg-blue-500
+                                      "
+                                    >
+                                      Explore →
+                                    </Link>
+                                  ) : (
+                                    <span
+                                      className="
+                                        inline-flex
+                                        items-center
+                                        justify-center
+                                        rounded-full
+                                        bg-slate-100
+                                        px-5
+                                        py-2.5
+                                        text-sm
+                                        font-medium
+                                        text-slate-600
+                                        dark:bg-slate-800
+                                        dark:text-slate-300
+                                      "
+                                    >
+                                      Not Published
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div
+                        className="
+                          rounded-xl
+                          bg-slate-50
+                          px-4
+                          py-3
+                          text-sm
+                          text-slate-500
+                          dark:bg-slate-800
+                          dark:text-slate-400
+                        "
+                      >
+                        No notes published for this chapter yet.
+                      </div>
+                    )}
                   </div>
                 </article>
               );

@@ -4,6 +4,11 @@ import { redirect } from "next/navigation";
 
 import { getStudentProfile } from "@/lib/learning/student-profile";
 import { getStudentDashboard } from "@/lib/learning/dashboard";
+import {
+  getStudentSubjectiveEvaluations,
+} from "@/lib/learning/subjective/student-evaluations";
+
+import PageAtmosphere from "@/app/components/backgrounds/PageAtmosphere";
 
 export default async function LearningPage() {
   const { isAuthenticated } = await auth();
@@ -14,98 +19,102 @@ export default async function LearningPage() {
 
   if (!isAuthenticated) {
     return (
-      <main className="px-6 py-20">
-        <div className="mx-auto flex min-h-[60vh] max-w-3xl items-center justify-center">
-          <section
-            className="
-              w-full
-              rounded-3xl
-              border
-              border-slate-200
-              bg-white
-              px-8
-              py-12
-              text-center
-              shadow-sm
-              dark:border-slate-800
-              dark:bg-slate-900
-              dark:shadow-none
-              sm:px-12
-            "
-          >
-            <p
+      <main className="relative isolate overflow-hidden bg-white dark:bg-slate-950 px-6 py-20">
+        <PageAtmosphere type="learning" />
+
+        <div className="relative z-10">
+          <div className="mx-auto flex min-h-[60vh] max-w-3xl items-center justify-center">
+            <section
               className="
-                mb-3
-                text-sm
-                font-semibold
-                uppercase
-                tracking-widest
-                text-blue-700
-                dark:text-blue-400
+                w-full
+                rounded-3xl
+                border
+                border-slate-200
+                bg-white
+                px-8
+                py-12
+                text-center
+                shadow-sm
+                dark:border-slate-800
+                dark:bg-slate-900
+                dark:shadow-none
+                sm:px-12
               "
             >
-              Learning
-            </p>
-
-            <h1
-              className="
-                text-3xl
-                font-bold
-                tracking-tight
-                text-blue-900
-                dark:text-blue-400
-                sm:text-4xl
-              "
-            >
-              Please Sign In to Continue Your Learning
-            </h1>
-
-            <p
-              className="
-                mx-auto
-                mt-4
-                max-w-xl
-                text-base
-                leading-7
-                text-slate-600
-                dark:text-slate-300
-              "
-            >
-              Sign in to access your personalized
-              learning space.
-            </p>
-
-            <div className="mt-8">
-              <Link
-                href="/sign-in?redirect_url=/learning"
+              <p
                 className="
-                  inline-flex
-                  items-center
-                  justify-center
-                  rounded-xl
-                  bg-blue-700
-                  px-6
-                  py-3
+                  mb-3
                   text-sm
                   font-semibold
-                  text-white
-                  shadow-sm
-                  transition-all
-                  hover:bg-blue-800
-                  hover:shadow-md
-                  focus:outline-none
-                  focus:ring-2
-                  focus:ring-blue-500
-                  focus:ring-offset-2
-                  dark:bg-blue-600
-                  dark:hover:bg-blue-500
-                  dark:focus:ring-offset-slate-900
+                  uppercase
+                  tracking-widest
+                  text-blue-700
+                  dark:text-blue-400
                 "
               >
-                Sign In to Continue →
-              </Link>
-            </div>
-          </section>
+                Learning
+              </p>
+
+              <h1
+                className="
+                  text-3xl
+                  font-bold
+                  tracking-tight
+                  text-blue-900
+                  dark:text-blue-400
+                  sm:text-4xl
+                "
+              >
+                Please Sign In to Continue Your Learning
+              </h1>
+
+              <p
+                className="
+                  mx-auto
+                  mt-4
+                  max-w-xl
+                  text-base
+                  leading-7
+                  text-slate-600
+                  dark:text-slate-300
+                "
+              >
+                Sign in to access your personalized
+                learning space.
+              </p>
+
+              <div className="mt-8">
+                <Link
+                  href="/sign-in?redirect_url=/learning"
+                  className="
+                    inline-flex
+                    items-center
+                    justify-center
+                    rounded-xl
+                    bg-blue-700
+                    px-6
+                    py-3
+                    text-sm
+                    font-semibold
+                    text-white
+                    shadow-sm
+                    transition-all
+                    hover:bg-blue-800
+                    hover:shadow-md
+                    focus:outline-none
+                    focus:ring-2
+                    focus:ring-blue-500
+                    focus:ring-offset-2
+                    dark:bg-blue-600
+                    dark:hover:bg-blue-500
+                    dark:focus:ring-offset-slate-900
+                  "
+                >
+                  Sign In to Continue →
+                </Link>
+              </div>
+            </section>
+          </div>
         </div>
       </main>
     );
@@ -123,54 +132,58 @@ export default async function LearningPage() {
 
   if (!profile.program_id) {
     return (
-      <main className="px-6 py-20">
-        <div className="mx-auto max-w-3xl">
-          <section
-            className="
-              rounded-3xl
-              border
-              border-amber-200
-              bg-amber-50
-              p-8
-              dark:border-amber-900
-              dark:bg-amber-950/30
-            "
-          >
-            <h1
-              className="
-                text-2xl
-                font-bold
-                text-amber-900
-                dark:text-amber-300
-              "
-            >
-              Learning program not assigned
-            </h1>
+      <main className="relative isolate overflow-hidden bg-white dark:bg-slate-950 px-6 py-20">
+        <PageAtmosphere type="learning" />
 
-            <p
+        <div className="relative z-10">
+          <div className="mx-auto max-w-3xl">
+            <section
               className="
-                mt-3
-                leading-7
-                text-amber-800
-                dark:text-amber-200
+                rounded-3xl
+                border
+                border-amber-200
+                bg-amber-50
+                p-8
+                dark:border-amber-900
+                dark:bg-amber-950/30
               "
             >
-              Your student profile is complete, but no
-              learning class has been assigned to it yet.
-            </p>
+              <h1
+                className="
+                  text-2xl
+                  font-bold
+                  text-amber-900
+                  dark:text-amber-300
+                "
+              >
+                Learning program not assigned
+              </h1>
 
-            <p
-              className="
-                mt-2
-                text-sm
-                text-amber-700
-                dark:text-amber-300
-              "
-            >
-              Please contact the administrator to update
-              your learning profile.
-            </p>
-          </section>
+              <p
+                className="
+                  mt-3
+                  leading-7
+                  text-amber-800
+                  dark:text-amber-200
+                "
+              >
+                Your student profile is complete, but no
+                learning class has been assigned to it yet.
+              </p>
+
+              <p
+                className="
+                  mt-2
+                  text-sm
+                  text-amber-700
+                  dark:text-amber-300
+                "
+              >
+                Please contact the administrator to update
+                your learning profile.
+              </p>
+            </section>
+          </div>
         </div>
       </main>
     );
@@ -178,10 +191,18 @@ export default async function LearningPage() {
 
   /* =====================================================
    * Load Student Dashboard
+   *
+   * Existing MCQ dashboard remains unchanged.
+   *
+   * Subjective evaluations are loaded separately so we
+   * do not modify the existing dashboard service.
    * ===================================================== */
 
   const dashboard =
     await getStudentDashboard();
+
+  const subjectiveEvaluations =
+    await getStudentSubjectiveEvaluations();
 
   /* =====================================================
    * Determine existing class route
@@ -199,44 +220,219 @@ export default async function LearningPage() {
   const notesHref =
     `/learning/${classSlug}/notes`;
 
+  /*
+   * Subjective intentionally has its own student-facing
+   * entry point.
+   *
+   * It is NOT tied directly to the class route here.
+   *
+   * The Subjective Engine handles:
+   *
+   * Subjective
+   *   ↓
+   * Chapter-wise Practice
+   *   ↓
+   * Class
+   *   ↓
+   * Chapter
+   *   ↓
+   * Category
+   *   ↓
+   * Set
+   */
+
+  const subjectiveHref =
+    "/learning/subjective";
+
   /* =====================================================
    * Dashboard
    * ===================================================== */
 
   return (
-    <main className="px-6 py-12">
-      <div className="mx-auto max-w-6xl space-y-10">
+    <main className="relative isolate overflow-hidden bg-white dark:bg-slate-950 px-6 py-12">
+      <PageAtmosphere type="learning" />
 
-        {/* =================================================
-         * Welcome
-         * ================================================= */}
+      <div className="relative z-10">
+        <div className="mx-auto max-w-6xl space-y-10">
 
-        <section
-          className="
-            rounded-3xl
-            border
-            border-slate-200
-            bg-white
-            p-8
-            shadow-sm
-            dark:border-slate-800
-            dark:bg-slate-900
-            dark:shadow-none
-            sm:p-10
-            lg:p-12
-          "
-        >
-          <div
+          {/* =================================================
+           * Welcome
+           * ================================================= */}
+
+          <section
             className="
-              flex
-              flex-col
-              gap-8
-              sm:flex-row
-              sm:items-start
-              sm:justify-between
+              rounded-3xl
+              border
+              border-slate-200
+              bg-white
+              p-8
+              shadow-sm
+              dark:border-slate-800
+              dark:bg-slate-900
+              dark:shadow-none
+              sm:p-10
+              lg:p-12
             "
           >
-            <div className="max-w-3xl">
+            <div
+              className="
+                flex
+                flex-col
+                gap-8
+                sm:flex-row
+                sm:items-start
+                sm:justify-between
+              "
+            >
+              <div className="max-w-3xl">
+                <p
+                  className="
+                    text-sm
+                    font-semibold
+                    uppercase
+                    tracking-widest
+                    text-blue-700
+                    dark:text-blue-400
+                  "
+                >
+                  Your Learning Space
+                </p>
+
+                <h1
+                  className="
+                    mt-3
+                    text-4xl
+                    font-bold
+                    tracking-tight
+                    text-blue-900
+                    dark:text-blue-400
+                    sm:text-5xl
+                  "
+                >
+                  Welcome, {profile.full_name}
+                </h1>
+
+                <p
+                  className="
+                    mt-5
+                    max-w-2xl
+                    text-lg
+                    leading-8
+                    text-slate-600
+                    dark:text-slate-300
+                  "
+                >
+                  Learning is not about finishing more
+                  chapters. It is about understanding one
+                  thing a little more clearly than before.
+                </p>
+
+                <p
+                  className="
+                    mt-3
+                    text-base
+                    font-medium
+                    text-slate-800
+                    dark:text-slate-200
+                  "
+                >
+                  Choose where you want to begin.
+                </p>
+              </div>
+
+              <Link
+                href="/learning/settings"
+                className="
+                  inline-flex
+                  shrink-0
+                  items-center
+                  justify-center
+                  rounded-xl
+                  border
+                  border-slate-200
+                  px-4
+                  py-2.5
+                  text-sm
+                  font-semibold
+                  text-slate-700
+                  transition
+                  hover:border-blue-300
+                  hover:text-blue-700
+                  dark:border-slate-700
+                  dark:text-slate-300
+                  dark:hover:border-blue-500
+                  dark:hover:text-blue-400
+                "
+              >
+                Settings
+              </Link>
+            </div>
+
+            {/* Student context */}
+
+            <div className="mt-8 flex flex-wrap gap-3">
+              {dashboard.student.programName && (
+                <span
+                  className="
+                    rounded-full
+                    bg-blue-50
+                    px-4
+                    py-2
+                    text-sm
+                    font-medium
+                    text-blue-700
+                    dark:bg-blue-500/10
+                    dark:text-blue-400
+                  "
+                >
+                  {dashboard.student.programName}
+                </span>
+              )}
+
+              {dashboard.student.board && (
+                <span
+                  className="
+                    rounded-full
+                    bg-slate-100
+                    px-4
+                    py-2
+                    text-sm
+                    font-medium
+                    text-slate-700
+                    dark:bg-slate-800
+                    dark:text-slate-300
+                  "
+                >
+                  {dashboard.student.board}
+                </span>
+              )}
+
+              {dashboard.curriculum?.session && (
+                <span
+                  className="
+                    rounded-full
+                    bg-slate-100
+                    px-4
+                    py-2
+                    text-sm
+                    font-medium
+                    text-slate-700
+                    dark:bg-slate-800
+                    dark:text-slate-300
+                  "
+                >
+                  Session {dashboard.curriculum.session}
+                </span>
+              )}
+            </div>
+          </section>
+
+          {/* =================================================
+           * Choose Your Learning Path
+           * ================================================= */}
+
+          <section>
+            <div className="mb-5">
               <p
                 className="
                   text-sm
@@ -247,466 +443,928 @@ export default async function LearningPage() {
                   dark:text-blue-400
                 "
               >
-                Your Learning Space
+                Your Learning
               </p>
 
-              <h1
+              <h2
                 className="
-                  mt-3
-                  text-4xl
+                  mt-2
+                  text-2xl
                   font-bold
-                  tracking-tight
-                  text-blue-900
-                  dark:text-blue-400
-                  sm:text-5xl
+                  text-slate-900
+                  dark:text-slate-100
                 "
               >
-                Welcome, {profile.full_name}
-              </h1>
+                Where would you like to begin?
+              </h2>
 
               <p
                 className="
-                  mt-5
+                  mt-2
                   max-w-2xl
-                  text-lg
-                  leading-8
-                  text-slate-600
-                  dark:text-slate-300
+                  text-sm
+                  leading-6
+                  text-slate-500
+                  dark:text-slate-400
                 "
               >
-                Learning is not about finishing more
-                chapters. It is about understanding one
-                thing a little more clearly than before.
-              </p>
-
-              <p
-                className="
-                  mt-3
-                  text-base
-                  font-medium
-                  text-slate-800
-                  dark:text-slate-200
-                "
-              >
-                Choose where you want to begin.
+                Build understanding through notes, practise
+                what you know, or express your mathematical
+                thinking through written practice.
               </p>
             </div>
 
-            <Link
-              href="/learning/settings"
+            {/* =================================================
+             * Three Learning Pillars
+             * ================================================= */}
+
+            <div
               className="
-                inline-flex
-                shrink-0
-                items-center
-                justify-center
-                rounded-xl
-                border
-                border-slate-200
-                px-4
-                py-2.5
-                text-sm
-                font-semibold
-                text-slate-700
-                transition
-                hover:border-blue-300
-                hover:text-blue-700
-                dark:border-slate-700
-                dark:text-slate-300
-                dark:hover:border-blue-500
-                dark:hover:text-blue-400
+                grid
+                gap-5
+                md:grid-cols-2
+                lg:grid-cols-3
               "
             >
-              Settings
-            </Link>
-          </div>
 
-          {/* Student context */}
+              {/* =================================================
+               * MCQ Practice
+               * ================================================= */}
 
-          <div className="mt-8 flex flex-wrap gap-3">
-            {dashboard.student.programName && (
-              <span
+              <Link
+                href={mcqHref}
                 className="
-                  rounded-full
-                  bg-blue-50
-                  px-4
-                  py-2
-                  text-sm
-                  font-medium
-                  text-blue-700
-                  dark:bg-blue-500/10
-                  dark:text-blue-400
-                "
-              >
-                {dashboard.student.programName}
-              </span>
-            )}
-
-            {dashboard.student.board && (
-              <span
-                className="
-                  rounded-full
-                  bg-slate-100
-                  px-4
-                  py-2
-                  text-sm
-                  font-medium
-                  text-slate-700
-                  dark:bg-slate-800
-                  dark:text-slate-300
-                "
-              >
-                {dashboard.student.board}
-              </span>
-            )}
-
-            {dashboard.curriculum?.session && (
-              <span
-                className="
-                  rounded-full
-                  bg-slate-100
-                  px-4
-                  py-2
-                  text-sm
-                  font-medium
-                  text-slate-700
-                  dark:bg-slate-800
-                  dark:text-slate-300
-                "
-              >
-                Session {dashboard.curriculum.session}
-              </span>
-            )}
-          </div>
-        </section>
-
-        {/* =================================================
-         * Choose Your Learning Path
-         * ================================================= */}
-
-        <section>
-          <div className="mb-5">
-            <p
-              className="
-                text-sm
-                font-semibold
-                uppercase
-                tracking-widest
-                text-blue-700
-                dark:text-blue-400
-              "
-            >
-              Your Learning
-            </p>
-
-            <h2
-              className="
-                mt-2
-                text-2xl
-                font-bold
-                text-slate-900
-                dark:text-slate-100
-              "
-            >
-              Where would you like to begin?
-            </h2>
-
-            <p
-              className="
-                mt-2
-                max-w-2xl
-                text-sm
-                leading-6
-                text-slate-500
-                dark:text-slate-400
-              "
-            >
-              Build understanding through notes, or test
-              what you know through focused practice.
-            </p>
-          </div>
-
-          <div
-            className="
-              grid
-              gap-5
-              md:grid-cols-2
-            "
-          >
-            {/* MCQ Practice */}
-
-            <Link
-              href={mcqHref}
-              className="
-                group
-                rounded-3xl
-                border
-                border-slate-200
-                bg-white
-                p-7
-                shadow-sm
-                transition-all
-                hover:-translate-y-1
-                hover:border-blue-300
-                hover:shadow-md
-                dark:border-slate-800
-                dark:bg-slate-900
-                dark:shadow-none
-                dark:hover:border-blue-700
-              "
-            >
-              <div
-                className="
+                  group
                   flex
-                  h-12
-                  w-12
-                  items-center
-                  justify-center
-                  rounded-2xl
-                  bg-blue-50
-                  text-xl
-                  font-bold
-                  text-blue-700
-                  dark:bg-blue-500/10
-                  dark:text-blue-400
-                "
-              >
-                ?
-              </div>
-
-              <p
-                className="
-                  mt-6
-                  text-xs
-                  font-semibold
-                  uppercase
-                  tracking-widest
-                  text-blue-700
-                  dark:text-blue-400
-                "
-              >
-                Practice
-              </p>
-
-              <h3
-                className="
-                  mt-2
-                  text-2xl
-                  font-bold
-                  text-slate-900
-                  dark:text-slate-100
-                "
-              >
-                MCQ Practice
-              </h3>
-
-              <p
-                className="
-                  mt-3
-                  max-w-md
-                  text-sm
-                  leading-6
-                  text-slate-600
-                  dark:text-slate-400
-                "
-              >
-                Practice chapter-wise questions, track your
-                performance, and understand where you need
-                more attention.
-              </p>
-
-              <span
-                className="
-                  mt-6
-                  inline-flex
-                  items-center
-                  text-sm
-                  font-semibold
-                  text-blue-700
-                  transition
-                  group-hover:gap-2
-                  dark:text-blue-400
-                "
-              >
-                Explore MCQs
-                <span className="ml-1">→</span>
-              </span>
-            </Link>
-
-            {/* Notes */}
-
-            <Link
-              href={notesHref}
-              className="
-                group
-                rounded-3xl
-                border
-                border-slate-200
-                bg-white
-                p-7
-                shadow-sm
-                transition-all
-                hover:-translate-y-1
-                hover:border-blue-300
-                hover:shadow-md
-                dark:border-slate-800
-                dark:bg-slate-900
-                dark:shadow-none
-                dark:hover:border-blue-700
-              "
-            >
-              <div
-                className="
-                  flex
-                  h-12
-                  w-12
-                  items-center
-                  justify-center
-                  rounded-2xl
-                  bg-blue-50
-                  text-xl
-                  font-bold
-                  text-blue-700
-                  dark:bg-blue-500/10
-                  dark:text-blue-400
-                "
-              >
-                ◫
-              </div>
-
-              <p
-                className="
-                  mt-6
-                  text-xs
-                  font-semibold
-                  uppercase
-                  tracking-widest
-                  text-blue-700
-                  dark:text-blue-400
-                "
-              >
-                Understand
-              </p>
-
-              <h3
-                className="
-                  mt-2
-                  text-2xl
-                  font-bold
-                  text-slate-900
-                  dark:text-slate-100
-                "
-              >
-                Notes
-              </h3>
-
-              <p
-                className="
-                  mt-3
-                  max-w-md
-                  text-sm
-                  leading-6
-                  text-slate-600
-                  dark:text-slate-400
-                "
-              >
-                Explore chapter-wise notes designed to
-                build conceptual clarity before you begin
-                practicing.
-              </p>
-
-              <span
-                className="
-                  mt-6
-                  inline-flex
-                  items-center
-                  text-sm
-                  font-semibold
-                  text-blue-700
-                  transition
-                  group-hover:gap-2
-                  dark:text-blue-400
-                "
-              >
-                Explore Notes
-                <span className="ml-1">→</span>
-              </span>
-            </Link>
-          </div>
-        </section>
-
-        {/* =================================================
-         * Continue Learning
-         * ================================================= */}
-
-        {dashboard.continueLearning &&
-          dashboard.continueLearning.tests?.resource_id && (
-            <section
-              className="
-                rounded-2xl
-                border
-                border-blue-200
-                bg-blue-50
-                p-6
-                dark:border-blue-900
-                dark:bg-blue-950/30
-              "
-            >
-              <p
-                className="
-                  text-sm
-                  font-semibold
-                  uppercase
-                  tracking-widest
-                  text-blue-700
-                  dark:text-blue-400
-                "
-              >
-                Continue Learning
-              </p>
-
-              <div
-                className="
-                  mt-3
-                  flex
+                  h-full
                   flex-col
-                  gap-4
-                  sm:flex-row
-                  sm:items-center
-                  sm:justify-between
+                  rounded-3xl
+                  border
+                  border-slate-200
+                  bg-white
+                  p-7
+                  shadow-sm
+                  transition-all
+                  hover:-translate-y-1
+                  hover:border-blue-300
+                  hover:shadow-md
+                  dark:border-slate-800
+                  dark:bg-slate-900
+                  dark:shadow-none
+                  dark:hover:border-blue-700
                 "
               >
-                <div>
-                  <h2
-                    className="
-                      text-xl
-                      font-bold
-                      text-blue-900
-                      dark:text-blue-300
-                    "
-                  >
-                    {dashboard.continueLearning.tests.title ??
-                      "Practice Test"}
-                  </h2>
-
-                  <p
-                    className="
-                      mt-1
-                      text-sm
-                      text-blue-800
-                      dark:text-blue-200
-                    "
-                  >
-                    Attempt{" "}
-                    {dashboard.continueLearning.attempt_number}{" "}
-                    is still in progress.
-                  </p>
+                <div
+                  className="
+                    flex
+                    h-12
+                    w-12
+                    items-center
+                    justify-center
+                    rounded-2xl
+                    bg-blue-50
+                    text-xl
+                    font-bold
+                    text-blue-700
+                    dark:bg-blue-500/10
+                    dark:text-blue-400
+                  "
+                >
+                  ?
                 </div>
 
-                <Link
-                  href={`/learning/resources/${dashboard.continueLearning.tests.resource_id}/practice?attemptId=${encodeURIComponent(
-                    dashboard.continueLearning.id
-                  )}`}
+                <p
                   className="
+                    mt-6
+                    text-xs
+                    font-semibold
+                    uppercase
+                    tracking-widest
+                    text-blue-700
+                    dark:text-blue-400
+                  "
+                >
+                  Practice
+                </p>
+
+                <h3
+                  className="
+                    mt-2
+                    text-2xl
+                    font-bold
+                    text-slate-900
+                    dark:text-slate-100
+                  "
+                >
+                  MCQ Practice
+                </h3>
+
+                <p
+                  className="
+                    mt-3
+                    max-w-md
+                    flex-1
+                    text-sm
+                    leading-6
+                    text-slate-600
+                    dark:text-slate-400
+                  "
+                >
+                  Practice chapter-wise questions, track your
+                  performance, and understand where you need
+                  more attention.
+                </p>
+
+                <span
+                  className="
+                    mt-6
+                    inline-flex
+                    items-center
+                    text-sm
+                    font-semibold
+                    text-blue-700
+                    transition
+                    group-hover:gap-2
+                    dark:text-blue-400
+                  "
+                >
+                  Explore MCQs
+                  <span className="ml-1">→</span>
+                </span>
+              </Link>
+
+              {/* =================================================
+               * Notes
+               * ================================================= */}
+
+              <Link
+                href={notesHref}
+                className="
+                  group
+                  flex
+                  h-full
+                  flex-col
+                  rounded-3xl
+                  border
+                  border-slate-200
+                  bg-white
+                  p-7
+                  shadow-sm
+                  transition-all
+                  hover:-translate-y-1
+                  hover:border-blue-300
+                  hover:shadow-md
+                  dark:border-slate-800
+                  dark:bg-slate-900
+                  dark:shadow-none
+                  dark:hover:border-blue-700
+                "
+              >
+                <div
+                  className="
+                    flex
+                    h-12
+                    w-12
+                    items-center
+                    justify-center
+                    rounded-2xl
+                    bg-blue-50
+                    text-xl
+                    font-bold
+                    text-blue-700
+                    dark:bg-blue-500/10
+                    dark:text-blue-400
+                  "
+                >
+                  ◫
+                </div>
+
+                <p
+                  className="
+                    mt-6
+                    text-xs
+                    font-semibold
+                    uppercase
+                    tracking-widest
+                    text-blue-700
+                    dark:text-blue-400
+                  "
+                >
+                  Understand
+                </p>
+
+                <h3
+                  className="
+                    mt-2
+                    text-2xl
+                    font-bold
+                    text-slate-900
+                    dark:text-slate-100
+                  "
+                >
+                  Notes
+                </h3>
+
+                <p
+                  className="
+                    mt-3
+                    max-w-md
+                    flex-1
+                    text-sm
+                    leading-6
+                    text-slate-600
+                    dark:text-slate-400
+                  "
+                >
+                  Explore chapter-wise notes designed to
+                  build conceptual clarity before you begin
+                  practicing.
+                </p>
+
+                <span
+                  className="
+                    mt-6
+                    inline-flex
+                    items-center
+                    text-sm
+                    font-semibold
+                    text-blue-700
+                    transition
+                    group-hover:gap-2
+                    dark:text-blue-400
+                  "
+                >
+                  Explore Notes
+                  <span className="ml-1">→</span>
+                </span>
+              </Link>
+
+              {/* =================================================
+               * Subjective Questions
+               * ================================================= */}
+
+              <Link
+                href={subjectiveHref}
+                className="
+                  group
+                  flex
+                  h-full
+                  flex-col
+                  rounded-3xl
+                  border
+                  border-slate-200
+                  bg-white
+                  p-7
+                  shadow-sm
+                  transition-all
+                  hover:-translate-y-1
+                  hover:border-blue-300
+                  hover:shadow-md
+                  dark:border-slate-800
+                  dark:bg-slate-900
+                  dark:shadow-none
+                  dark:hover:border-blue-700
+                "
+              >
+                <div
+                  className="
+                    flex
+                    h-12
+                    w-12
+                    items-center
+                    justify-center
+                    rounded-2xl
+                    bg-blue-50
+                    text-xl
+                    font-bold
+                    text-blue-700
+                    dark:bg-blue-500/10
+                    dark:text-blue-400
+                  "
+                >
+                  ✎
+                </div>
+
+                <p
+                  className="
+                    mt-6
+                    text-xs
+                    font-semibold
+                    uppercase
+                    tracking-widest
+                    text-blue-700
+                    dark:text-blue-400
+                  "
+                >
+                  Think & Write
+                </p>
+
+                <h3
+                  className="
+                    mt-2
+                    text-2xl
+                    font-bold
+                    text-slate-900
+                    dark:text-slate-100
+                  "
+                >
+                  Subjective Questions
+                </h3>
+
+                <p
+                  className="
+                    mt-3
+                    max-w-md
+                    flex-1
+                    text-sm
+                    leading-6
+                    text-slate-600
+                    dark:text-slate-400
+                  "
+                >
+                  Solve questions in your own words, express
+                  your mathematical thinking, and improve
+                  through guided feedback.
+                </p>
+
+                <span
+                  className="
+                    mt-6
+                    inline-flex
+                    items-center
+                    text-sm
+                    font-semibold
+                    text-blue-700
+                    transition
+                    group-hover:gap-2
+                    dark:text-blue-400
+                  "
+                >
+                  Explore Subjective
+                  <span className="ml-1">→</span>
+                </span>
+              </Link>
+
+            </div>
+          </section>
+
+          {/* =================================================
+           * Continue Learning
+           * ================================================= */}
+
+          {dashboard.continueLearning &&
+            dashboard.continueLearning.tests?.resource_id && (
+              <section
+                className="
+                  rounded-2xl
+                  border
+                  border-blue-200
+                  bg-blue-50
+                  p-6
+                  dark:border-blue-900
+                  dark:bg-blue-950/30
+                "
+              >
+                <p
+                  className="
+                    text-sm
+                    font-semibold
+                    uppercase
+                    tracking-widest
+                    text-blue-700
+                    dark:text-blue-400
+                  "
+                >
+                  Continue Learning
+                </p>
+
+                <div
+                  className="
+                    mt-3
+                    flex
+                    flex-col
+                    gap-4
+                    sm:flex-row
+                    sm:items-center
+                    sm:justify-between
+                  "
+                >
+                  <div>
+                    <h2
+                      className="
+                        text-xl
+                        font-bold
+                        text-blue-900
+                        dark:text-blue-300
+                      "
+                    >
+                      {dashboard.continueLearning.tests.title ??
+                        "Practice Test"}
+                    </h2>
+
+                    <p
+                      className="
+                        mt-1
+                        text-sm
+                        text-blue-800
+                        dark:text-blue-200
+                      "
+                    >
+                      Attempt{" "}
+                      {dashboard.continueLearning.attempt_number}{" "}
+                      is still in progress.
+                    </p>
+                  </div>
+
+                  <Link
+                    href={`/learning/resources/${dashboard.continueLearning.tests.resource_id}/practice?attemptId=${encodeURIComponent(
+                      dashboard.continueLearning.id
+                    )}`}
+                    className="
+                      inline-flex
+                      items-center
+                      justify-center
+                      rounded-xl
+                      bg-blue-700
+                      px-5
+                      py-2.5
+                      font-semibold
+                      text-white
+                      transition
+                      hover:bg-blue-800
+                      dark:bg-blue-600
+                      dark:hover:bg-blue-500
+                    "
+                  >
+                    Continue →
+                  </Link>
+                </div>
+              </section>
+            )}
+
+          {/* =================================================
+           * Progress
+           * ================================================= */}
+
+          <section>
+            <div className="mb-5">
+              <p
+                className="
+                  text-sm
+                  font-semibold
+                  uppercase
+                  tracking-widest
+                  text-blue-700
+                  dark:text-blue-400
+                "
+              >
+                Your Progress
+              </p>
+
+              <h2
+                className="
+                  mt-2
+                  text-2xl
+                  font-bold
+                  text-slate-900
+                  dark:text-slate-100
+                "
+              >
+                Keep moving forward
+              </h2>
+            </div>
+
+            <div
+              className="
+                grid
+                gap-4
+                sm:grid-cols-2
+                lg:grid-cols-4
+              "
+            >
+              <StatCard
+                label="Tests Attempted"
+                value={
+                  dashboard.stats.testsAttempted
+                }
+              />
+
+              <StatCard
+                label="Tests Completed"
+                value={
+                  dashboard.stats.testsCompleted
+                }
+              />
+
+              <StatCard
+                label="Average Score"
+                value={
+                  dashboard.stats.averagePercentage !==
+                  null
+                    ? `${dashboard.stats.averagePercentage}%`
+                    : "—"
+                }
+              />
+
+              <StatCard
+                label="Questions Answered"
+                value={
+                  dashboard.stats.questionsAnswered
+                }
+              />
+            </div>
+          </section>
+
+
+          {/* =================================================
+           * Checked Subjective Evaluations
+           *
+           * IMPORTANT:
+           * Student sees only learning outcome.
+           *
+           * No AI/manual/internal evaluation information.
+           * ================================================= */}
+
+          <section
+            className="
+              rounded-3xl
+              border
+              border-slate-200
+              bg-white
+              p-6
+              shadow-sm
+              dark:border-slate-800
+              dark:bg-slate-900
+              dark:shadow-none
+              sm:p-8
+            "
+          >
+            <div
+              className="
+                flex
+                flex-col
+                gap-3
+                sm:flex-row
+                sm:items-end
+                sm:justify-between
+              "
+            >
+              <div>
+                <p
+                  className="
+                    text-sm
+                    font-semibold
+                    uppercase
+                    tracking-widest
+                    text-blue-700
+                    dark:text-blue-400
+                  "
+                >
+                  Subjective
+                </p>
+
+                <h2
+                  className="
+                    mt-2
+                    text-2xl
+                    font-bold
+                    text-slate-900
+                    dark:text-slate-100
+                  "
+                >
+                  Checked Evaluations
+                </h2>
+
+                <p
+                  className="
+                    mt-2
+                    max-w-2xl
+                    text-sm
+                    leading-6
+                    text-slate-500
+                    dark:text-slate-400
+                  "
+                >
+                  Your checked answer sheets, marks, teacher
+                  feedback and ideal solutions.
+                </p>
+              </div>
+
+              <span
+                className="
+                  inline-flex
+                  w-fit
+                  items-center
+                  rounded-full
+                  border
+                  border-slate-200
+                  bg-slate-50
+                  px-3
+                  py-1.5
+                  text-xs
+                  font-medium
+                  text-slate-600
+                  dark:border-slate-700
+                  dark:bg-slate-800
+                  dark:text-slate-300
+                "
+              >
+                {subjectiveEvaluations.length} evaluated
+              </span>
+            </div>
+
+
+            {subjectiveEvaluations.length === 0 ? (
+              <div
+                className="
+                  mt-6
+                  rounded-2xl
+                  border
+                  border-dashed
+                  border-slate-300
+                  bg-slate-50
+                  p-6
+                  text-center
+                  dark:border-slate-700
+                  dark:bg-slate-950
+                "
+              >
+                <p
+                  className="
+                    text-sm
+                    font-semibold
+                    text-slate-800
+                    dark:text-slate-200
+                  "
+                >
+                  No checked assignment yet.
+                </p>
+
+                <p
+                  className="
+                    mt-2
+                    text-sm
+                    leading-6
+                    text-slate-500
+                    dark:text-slate-400
+                  "
+                >
+                  Once your teacher finishes checking an
+                  assignment, it will appear here.
+                </p>
+              </div>
+            ) : (
+              <div className="mt-6 space-y-3">
+                {subjectiveEvaluations.map(
+                  (evaluation) => {
+                    const percentage =
+                      evaluation.max_marks > 0
+                        ? Math.round(
+                            (evaluation.final_marks /
+                              evaluation.max_marks) *
+                              100,
+                          )
+                        : 0;
+
+                    return (
+                      <Link
+                        key={evaluation.attempt_id}
+                        href={`/learning/subjective/evaluations/${encodeURIComponent(
+                          evaluation.attempt_id
+                        )}`}
+                        className="
+                          group
+                          block
+                          rounded-2xl
+                          border
+                          border-slate-200
+                          bg-white
+                          p-5
+                          transition-all
+                          hover:-translate-y-0.5
+                          hover:border-blue-300
+                          hover:bg-blue-50/30
+                          hover:shadow-sm
+                          dark:border-slate-700
+                          dark:bg-slate-900
+                          dark:hover:border-blue-700
+                          dark:hover:bg-blue-950/20
+                        "
+                      >
+                        <div
+                          className="
+                            flex
+                            flex-col
+                            gap-4
+                            sm:flex-row
+                            sm:items-center
+                            sm:justify-between
+                          "
+                        >
+                          {/* Assignment information */}
+
+                          <div className="min-w-0">
+                            <h3
+                              className="
+                                truncate
+                                text-base
+                                font-semibold
+                                text-slate-900
+                                dark:text-white
+                              "
+                            >
+                              {evaluation.set_title}
+                            </h3>
+
+                            <p
+                              className="
+                                mt-1
+                                text-sm
+                                text-slate-500
+                                dark:text-slate-400
+                              "
+                            >
+                              {evaluation.question_count}{" "}
+                              questions
+                              {" • "}
+                              Attempt{" "}
+                              {evaluation.attempt_number}
+                            </p>
+
+                            {evaluation.evaluated_at && (
+                              <p
+                                className="
+                                  mt-2
+                                  text-xs
+                                  text-slate-400
+                                "
+                              >
+                                Checked on{" "}
+                                {formatAttemptDate(
+                                  evaluation.evaluated_at
+                                )}
+                              </p>
+                            )}
+                          </div>
+
+
+                          {/* Result */}
+
+                          <div
+                            className="
+                              flex
+                              items-center
+                              gap-5
+                              sm:shrink-0
+                            "
+                          >
+                            <div className="text-right">
+                              <p
+                                className="
+                                  text-lg
+                                  font-bold
+                                  text-slate-900
+                                  dark:text-white
+                                "
+                              >
+                                {evaluation.final_marks}
+                                {" / "}
+                                {evaluation.max_marks}
+                              </p>
+
+                              <p
+                                className="
+                                  text-xs
+                                  text-slate-500
+                                  dark:text-slate-400
+                                "
+                              >
+                                {percentage}%
+                              </p>
+                            </div>
+
+                            <span
+                              className="
+                                inline-flex
+                                items-center
+                                rounded-xl
+                                bg-blue-700
+                                px-3
+                                py-2
+                                text-xs
+                                font-semibold
+                                text-white
+                                transition
+                                group-hover:bg-blue-800
+                                dark:bg-blue-600
+                                dark:group-hover:bg-blue-500
+                              "
+                            >
+                              Review →
+                            </span>
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  },
+                )}
+              </div>
+            )}
+          </section>
+
+
+          {/* =================================================
+           * Detailed Attempt History
+           *
+           * Existing MCQ history remains untouched.
+           * Subjective checked evaluations are displayed
+           * separately above.
+           * ================================================= */}
+
+          <section>
+            <div className="mb-5">
+              <p
+                className="
+                  text-sm
+                  font-semibold
+                  uppercase
+                  tracking-widest
+                  text-blue-700
+                  dark:text-blue-400
+                "
+              >
+                Attempt History
+              </p>
+
+              <h2
+                className="
+                  mt-2
+                  text-2xl
+                  font-bold
+                  text-slate-900
+                  dark:text-slate-100
+                "
+              >
+                Your Practice Journey
+              </h2>
+
+              <p
+                className="
+                  mt-2
+                  max-w-2xl
+                  text-sm
+                  leading-6
+                  text-slate-500
+                  dark:text-slate-400
+                "
+              >
+                See how you performed in each MCQ set,
+                attempt by attempt.
+              </p>
+            </div>
+
+            {dashboard.recentAttempts.length === 0 ? (
+              <section
+                className="
+                  rounded-3xl
+                  border
+                  border-dashed
+                  border-slate-300
+                  bg-white
+                  p-8
+                  text-center
+                  dark:border-slate-700
+                  dark:bg-slate-900
+                "
+              >
+                <p
+                  className="
+                    text-base
+                    font-semibold
+                    text-slate-800
+                    dark:text-slate-200
+                  "
+                >
+                  No attempts yet
+                </p>
+
+                <p
+                  className="
+                    mt-2
+                    text-sm
+                    leading-6
+                    text-slate-500
+                    dark:text-slate-400
+                  "
+                >
+                  Start an MCQ practice set and your
+                  performance will appear here.
+                </p>
+
+                <Link
+                  href={mcqHref}
+                  className="
+                    mt-5
                     inline-flex
                     items-center
                     justify-center
@@ -714,6 +1372,7 @@ export default async function LearningPage() {
                     bg-blue-700
                     px-5
                     py-2.5
+                    text-sm
                     font-semibold
                     text-white
                     transition
@@ -722,212 +1381,29 @@ export default async function LearningPage() {
                     dark:hover:bg-blue-500
                   "
                 >
-                  Continue →
+                  Start Practice →
                 </Link>
+              </section>
+            ) : (
+              <div className="space-y-4">
+                {dashboard.recentAttempts.map(
+                  (attempt) => (
+                    <AttemptHistoryCard
+                      key={attempt.id}
+                      attempt={attempt}
+                    />
+                  )
+                )}
               </div>
-            </section>
-          )}
+            )}
+          </section>
 
-        {/* =================================================
-         * Progress
-         * ================================================= */}
-
-        <section>
-          <div className="mb-5">
-            <p
-              className="
-                text-sm
-                font-semibold
-                uppercase
-                tracking-widest
-                text-blue-700
-                dark:text-blue-400
-              "
-            >
-              Your Progress
-            </p>
-
-            <h2
-              className="
-                mt-2
-                text-2xl
-                font-bold
-                text-slate-900
-                dark:text-slate-100
-              "
-            >
-              Keep moving forward
-            </h2>
-          </div>
-
-          <div
-            className="
-              grid
-              gap-4
-              sm:grid-cols-2
-              lg:grid-cols-4
-            "
-          >
-            <StatCard
-              label="Tests Attempted"
-              value={
-                dashboard.stats.testsAttempted
-              }
-            />
-
-            <StatCard
-              label="Tests Completed"
-              value={
-                dashboard.stats.testsCompleted
-              }
-            />
-
-            <StatCard
-              label="Average Score"
-              value={
-                dashboard.stats.averagePercentage !==
-                null
-                  ? `${dashboard.stats.averagePercentage}%`
-                  : "—"
-              }
-            />
-
-            <StatCard
-              label="Questions Answered"
-              value={
-                dashboard.stats.questionsAnswered
-              }
-            />
-          </div>
-        </section>
-
-        {/* =================================================
-         * Detailed Attempt History
-         *
-         * This is the new part.
-         * ================================================= */}
-
-        <section>
-          <div className="mb-5">
-            <p
-              className="
-                text-sm
-                font-semibold
-                uppercase
-                tracking-widest
-                text-blue-700
-                dark:text-blue-400
-              "
-            >
-              Attempt History
-            </p>
-
-            <h2
-              className="
-                mt-2
-                text-2xl
-                font-bold
-                text-slate-900
-                dark:text-slate-100
-              "
-            >
-              Your Practice Journey
-            </h2>
-
-            <p
-              className="
-                mt-2
-                max-w-2xl
-                text-sm
-                leading-6
-                text-slate-500
-                dark:text-slate-400
-              "
-            >
-              See how you performed in each MCQ set,
-              attempt by attempt.
-            </p>
-          </div>
-
-          {dashboard.recentAttempts.length === 0 ? (
-            <section
-              className="
-                rounded-3xl
-                border
-                border-dashed
-                border-slate-300
-                bg-white
-                p-8
-                text-center
-                dark:border-slate-700
-                dark:bg-slate-900
-              "
-            >
-              <p
-                className="
-                  text-base
-                  font-semibold
-                  text-slate-800
-                  dark:text-slate-200
-                "
-              >
-                No attempts yet
-              </p>
-
-              <p
-                className="
-                  mt-2
-                  text-sm
-                  leading-6
-                  text-slate-500
-                  dark:text-slate-400
-                "
-              >
-                Start an MCQ practice set and your
-                performance will appear here.
-              </p>
-
-              <Link
-                href={mcqHref}
-                className="
-                  mt-5
-                  inline-flex
-                  items-center
-                  justify-center
-                  rounded-xl
-                  bg-blue-700
-                  px-5
-                  py-2.5
-                  text-sm
-                  font-semibold
-                  text-white
-                  transition
-                  hover:bg-blue-800
-                  dark:bg-blue-600
-                  dark:hover:bg-blue-500
-                "
-              >
-                Start Practice →
-              </Link>
-            </section>
-          ) : (
-            <div className="space-y-4">
-              {dashboard.recentAttempts.map(
-                (attempt) => (
-                  <AttemptHistoryCard
-                    key={attempt.id}
-                    attempt={attempt}
-                  />
-                )
-              )}
-            </div>
-          )}
-        </section>
-
+        </div>
       </div>
     </main>
   );
 }
+
 
 /* =========================================================
  * Attempt History Card
@@ -1210,6 +1686,7 @@ function AttemptHistoryCard({
   );
 }
 
+
 /* =========================================================
  * Attempt Metric
  * ========================================================= */
@@ -1259,6 +1736,7 @@ function AttemptMetric({
     </div>
   );
 }
+
 
 /* =========================================================
  * Stat Card
@@ -1310,6 +1788,7 @@ function StatCard({
   );
 }
 
+
 /* =========================================================
  * Attempt Date Formatter
  * ========================================================= */
@@ -1337,6 +1816,7 @@ function formatAttemptDate(
     }
   ).format(date);
 }
+
 
 /* =========================================================
  * Convert program name to existing learning route slug

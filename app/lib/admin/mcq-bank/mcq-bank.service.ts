@@ -27,21 +27,33 @@ export type AdminMcqRevision = {
   options: AdminMcqRevisionOption[];
 };
 
+/* =========================================================
+ * Attached MCQ Set
+ * =========================================================
+ *
+ * Shows which MCQ Sets currently use a question.
+ *
+ * Example:
+ *
+ * Question #1
+ *   └── Set 1
+ *   └── Set 20
+ *
+ * A question can belong to multiple Sets.
+ * ========================================================= */
+
+export type AdminMcqAttachedSet = {
+  resource_id: string;
+  title: string;
+  set_number: number | null;
+  status: string;
+};
+
 export type AdminMcq = {
   id: string;
 
   /*
    * Stable admin-facing question number.
-   *
-   * This is the human-readable identifier shown
-   * inside the Admin MCQ Bank.
-   *
-   * Example:
-   * Question #1
-   * Question #7
-   * Question #15
-   *
-   * This is intentionally separate from the UUID.
    */
   admin_question_number: number;
 
@@ -69,15 +81,6 @@ export type AdminMcq = {
 
   /*
    * Curriculum context.
-   *
-   * These fields allow the admin MCQ Bank UI
-   * to organize questions as:
-   *
-   * Class
-   *   ↓
-   * Chapter
-   *   ↓
-   * MCQs
    */
   curriculum_node_id: string | null;
 
@@ -88,6 +91,14 @@ export type AdminMcq = {
   class_name: string | null;
 
   class_slug: string | null;
+
+  /*
+   * MCQ Set usage.
+   *
+   * One question may be reused across multiple
+   * MCQ Sets.
+   */
+  attached_sets: AdminMcqAttachedSet[];
 };
 
 export type AdminMcqOption = AdminMcqRevisionOption;
@@ -126,12 +137,6 @@ export type AdminMcqDetail = {
 
   /*
    * Compatibility field.
-   *
-   * For revision-based MCQs this comes from
-   * question_revision_options.
-   *
-   * For legacy questions it falls back to
-   * question_mcq_options.
    */
   options: AdminMcqOption[];
 
@@ -144,6 +149,11 @@ export type AdminMcqDetail = {
   class_name: string | null;
 
   class_slug: string | null;
+
+  /*
+   * MCQ Set usage.
+   */
+  attached_sets: AdminMcqAttachedSet[];
 };
 
 /* =========================================================
@@ -165,20 +175,6 @@ export async function getAdminMcqs(): Promise<AdminMcq[]> {
 
   /* -------------------------------------------------------
    * 3. Load MCQ questions
-   *
-   * IMPORTANT:
-   *
-   * admin_question_number is loaded directly from the
-   * questions table and is preserved throughout the
-   * service response.
-   *
-   * This allows the Admin UI to display:
-   *
-   * Question #1
-   * Question #2
-   * Question #15
-   *
-   * instead of exposing a UUID fragment.
    * ------------------------------------------------------- */
 
   const {
@@ -228,6 +224,7 @@ export async function getAdminMcqs(): Promise<AdminMcq[]> {
       | "chapter_sequence_order"
       | "class_name"
       | "class_slug"
+      | "attached_sets"
     >
   >;
 
@@ -235,16 +232,13 @@ export async function getAdminMcqs(): Promise<AdminMcq[]> {
     return [];
   }
 
-  /* -------------------------------------------------------
-   * 4. Load question → curriculum mappings
-   *
-   * One MCQ may be reused later, but the current authoring
-   * workflow maps each question to its curriculum chapter.
-   * ------------------------------------------------------- */
-
   const questionIds = questions.map(
     (question) => question.id
   );
+
+  /* -------------------------------------------------------
+   * 4. Load question → curriculum mappings
+   * ------------------------------------------------------- */
 
   const {
     data: curriculumMappings,
@@ -487,20 +481,6 @@ export async function getAdminMcqs(): Promise<AdminMcq[]> {
 
   /* -------------------------------------------------------
    * 9. Load latest revision for every MCQ
-   *
-   * IMPORTANT:
-   *
-   * The MCQ Bank must show the authoritative authoring
-   * content.
-   *
-   * A newly created MCQ has:
-   *
-   * current_revision_id = NULL
-   *
-   * while its first revision is DRAFT.
-   *
-   * Therefore the list cannot depend only on
-   * questions.current_revision_id.
    * ------------------------------------------------------- */
 
   const {
@@ -537,7 +517,7 @@ export async function getAdminMcqs(): Promise<AdminMcq[]> {
   }
 
   /* -------------------------------------------------------
-   * 10. Keep only the latest revision per question
+   * 10. Keep only latest revision per question
    * ------------------------------------------------------- */
 
   const latestRevisionByQuestionId =
@@ -569,7 +549,324 @@ export async function getAdminMcqs(): Promise<AdminMcq[]> {
   }
 
   /* -------------------------------------------------------
-   * 11. Build final MCQ list
+   * 11. Load question → MCQ Set relationships
+   *
+   * Relationship:
+   *
+   * questions
+   *    ↓
+   * test_questions
+   *    ↓
+   * tests
+   *    ↓
+   * resources
+   *
+   * A single question may be attached to many Sets.
+   * ------------------------------------------------------- */
+
+  const {
+    data: testQuestionRows,
+    error: testQuestionRowsError,
+  } = await supabase
+    .from("test_questions")
+    .select(
+      `
+        question_id,
+        test_id
+      `
+    )
+    .in(
+      "question_id",
+      questionIds
+    );
+
+  if (testQuestionRowsError) {
+    throw new Error(
+      `Failed to load MCQ Set attachments: ${testQuestionRowsError.message}`
+    );
+  }
+
+  /* -------------------------------------------------------
+   * 12. Build question → test IDs lookup
+   * ------------------------------------------------------- */
+
+  const testIds = [
+    ...new Set(
+      (testQuestionRows ?? []).map(
+        (row) => row.test_id
+      )
+    ),
+  ];
+
+  const testIdsByQuestionId =
+    new Map<
+      string,
+      string[]
+    >();
+
+  for (
+    const row of
+      testQuestionRows ?? []
+  ) {
+    const existing =
+      testIdsByQuestionId.get(
+        row.question_id
+      ) ?? [];
+
+    if (
+      !existing.includes(
+        row.test_id
+      )
+    ) {
+      existing.push(
+        row.test_id
+      );
+    }
+
+    testIdsByQuestionId.set(
+      row.question_id,
+      existing
+    );
+  }
+
+  /* -------------------------------------------------------
+   * 13. Load linked MCQ tests
+   * ------------------------------------------------------- */
+
+  const testById =
+    new Map<
+      string,
+      {
+        id: string;
+        resource_id: string;
+        test_type: string;
+      }
+    >();
+
+  if (
+    testIds.length > 0
+  ) {
+    const {
+      data: tests,
+      error: testsError,
+    } = await supabase
+      .from("tests")
+      .select(
+        `
+          id,
+          resource_id,
+          test_type
+        `
+      )
+      .in(
+        "id",
+        testIds
+      )
+      .eq(
+        "test_type",
+        "MCQ"
+      );
+
+    if (testsError) {
+      throw new Error(
+        `Failed to load MCQ Set tests: ${testsError.message}`
+      );
+    }
+
+    for (
+      const test of
+        tests ?? []
+    ) {
+      testById.set(
+        test.id,
+        test
+      );
+    }
+  }
+
+  /* -------------------------------------------------------
+   * 14. Load MCQ Set resources
+   * ------------------------------------------------------- */
+
+  const resourceIds = [
+    ...new Set(
+      Array.from(
+        testById.values()
+      ).map(
+        (test) =>
+          test.resource_id
+      )
+    ),
+  ];
+
+  const resourceById =
+    new Map<
+      string,
+      {
+        id: string;
+        title: string;
+        set_number: number | null;
+        status: string;
+        resource_type: string;
+      }
+    >();
+
+  if (
+    resourceIds.length > 0
+  ) {
+    const {
+      data: resources,
+      error: resourcesError,
+    } = await supabase
+      .from("resources")
+      .select(
+        `
+          id,
+          title,
+          set_number,
+          status,
+          resource_type
+        `
+      )
+      .in(
+        "id",
+        resourceIds
+      )
+      .eq(
+        "resource_type",
+        "MCQ"
+      );
+
+    if (resourcesError) {
+      throw new Error(
+        `Failed to load MCQ Set resources: ${resourcesError.message}`
+      );
+    }
+
+    for (
+      const resource of
+        resources ?? []
+    ) {
+      resourceById.set(
+        resource.id,
+        resource
+      );
+    }
+  }
+
+  /* -------------------------------------------------------
+   * 15. Build question → attached Sets lookup
+   * ------------------------------------------------------- */
+
+  const attachedSetsByQuestionId =
+    new Map<
+      string,
+      AdminMcqAttachedSet[]
+    >();
+
+  for (
+    const row of
+      testQuestionRows ?? []
+  ) {
+    const test =
+      testById.get(
+        row.test_id
+      );
+
+    if (!test) {
+      continue;
+    }
+
+    const resource =
+      resourceById.get(
+        test.resource_id
+      );
+
+    if (!resource) {
+      continue;
+    }
+
+    const attachedSets =
+      attachedSetsByQuestionId.get(
+        row.question_id
+      ) ?? [];
+
+    const alreadyAttached =
+      attachedSets.some(
+        (set) =>
+          set.resource_id ===
+          resource.id
+      );
+
+    if (!alreadyAttached) {
+      attachedSets.push({
+        resource_id:
+          resource.id,
+
+        title:
+          resource.title,
+
+        set_number:
+          resource.set_number,
+
+        status:
+          resource.status,
+      });
+    }
+
+    attachedSetsByQuestionId.set(
+      row.question_id,
+      attachedSets
+    );
+  }
+
+  /* -------------------------------------------------------
+   * 16. Sort attached Sets
+   *
+   * Set 1
+   * Set 2
+   * Set 10
+   * Set 20
+   * ------------------------------------------------------- */
+
+  for (
+    const attachedSets of
+      attachedSetsByQuestionId.values()
+  ) {
+    attachedSets.sort(
+      (a, b) => {
+        const aNumber =
+          a.set_number ??
+          Number.MAX_SAFE_INTEGER;
+
+        const bNumber =
+          b.set_number ??
+          Number.MAX_SAFE_INTEGER;
+
+        if (
+          aNumber !==
+          bNumber
+        ) {
+          return (
+            aNumber -
+            bNumber
+          );
+        }
+
+        return a.title.localeCompare(
+          b.title,
+          undefined,
+          {
+            numeric: true,
+            sensitivity: "base",
+          }
+        );
+      }
+    );
+  }
+
+  /* -------------------------------------------------------
+   * 17. Build final MCQ list
    * ------------------------------------------------------- */
 
   return questions.map(
@@ -605,14 +902,6 @@ export async function getAdminMcqs(): Promise<AdminMcq[]> {
           question.id
         );
 
-      /*
-       * Revision content is authoritative for the
-       * admin question library.
-       *
-       * Legacy questions without revisions continue
-       * to use questions.question_text.
-       */
-
       const displayedQuestionText =
         latestRevision?.question_text ??
         question.question_text;
@@ -620,15 +909,6 @@ export async function getAdminMcqs(): Promise<AdminMcq[]> {
       return {
         ...question,
 
-        /*
-         * IMPORTANT:
-         *
-         * admin_question_number is intentionally preserved
-         * from the questions table.
-         *
-         * No UUID slicing or generated numbering happens
-         * here.
-         */
         admin_question_number:
           question.admin_question_number,
 
@@ -653,6 +933,11 @@ export async function getAdminMcqs(): Promise<AdminMcq[]> {
         class_slug:
           program?.slug ??
           null,
+
+        attached_sets:
+          attachedSetsByQuestionId.get(
+            question.id
+          ) ?? [],
       };
     }
   );
@@ -1065,7 +1350,229 @@ export async function getAdminMcqById(
   }
 
   /* -------------------------------------------------------
-   * 11. Determine displayed content
+   * 11. Load attached MCQ Sets for this question
+   * ------------------------------------------------------- */
+
+  const {
+    data: attachedTestQuestions,
+    error: attachedTestQuestionsError,
+  } = await supabase
+    .from("test_questions")
+    .select(
+      `
+        test_id
+      `
+    )
+    .eq(
+      "question_id",
+      questionId
+    );
+
+  if (attachedTestQuestionsError) {
+    throw new Error(
+      `Failed to load MCQ Set attachments: ${attachedTestQuestionsError.message}`
+    );
+  }
+
+  const attachedTestIds = [
+    ...new Set(
+      (attachedTestQuestions ?? []).map(
+        (row) =>
+          row.test_id
+      )
+    ),
+  ];
+
+  const attachedTestById =
+    new Map<
+      string,
+      {
+        id: string;
+        resource_id: string;
+        test_type: string;
+      }
+    >();
+
+  if (
+    attachedTestIds.length > 0
+  ) {
+    const {
+      data: attachedTests,
+      error: attachedTestsError,
+    } = await supabase
+      .from("tests")
+      .select(
+        `
+          id,
+          resource_id,
+          test_type
+        `
+      )
+      .in(
+        "id",
+        attachedTestIds
+      )
+      .eq(
+        "test_type",
+        "MCQ"
+      );
+
+    if (attachedTestsError) {
+      throw new Error(
+        `Failed to load MCQ Set tests: ${attachedTestsError.message}`
+      );
+    }
+
+    for (
+      const test of
+        attachedTests ?? []
+    ) {
+      attachedTestById.set(
+        test.id,
+        test
+      );
+    }
+  }
+
+  const attachedResourceIds = [
+    ...new Set(
+      Array.from(
+        attachedTestById.values()
+      ).map(
+        (test) =>
+          test.resource_id
+      )
+    ),
+  ];
+
+  const attachedResourceById =
+    new Map<
+      string,
+      {
+        id: string;
+        title: string;
+        set_number: number | null;
+        status: string;
+        resource_type: string;
+      }
+    >();
+
+  if (
+    attachedResourceIds.length > 0
+  ) {
+    const {
+      data: attachedResources,
+      error: attachedResourcesError,
+    } = await supabase
+      .from("resources")
+      .select(
+        `
+          id,
+          title,
+          set_number,
+          status,
+          resource_type
+        `
+      )
+      .in(
+        "id",
+        attachedResourceIds
+      )
+      .eq(
+        "resource_type",
+        "MCQ"
+      );
+
+    if (attachedResourcesError) {
+      throw new Error(
+        `Failed to load MCQ Set resources: ${attachedResourcesError.message}`
+      );
+    }
+
+    for (
+      const resource of
+        attachedResources ?? []
+    ) {
+      attachedResourceById.set(
+        resource.id,
+        resource
+      );
+    }
+  }
+
+  const attachedSets: AdminMcqAttachedSet[] = [];
+
+  for (
+    const test of
+      attachedTestById.values()
+  ) {
+    const resource =
+      attachedResourceById.get(
+        test.resource_id
+      );
+
+    if (!resource) {
+      continue;
+    }
+
+    if (
+      attachedSets.some(
+        (set) =>
+          set.resource_id ===
+          resource.id
+      )
+    ) {
+      continue;
+    }
+
+    attachedSets.push({
+      resource_id:
+        resource.id,
+
+      title:
+        resource.title,
+
+      set_number:
+        resource.set_number,
+
+      status:
+        resource.status,
+    });
+  }
+
+  attachedSets.sort(
+    (a, b) => {
+      const aNumber =
+        a.set_number ??
+        Number.MAX_SAFE_INTEGER;
+
+      const bNumber =
+        b.set_number ??
+        Number.MAX_SAFE_INTEGER;
+
+      if (
+        aNumber !==
+        bNumber
+      ) {
+        return (
+          aNumber -
+          bNumber
+        );
+      }
+
+      return a.title.localeCompare(
+        b.title,
+        undefined,
+        {
+          numeric: true,
+          sensitivity: "base",
+        }
+      );
+    }
+  );
+
+  /* -------------------------------------------------------
+   * 12. Determine displayed content
    * ------------------------------------------------------- */
 
   const displayedQuestionText =
@@ -1077,7 +1584,7 @@ export async function getAdminMcqById(
     legacyOptions;
 
   /* -------------------------------------------------------
-   * 12. Return complete MCQ detail
+   * 13. Return complete MCQ detail
    * ------------------------------------------------------- */
 
   return {
@@ -1139,5 +1646,8 @@ export async function getAdminMcqById(
 
     class_slug:
       classSlug,
+
+    attached_sets:
+      attachedSets,
   };
 }

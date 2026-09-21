@@ -10,9 +10,9 @@ import {
   getAdminMcqSetQuestions,
 } from "@/app/lib/admin/mcq-bank/mcq-set-questions.service";
 
-import PublishMcqSetButton from "./PublishMcqSetButton";
-
 import MathTextPreview from "../../components/MathTextPreview";
+
+import PublishMcqSetButton from "./PublishMcqSetButton";
 
 
 type Props = {
@@ -490,7 +490,19 @@ export default async function AdminMcqSetDetailPage({
               </Link>
 
 
-              {/* Publish Set */}
+              {/* =================================================
+               * Publish Set
+               * =================================================
+               *
+               * Publishing belongs to Content Creation.
+               *
+               * A Set can only be published when:
+               *
+               *   - It is not already published
+               *   - At least one MCQ is attached
+               *
+               * Access & Pricing is intentionally NOT involved.
+               * ================================================= */}
 
               {!isPublished &&
                 !isEmpty && (
@@ -507,7 +519,7 @@ export default async function AdminMcqSetDetailPage({
 
 
           {/* =================================================
-           * Draft Publishing Notice
+           * Draft Publishing Notice — Empty
            * ================================================= */}
 
           {!isPublished &&
@@ -548,6 +560,55 @@ export default async function AdminMcqSetDetailPage({
                 >
                   Add at least one MCQ to this Set
                   before publishing it for students.
+                </p>
+
+              </div>
+            )}
+
+
+          {/* =================================================
+           * Ready to Publish Notice
+           * ================================================= */}
+
+          {!isPublished &&
+            !isEmpty && (
+              <div
+                className="
+                  mt-6
+                  rounded-2xl
+                  border
+                  border-blue-200
+                  bg-blue-50
+                  p-4
+                  dark:border-blue-900/50
+                  dark:bg-blue-950/20
+                "
+              >
+
+                <p
+                  className="
+                    text-sm
+                    font-semibold
+                    text-blue-800
+                    dark:text-blue-300
+                  "
+                >
+                  Set is ready for publication
+                </p>
+
+
+                <p
+                  className="
+                    mt-1
+                    text-sm
+                    leading-6
+                    text-blue-700
+                    dark:text-blue-400
+                  "
+                >
+                  Review the attached MCQs and publish
+                  this Set when the content is ready for
+                  students.
                 </p>
 
               </div>
@@ -1598,8 +1659,10 @@ export default async function AdminMcqSetDetailPage({
             they are being prepared and can still be
             attached to this Set. The Set itself is the
             publishing boundary for student-facing
-            access. A Set must contain at least one
-            MCQ before it can be published.
+            access. Review the questions and publish
+            the Set when the content is ready.
+            A Set must contain at least one MCQ before
+            it can be published.
           </p>
 
         </section>

@@ -11,54 +11,52 @@ interface MathTextPreviewProps {
 }
 
 /*
- * Renders mixed text + LaTeX.
+ * Renders mixed plain text + LaTeX.
  *
- * Supported examples:
+ * Supported:
  *
+ * Inline:
  *   $x^2$
- *   $\frac{a}{b}$
- *   $$\int_0^1 x^2\,dx$$
  *   \(x^2+y^2\)
+ *
+ * Display:
+ *   $$\int_0^1 x^2\,dx$$
  *   \[x^2+y^2\]
  *
  * Plain text remains plain text.
  */
 
-function renderMixedContent(
-  value: string
-): string {
+function renderMixedContent(value: string): string {
   if (!value) {
     return "";
   }
 
   /*
-   * Protect HTML by escaping the user's text first.
+   * Escape HTML first so plain text cannot inject HTML.
    */
-  const escapeHtml = (
-    text: string
-  ): string =>
+  const escapeHtml = (text: string): string =>
     text
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
-      .replace(
-        /'/g,
-        "&#039;"
-      );
+      .replace(/'/g, "&#039;");
 
   /*
-   * Supported math delimiters.
+   * Detect the supported LaTeX delimiters.
    *
    * IMPORTANT:
-   * $$ must come before $
-   * so that display math is detected correctly.
+   * Longer delimiters are checked before shorter ones.
+   *
+   * $$ ... $$
+   * $ ... $
+   * \( ... \)
+   * \[ ... \]
    */
   const pattern =
-    /(\$\$[\s\S]*?\$\$|\$[^$\n]+?\$|\\\([\s\S]*?\\\)|\\\[[\s\S]*?\\\])/g;
+    /(\$\$[\s\S]*?\$\$|\$[^\$\n]+?\$|\\\([\s\S]*?\\\)|\\\[[\s\S]*?\\\])/g;
 
-  const parts =
-    value.split(pattern);
+  const parts = value.split(pattern);
 
   return parts
     .map((part) => {
@@ -69,23 +67,16 @@ function renderMixedContent(
       /*
        * Display math: $$ ... $$
        */
-      if (
-        part.startsWith("$$") &&
-        part.endsWith("$$")
-      ) {
-        const expression =
-          part.slice(2, -2);
+      if (part.startsWith("$$") && part.endsWith("$$")) {
+        const expression = part.slice(2, -2);
 
         try {
-          return katex.renderToString(
-            expression,
-            {
-              displayMode: true,
-              throwOnError: false,
-              strict: "warn",
-              trust: false,
-            }
-          );
+          return katex.renderToString(expression, {
+            displayMode: true,
+            throwOnError: false,
+            strict: "warn",
+            trust: false,
+          });
         } catch {
           return `<span class="text-red-500">${escapeHtml(
             part
@@ -96,23 +87,16 @@ function renderMixedContent(
       /*
        * Inline math: $ ... $
        */
-      if (
-        part.startsWith("$") &&
-        part.endsWith("$")
-      ) {
-        const expression =
-          part.slice(1, -1);
+      if (part.startsWith("$") && part.endsWith("$")) {
+        const expression = part.slice(1, -1);
 
         try {
-          return katex.renderToString(
-            expression,
-            {
-              displayMode: false,
-              throwOnError: false,
-              strict: "warn",
-              trust: false,
-            }
-          );
+          return katex.renderToString(expression, {
+            displayMode: false,
+            throwOnError: false,
+            strict: "warn",
+            trust: false,
+          });
         } catch {
           return `<span class="text-red-500">${escapeHtml(
             part
@@ -123,23 +107,16 @@ function renderMixedContent(
       /*
        * Inline math: \( ... \)
        */
-      if (
-        part.startsWith("\\(") &&
-        part.endsWith("\\)")
-      ) {
-        const expression =
-          part.slice(2, -2);
+      if (part.startsWith("\\(") && part.endsWith("\\)")) {
+        const expression = part.slice(2, -2);
 
         try {
-          return katex.renderToString(
-            expression,
-            {
-              displayMode: false,
-              throwOnError: false,
-              strict: "warn",
-              trust: false,
-            }
-          );
+          return katex.renderToString(expression, {
+            displayMode: false,
+            throwOnError: false,
+            strict: "warn",
+            trust: false,
+          });
         } catch {
           return `<span class="text-red-500">${escapeHtml(
             part
@@ -150,23 +127,16 @@ function renderMixedContent(
       /*
        * Display math: \[ ... \]
        */
-      if (
-        part.startsWith("\\[") &&
-        part.endsWith("\\]")
-      ) {
-        const expression =
-          part.slice(2, -2);
+      if (part.startsWith("\\[") && part.endsWith("\\]")) {
+        const expression = part.slice(2, -2);
 
         try {
-          return katex.renderToString(
-            expression,
-            {
-              displayMode: true,
-              throwOnError: false,
-              strict: "warn",
-              trust: false,
-            }
-          );
+          return katex.renderToString(expression, {
+            displayMode: true,
+            throwOnError: false,
+            strict: "warn",
+            trust: false,
+          });
         } catch {
           return `<span class="text-red-500">${escapeHtml(
             part
@@ -177,10 +147,7 @@ function renderMixedContent(
       /*
        * Normal text.
        */
-      return escapeHtml(part).replace(
-        /\n/g,
-        "<br />"
-      );
+      return escapeHtml(part).replace(/\n/g, "<br />");
     })
     .join("");
 }
@@ -189,14 +156,10 @@ export default function MathTextPreview({
   value,
   className = "",
 }: MathTextPreviewProps) {
-  const rendered =
-    useMemo(
-      () =>
-        renderMixedContent(
-          value
-        ),
-      [value]
-    );
+  const rendered = useMemo(
+    () => renderMixedContent(value),
+    [value]
+  );
 
   if (!value.trim()) {
     return (
@@ -208,8 +171,7 @@ export default function MathTextPreview({
           ${className}
         `}
       >
-        Mathematical preview will
-        appear here.
+        Mathematical preview will appear here.
       </div>
     );
   }

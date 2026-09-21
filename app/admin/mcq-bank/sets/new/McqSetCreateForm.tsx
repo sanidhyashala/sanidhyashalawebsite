@@ -29,6 +29,13 @@ type AdminMcqCurriculumClass = {
 
 
 /* =========================================================
+ * Access Type
+ * ========================================================= */
+
+type McqAccessType = "FREE" | "PREMIUM";
+
+
+/* =========================================================
  * Component
  * ========================================================= */
 
@@ -50,14 +57,11 @@ export default function McqSetCreateForm({
   const [description, setDescription] =
     useState("");
 
-  const [accessType, setAccessType] =
-    useState<"FREE" | "PREMIUM">("FREE");
-
   const [durationMinutes, setDurationMinutes] =
     useState("");
 
-  const [maxAttempts, setMaxAttempts] =
-    useState("1");
+  const [accessType, setAccessType] =
+    useState<McqAccessType>("FREE");
 
   const [passingPercentage, setPassingPercentage] =
     useState("");
@@ -89,6 +93,23 @@ export default function McqSetCreateForm({
 
   const [error, setError] =
     useState<string | null>(null);
+
+
+  /* =========================================================
+   * Access → Maximum Attempts
+   *
+   * These values mirror the DB authority:
+   *
+   * FREE    → 3
+   * PREMIUM → 7
+   *
+   * The value is never manually editable.
+   * ========================================================= */
+
+  const maxAttempts =
+    accessType === "PREMIUM"
+      ? 7
+      : 3;
 
 
   /* =========================================================
@@ -175,6 +196,19 @@ export default function McqSetCreateForm({
 
 
   /* =========================================================
+   * Access Type Change
+   * ========================================================= */
+
+  function handleAccessTypeChange(
+    value: McqAccessType
+  ) {
+    setAccessType(value);
+
+    setError(null);
+  }
+
+
+  /* =========================================================
    * Submit
    * ========================================================= */
 
@@ -211,16 +245,34 @@ export default function McqSetCreateForm({
        *
        * The server action receives:
        *
+       * access_type
        * curriculum_node_id
+       * max_attempts
        *
-       * and the database is responsible for
-       * assigning the chapter-wise Set Number.
+       * The database remains the final authority
+       * for the FREE/PREMIUM attempt rule.
        */
 
       const formData =
         new FormData(
           event.currentTarget
         );
+
+
+      /*
+       * Explicitly ensure the selected access
+       * type and DB-derived attempt value are sent.
+       */
+
+      formData.set(
+        "access_type",
+        accessType
+      );
+
+      formData.set(
+        "max_attempts",
+        String(maxAttempts)
+      );
 
 
       /*
@@ -763,188 +815,7 @@ export default function McqSetCreateForm({
 
 
       {/* =================================================
-       * Access
-       * ================================================= */}
-
-      <section
-        className="
-          rounded-2xl
-          border
-          border-slate-200
-          bg-white
-          p-6
-          shadow-sm
-          dark:border-slate-800
-          dark:bg-slate-900
-        "
-      >
-
-        <div className="mb-6">
-
-          <p
-            className="
-              text-xs
-              font-semibold
-              uppercase
-              tracking-wider
-              text-slate-500
-            "
-          >
-            Access
-          </p>
-
-          <h2
-            className="
-              mt-2
-              text-lg
-              font-bold
-              text-slate-900
-              dark:text-white
-            "
-          >
-            Who can access this set?
-          </h2>
-
-        </div>
-
-
-        <input
-          type="hidden"
-          name="access_type"
-          value={accessType}
-        />
-
-
-        <div className="grid gap-4 sm:grid-cols-2">
-
-          {/* FREE */}
-
-          <button
-            type="button"
-            onClick={() =>
-              setAccessType("FREE")
-            }
-            disabled={isSubmitting}
-            className={`
-              rounded-2xl
-              border
-              p-5
-              text-left
-              transition
-              disabled:cursor-not-allowed
-              disabled:opacity-60
-              ${
-                accessType === "FREE"
-                  ? `
-                    border-blue-500
-                    bg-blue-50
-                    dark:border-blue-500
-                    dark:bg-blue-950/30
-                  `
-                  : `
-                    border-slate-200
-                    bg-white
-                    hover:bg-slate-50
-                    dark:border-slate-700
-                    dark:bg-slate-900
-                    dark:hover:bg-slate-800
-                  `
-              }
-            `}
-          >
-
-            <p
-              className="
-                text-sm
-                font-bold
-                text-slate-900
-                dark:text-white
-              "
-            >
-              Free
-            </p>
-
-            <p
-              className="
-                mt-2
-                text-xs
-                leading-5
-                text-slate-500
-              "
-            >
-              Available without payment.
-            </p>
-
-          </button>
-
-
-          {/* PREMIUM */}
-
-          <button
-            type="button"
-            onClick={() =>
-              setAccessType("PREMIUM")
-            }
-            disabled={isSubmitting}
-            className={`
-              rounded-2xl
-              border
-              p-5
-              text-left
-              transition
-              disabled:cursor-not-allowed
-              disabled:opacity-60
-              ${
-                accessType === "PREMIUM"
-                  ? `
-                    border-blue-500
-                    bg-blue-50
-                    dark:border-blue-500
-                    dark:bg-blue-950/30
-                  `
-                  : `
-                    border-slate-200
-                    bg-white
-                    hover:bg-slate-50
-                    dark:border-slate-700
-                    dark:bg-slate-900
-                    dark:hover:bg-slate-800
-                  `
-              }
-            `}
-          >
-
-            <p
-              className="
-                text-sm
-                font-bold
-                text-slate-900
-                dark:text-white
-              "
-            >
-              Premium
-            </p>
-
-            <p
-              className="
-                mt-2
-                text-xs
-                leading-5
-                text-slate-500
-              "
-            >
-              Reserved for premium access.
-            </p>
-
-          </button>
-
-        </div>
-
-      </section>
-
-
-      {/* =================================================
-       * Test Configuration
+       * Access & Test Configuration
        * ================================================= */}
 
       <section
@@ -989,8 +860,338 @@ export default function McqSetCreateForm({
         </div>
 
 
+        {/* =================================================
+         * Access Type
+         * ================================================= */}
+
+        <div>
+
+          <p
+            className="
+              text-sm
+              font-semibold
+              text-slate-800
+              dark:text-slate-200
+            "
+          >
+            Access Type
+          </p>
+
+
+          <div
+            className="
+              mt-3
+              grid
+              gap-3
+              sm:grid-cols-2
+            "
+          >
+
+            {/* FREE */}
+
+            <label
+              className={`
+                cursor-pointer
+                rounded-2xl
+                border
+                p-4
+                transition
+                ${
+                  accessType === "FREE"
+                    ? `
+                      border-emerald-400
+                      bg-emerald-50
+                      ring-2
+                      ring-emerald-100
+                      dark:border-emerald-700
+                      dark:bg-emerald-950/30
+                      dark:ring-emerald-900/40
+                    `
+                    : `
+                      border-slate-200
+                      bg-white
+                      hover:border-slate-300
+                      dark:border-slate-700
+                      dark:bg-slate-950
+                      dark:hover:border-slate-600
+                    `
+                }
+              `}
+            >
+
+              <div className="flex items-start gap-3">
+
+                <input
+                  type="radio"
+                  name="access_type"
+                  value="FREE"
+                  checked={
+                    accessType === "FREE"
+                  }
+                  onChange={() =>
+                    handleAccessTypeChange(
+                      "FREE"
+                    )
+                  }
+                  disabled={isSubmitting}
+                  className="
+                    mt-1
+                    h-4
+                    w-4
+                  "
+                />
+
+
+                <span className="min-w-0">
+
+                  <span
+                    className="
+                      block
+                      text-sm
+                      font-bold
+                      text-slate-900
+                      dark:text-white
+                    "
+                  >
+                    FREE
+                  </span>
+
+
+                  <span
+                    className="
+                      mt-1
+                      block
+                      text-xs
+                      leading-5
+                      text-slate-500
+                      dark:text-slate-400
+                    "
+                  >
+                    Available without a paid
+                    chapter or subject entitlement.
+                  </span>
+
+                </span>
+
+              </div>
+
+            </label>
+
+
+            {/* PREMIUM */}
+
+            <label
+              className={`
+                cursor-pointer
+                rounded-2xl
+                border
+                p-4
+                transition
+                ${
+                  accessType === "PREMIUM"
+                    ? `
+                      border-amber-400
+                      bg-amber-50
+                      ring-2
+                      ring-amber-100
+                      dark:border-amber-700
+                      dark:bg-amber-950/30
+                      dark:ring-amber-900/40
+                    `
+                    : `
+                      border-slate-200
+                      bg-white
+                      hover:border-slate-300
+                      dark:border-slate-700
+                      dark:bg-slate-950
+                      dark:hover:border-slate-600
+                    `
+                }
+              `}
+            >
+
+              <div className="flex items-start gap-3">
+
+                <input
+                  type="radio"
+                  name="access_type"
+                  value="PREMIUM"
+                  checked={
+                    accessType === "PREMIUM"
+                  }
+                  onChange={() =>
+                    handleAccessTypeChange(
+                      "PREMIUM"
+                    )
+                  }
+                  disabled={isSubmitting}
+                  className="
+                    mt-1
+                    h-4
+                    w-4
+                  "
+                />
+
+
+                <span className="min-w-0">
+
+                  <span
+                    className="
+                      block
+                      text-sm
+                      font-bold
+                      text-slate-900
+                      dark:text-white
+                    "
+                  >
+                    PREMIUM
+                  </span>
+
+
+                  <span
+                    className="
+                      mt-1
+                      block
+                      text-xs
+                      leading-5
+                      text-slate-500
+                      dark:text-slate-400
+                    "
+                  >
+                    Available through the relevant
+                    chapter or subject entitlement.
+                  </span>
+
+                </span>
+
+              </div>
+
+            </label>
+
+          </div>
+
+        </div>
+
+
+        {/* =================================================
+         * Access Type Summary
+         * ================================================= */}
+
         <div
           className="
+            mt-5
+            rounded-2xl
+            border
+            border-slate-200
+            bg-slate-50
+            p-4
+            dark:border-slate-700
+            dark:bg-slate-950
+          "
+        >
+
+          <div
+            className="
+              flex
+              flex-col
+              gap-3
+              sm:flex-row
+              sm:items-center
+              sm:justify-between
+            "
+          >
+
+            <div>
+
+              <p
+                className="
+                  text-xs
+                  font-semibold
+                  uppercase
+                  tracking-wider
+                  text-slate-500
+                "
+              >
+                Maximum Attempts
+              </p>
+
+
+              <p
+                className="
+                  mt-1
+                  text-sm
+                  font-semibold
+                  text-slate-900
+                  dark:text-white
+                "
+              >
+                {accessType === "FREE"
+                  ? "FREE access"
+                  : "PREMIUM access"}
+              </p>
+
+            </div>
+
+
+            <div
+              className="
+                flex
+                items-baseline
+                gap-2
+              "
+            >
+
+              <span
+                className="
+                  text-2xl
+                  font-bold
+                  text-slate-900
+                  dark:text-white
+                "
+              >
+                {maxAttempts}
+              </span>
+
+
+              <span
+                className="
+                  text-xs
+                  font-medium
+                  text-slate-500
+                "
+              >
+                attempts
+              </span>
+
+            </div>
+
+          </div>
+
+
+          <p
+            className="
+              mt-3
+              text-xs
+              leading-5
+              text-slate-500
+              dark:text-slate-400
+            "
+          >
+            Maximum attempts are determined
+            automatically by the selected access type
+            and are not manually editable.
+          </p>
+
+        </div>
+
+
+        {/* =================================================
+         * Duration / Passing
+         * ================================================= */}
+
+        <div
+          className="
+            mt-6
             grid
             gap-5
             sm:grid-cols-2
@@ -1048,62 +1249,6 @@ export default function McqSetCreateForm({
                 dark:bg-slate-950
                 dark:text-white
               "
-            />
-
-          </div>
-
-
-          {/* Max Attempts */}
-
-          <div>
-
-            <label
-              htmlFor="maxAttempts"
-              className="
-                text-sm
-                font-semibold
-                text-slate-800
-                dark:text-slate-200
-              "
-            >
-              Maximum Attempts
-            </label>
-
-
-            <input
-              id="maxAttempts"
-              name="max_attempts"
-              type="number"
-              min="1"
-              value={maxAttempts}
-              onChange={(event) =>
-                setMaxAttempts(
-                  event.target.value
-                )
-              }
-              disabled={isSubmitting}
-              className="
-                mt-2
-                w-full
-                rounded-xl
-                border
-                border-slate-200
-                bg-white
-                px-4
-                py-3
-                text-sm
-                text-slate-900
-                outline-none
-                focus:border-blue-500
-                focus:ring-2
-                focus:ring-blue-100
-                disabled:cursor-not-allowed
-                disabled:opacity-60
-                dark:border-slate-700
-                dark:bg-slate-950
-                dark:text-white
-              "
-              required
             />
 
           </div>
@@ -1289,6 +1434,51 @@ export default function McqSetCreateForm({
           </label>
 
         </div>
+
+      </section>
+
+
+      {/* =================================================
+       * Publishing Architecture Note
+       * ================================================= */}
+
+      <section
+        className="
+          rounded-2xl
+          border
+          border-blue-200
+          bg-blue-50
+          p-5
+          dark:border-blue-900/50
+          dark:bg-blue-950/20
+        "
+      >
+
+        <p
+          className="
+            text-sm
+            font-semibold
+            text-blue-900
+            dark:text-blue-300
+          "
+        >
+          Content Creation
+        </p>
+
+        <p
+          className="
+            mt-2
+            text-sm
+            leading-6
+            text-blue-800
+            dark:text-blue-400
+          "
+        >
+          This Set will be created as a DRAFT.
+          Add and review the questions first, then
+          publish the MCQ Set from the Content Creation
+          workflow.
+        </p>
 
       </section>
 

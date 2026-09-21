@@ -20,20 +20,22 @@ const CLASS_LABELS: Record<string, string> = {
 };
 
 export default async function AdminLearningPage() {
-  const [curriculum, resources] =
-    await Promise.all([
-      getAdminLearningCurriculum(),
-      getAdminLearningResources(),
-    ]);
+  const [curriculum, resources] = await Promise.all([
+    getAdminLearningCurriculum(),
+    getAdminLearningResources(),
+  ]);
 
   /*
    * -------------------------------------------------------
-   * Build class-wise curriculum overview
+   * Build class-wise Notes overview
    * -------------------------------------------------------
    *
-   * The database remains the source of truth.
+   * Curriculum gives chapter counts.
    *
-   * We only use program.slug to identify the class.
+   * Resources are filtered strictly to NOTE resources.
+   *
+   * MCQ, Subjective, Case-Based and Mock Test resources
+   * are intentionally ignored.
    */
 
   const classOverview = new Map<
@@ -42,27 +44,32 @@ export default async function AdminLearningPage() {
       programName: string;
       session: string;
       chapterCount: number;
-      resourceCount: number;
+
+      noteCount: number;
+      publishedNoteCount: number;
+      unpublishedNoteCount: number;
+      freeNoteCount: number;
+      premiumNoteCount: number;
     }
   >();
 
   /*
+   * -------------------------------------------------------
    * Curriculum → chapter counts
+   * -------------------------------------------------------
    */
 
   for (const node of curriculum) {
-    const program =
-      node.program;
-
-    const version =
-      node.curriculum_version;
+    const program = node.program;
+    const version = node.curriculum_version;
 
     if (!program || !version) {
       continue;
     }
 
-    const existing =
-      classOverview.get(program.slug);
+    const existing = classOverview.get(
+      program.slug
+    );
 
     if (existing) {
       existing.chapterCount += 1;
@@ -71,34 +78,136 @@ export default async function AdminLearningPage() {
         programName: program.name,
         session: version.session,
         chapterCount: 1,
-        resourceCount: 0,
+
+        noteCount: 0,
+        publishedNoteCount: 0,
+        unpublishedNoteCount: 0,
+        freeNoteCount: 0,
+        premiumNoteCount: 0,
       });
     }
   }
 
   /*
-   * Resources → resource counts
+   * -------------------------------------------------------
+   * Resources → Notes only
+   * -------------------------------------------------------
+   *
+   * A resource is counted once per program.
+   *
+   * This protects the card counts from duplicate mappings
+   * of the same resource to the same class.
    */
 
-  for (const resource of resources) {
-    const program =
-      resource.curriculum.program;
+  const countedNotesByProgram = new Map<
+    string,
+    Set<string>
+  >();
 
-    if (!program) {
+  for (const resource of resources) {
+    if (resource.resource_type !== "NOTE") {
       continue;
     }
 
-    const existing =
-      classOverview.get(program.slug);
+    const mappings =
+      resource.curriculum.mappings ?? [];
 
-    if (existing) {
-      existing.resourceCount += 1;
+    /*
+     * Backward-compatible fallback for any resource that
+     * has only the original single curriculum mapping.
+     */
+    const effectiveMappings =
+      mappings.length > 0
+        ? mappings
+        : resource.curriculum.program
+          ? [
+              {
+                program:
+                  resource.curriculum.program,
+              },
+            ]
+          : [];
+
+    const programSlugs = new Set<string>();
+
+    for (const mapping of effectiveMappings) {
+      const program =
+        mapping.program;
+
+      if (!program) {
+        continue;
+      }
+
+      programSlugs.add(program.slug);
+    }
+
+    for (const programSlug of programSlugs) {
+      const existing =
+        classOverview.get(programSlug);
+
+      if (!existing) {
+        continue;
+      }
+
+      /*
+       * A resource should contribute only once to the
+       * statistics of a particular class.
+       */
+      const countedResources =
+        countedNotesByProgram.get(
+          programSlug
+        ) ?? new Set<string>();
+
+      if (
+        countedResources.has(resource.id)
+      ) {
+        continue;
+      }
+
+      countedResources.add(resource.id);
+
+      countedNotesByProgram.set(
+        programSlug,
+        countedResources
+      );
+
+      /*
+       * Total Notes
+       */
+      existing.noteCount += 1;
+
+      /*
+       * Publication status
+       */
+      if (
+        resource.status === "PUBLISHED"
+      ) {
+        existing.publishedNoteCount += 1;
+      } else {
+        existing.unpublishedNoteCount += 1;
+      }
+
+      /*
+       * Access type
+       */
+      if (
+        resource.access_type === "FREE"
+      ) {
+        existing.freeNoteCount += 1;
+      }
+
+      if (
+        resource.access_type === "PREMIUM"
+      ) {
+        existing.premiumNoteCount += 1;
+      }
     }
   }
 
   /*
-   * Only show the classes that actually exist
-   * in the curriculum.
+   * -------------------------------------------------------
+   * Only show classes that actually exist in curriculum.
+   * -------------------------------------------------------
    */
 
   const classCards = Array.from(
@@ -111,10 +220,10 @@ export default async function AdminLearningPage() {
 
   return (
     <AdminPage
-      title="Learning Resources"
-      description="Manage learning resources class-wise from one place."
+      title="Learning Notes"
+      description="Manage learning notes class-wise from one place."
       sectionTitle="Learning Programs"
-      sectionDescription="Choose a class to manage its notes, MCQs, questions and other learning resources."
+      sectionDescription="Choose a class to manage its chapter-wise notes and monitor their status."
       actions={
         <Link
           href="/admin/learning/new"
@@ -133,7 +242,7 @@ export default async function AdminLearningPage() {
             dark:hover:bg-slate-200
           "
         >
-          + New Resource
+          + New Note
         </Link>
       }
     >
@@ -161,16 +270,24 @@ export default async function AdminLearningPage() {
                 dark:hover:border-slate-700
               "
             >
+              {/* Session */}
+
               <p className="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-400">
                 {item.session}
               </p>
+
+              {/* Class Name */}
 
               <h2 className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">
                 {CLASS_LABELS[programSlug] ??
                   item.programName}
               </h2>
 
+              {/* Notes Statistics */}
+
               <div className="mt-6 grid grid-cols-2 gap-3">
+                {/* Chapters */}
+
                 <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-950">
                   <p className="text-xs text-slate-500 dark:text-slate-400">
                     Chapters
@@ -181,19 +298,71 @@ export default async function AdminLearningPage() {
                   </p>
                 </div>
 
-                <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-950">
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Resources
+                {/* Total Notes */}
+
+                <div className="rounded-xl bg-blue-50 p-3 dark:bg-blue-950/30">
+                  <p className="text-xs text-blue-700 dark:text-blue-400">
+                    Total Notes
                   </p>
 
-                  <p className="mt-1 text-xl font-bold text-slate-900 dark:text-white">
-                    {item.resourceCount}
+                  <p className="mt-1 text-xl font-bold text-blue-900 dark:text-blue-300">
+                    {item.noteCount}
+                  </p>
+                </div>
+
+                {/* Published */}
+
+                <div className="rounded-xl bg-emerald-50 p-3 dark:bg-emerald-950/30">
+                  <p className="text-xs text-emerald-700 dark:text-emerald-400">
+                    Published
+                  </p>
+
+                  <p className="mt-1 text-xl font-bold text-emerald-800 dark:text-emerald-300">
+                    {item.publishedNoteCount}
+                  </p>
+                </div>
+
+                {/* Unpublished */}
+
+                <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-950">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Unpublished
+                  </p>
+
+                  <p className="mt-1 text-xl font-bold text-slate-800 dark:text-slate-200">
+                    {item.unpublishedNoteCount}
+                  </p>
+                </div>
+
+                {/* FREE */}
+
+                <div className="rounded-xl bg-blue-50 p-3 dark:bg-blue-950/30">
+                  <p className="text-xs text-blue-700 dark:text-blue-400">
+                    FREE
+                  </p>
+
+                  <p className="mt-1 text-xl font-bold text-blue-900 dark:text-blue-300">
+                    {item.freeNoteCount}
+                  </p>
+                </div>
+
+                {/* PREMIUM */}
+
+                <div className="rounded-xl bg-amber-50 p-3 dark:bg-amber-950/30">
+                  <p className="text-xs text-amber-700 dark:text-amber-400">
+                    PREMIUM
+                  </p>
+
+                  <p className="mt-1 text-xl font-bold text-amber-900 dark:text-amber-300">
+                    {item.premiumNoteCount}
                   </p>
                 </div>
               </div>
 
+              {/* Navigation */}
+
               <p className="mt-6 text-sm font-semibold text-blue-700 transition-colors group-hover:text-blue-900 dark:text-blue-400 dark:group-hover:text-blue-300">
-                Manage class →
+                Manage Notes →
               </p>
             </Link>
           )

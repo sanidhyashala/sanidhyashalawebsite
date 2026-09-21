@@ -735,22 +735,29 @@ export default function ResourcePdfUpload({
                         </p>
 
                         <p className="mt-1 text-xs text-slate-500">
+  {version.file_size_bytes
+    ? (
+        version.file_size_bytes /
+        (1024 * 1024)
+      ).toFixed(2)
+    : "—"}{" "}
+  MB
 
-                          {version.file_size_bytes
-                            ? (
-                                version.file_size_bytes /
-                                (1024 * 1024)
-                              ).toFixed(2)
-                            : "—"}{" "}
-                          MB
+  {" · "}
 
-                          {" · "}
-
-                          {new Date(
-                            version.created_at
-                          ).toLocaleString()}
-
-                        </p>
+  {new Date(
+    version.created_at
+  ).toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  })}
+</p>
 
                       </div>
 

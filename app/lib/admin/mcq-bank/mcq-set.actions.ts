@@ -39,7 +39,41 @@ export type CreateAdminMcqSetResult = {
 
 
 /* =========================================================
+ * MCQ Access Type
+ * ========================================================= */
+
+type McqAccessType =
+  | "FREE"
+  | "PREMIUM";
+
+
+/* =========================================================
  * Create Admin MCQ Set
+ * =========================================================
+ *
+ * Content Creation owns:
+ *
+ *   1. MCQ Set creation
+ *   2. Access Type selection
+ *   3. Question attachment
+ *   4. Review
+ *   5. Publication
+ *
+ * Access Type:
+ *
+ *   FREE    → Maximum Attempts = 3
+ *   PREMIUM → Maximum Attempts = 7
+ *
+ * Maximum Attempts are NOT manually configurable.
+ *
+ * The application derives the value from Access Type,
+ * and the database remains the final authority.
+ *
+ * Pricing itself is handled separately at:
+ *
+ *   Chapter Product
+ *   Subject Product
+ *
  * ========================================================= */
 
 export async function createAdminMcqSet(
@@ -69,21 +103,15 @@ export async function createAdminMcqSet(
     ).trim();
 
 
-  const accessType =
+  const accessTypeRaw =
     String(
-      formData.get("access_type") ?? "FREE"
-    ).trim();
+      formData.get("access_type") ?? ""
+    ).trim().toUpperCase();
 
 
   const durationRaw =
     String(
       formData.get("duration_minutes") ?? ""
-    ).trim();
-
-
-  const maxAttemptsRaw =
-    String(
-      formData.get("max_attempts") ?? "1"
     ).trim();
 
 
@@ -129,32 +157,53 @@ export async function createAdminMcqSet(
   }
 
 
+  /* -------------------------------------------------------
+   * 4. Validate Access Type
+   * ------------------------------------------------------- */
+
   if (
-    accessType !== "FREE" &&
-    accessType !== "PREMIUM"
+    accessTypeRaw !== "FREE" &&
+    accessTypeRaw !== "PREMIUM"
   ) {
     return {
       success: false,
       message:
-        "Invalid access type.",
+        "Please select a valid MCQ access type.",
     };
   }
 
 
+  const accessType =
+    accessTypeRaw as McqAccessType;
+
+
   /* -------------------------------------------------------
-   * 4. Parse numeric values
+   * 5. Derive Maximum Attempts
+   * -------------------------------------------------------
+   *
+   * Maximum Attempts are determined exclusively
+   * by Access Type.
+   *
+   * FREE    → 3
+   * PREMIUM → 7
+   *
+   * No user-entered max_attempts value is trusted.
+   * ------------------------------------------------------- */
+
+  const maxAttempts =
+    accessType === "FREE"
+      ? 3
+      : 7;
+
+
+  /* -------------------------------------------------------
+   * 6. Parse numeric values
    * ------------------------------------------------------- */
 
   const durationMinutes =
     durationRaw === ""
       ? null
       : Number(durationRaw);
-
-
-  const maxAttempts =
-    maxAttemptsRaw === ""
-      ? 1
-      : Number(maxAttemptsRaw);
 
 
   const passingPercentage =
@@ -164,7 +213,7 @@ export async function createAdminMcqSet(
 
 
   /* -------------------------------------------------------
-   * 5. Validate numeric values
+   * 7. Validate numeric values
    * ------------------------------------------------------- */
 
   if (
@@ -178,18 +227,6 @@ export async function createAdminMcqSet(
       success: false,
       message:
         "Duration must be a positive whole number.",
-    };
-  }
-
-
-  if (
-    !Number.isInteger(maxAttempts) ||
-    maxAttempts <= 0
-  ) {
-    return {
-      success: false,
-      message:
-        "Maximum attempts must be a positive whole number.",
     };
   }
 
@@ -211,7 +248,7 @@ export async function createAdminMcqSet(
 
 
   /* -------------------------------------------------------
-   * 6. Trusted admin Supabase client
+   * 8. Trusted admin Supabase client
    * ------------------------------------------------------- */
 
   const supabase =
@@ -219,7 +256,20 @@ export async function createAdminMcqSet(
 
 
   /* -------------------------------------------------------
-   * 7. Atomic database operation
+   * 9. Atomic database operation
+   * -------------------------------------------------------
+   *
+   * The database function:
+   *
+   *   create_admin_mcq_set()
+   *
+   * remains the final authority for:
+   *
+   *   FREE    → 3 attempts
+   *   PREMIUM → 7 attempts
+   *
+   * The application passes the same derived value,
+   * but the DB independently derives and enforces it.
    * ------------------------------------------------------- */
 
   const {
@@ -259,7 +309,7 @@ export async function createAdminMcqSet(
 
 
   /* -------------------------------------------------------
-   * 8. Database error
+   * 10. Database error
    * ------------------------------------------------------- */
 
   if (error) {
@@ -272,7 +322,7 @@ export async function createAdminMcqSet(
 
 
   /* -------------------------------------------------------
-   * 9. Verify RPC result
+   * 11. Verify RPC result
    * ------------------------------------------------------- */
 
   if (
@@ -292,21 +342,7 @@ export async function createAdminMcqSet(
 
 
   /* -------------------------------------------------------
-   * 10. Load database-generated Set number
-   * -------------------------------------------------------
-   *
-   * IMPORTANT:
-   *
-   * The Set number is generated by the database.
-   *
-   * We do NOT calculate it here.
-   *
-   * This keeps numbering safe for:
-   *
-   * Class + Chapter
-   *
-   * and prevents duplicate numbering when
-   * multiple Sets are created.
+   * 12. Load database-generated Set number
    * ------------------------------------------------------- */
 
   const {
@@ -354,7 +390,7 @@ export async function createAdminMcqSet(
 
 
   /* -------------------------------------------------------
-   * 11. Revalidate admin pages
+   * 13. Revalidate admin pages
    * ------------------------------------------------------- */
 
   revalidatePath(
@@ -367,7 +403,7 @@ export async function createAdminMcqSet(
 
 
   /* -------------------------------------------------------
-   * 12. Return normalized result
+   * 14. Return normalized result
    * ------------------------------------------------------- */
 
   return {
@@ -409,20 +445,9 @@ export async function createAdminMcqSet(
  *
  *   publish_admin_mcq_set()
  *
- * The database function:
+ * Content Creation owns the publishing workflow.
  *
- *   1. Locks the Resource + Test.
- *   2. Validates that both are DRAFT.
- *   3. Validates that the Set has questions.
- *   4. Validates every question snapshot.
- *   5. Validates every revision.
- *   6. Publishes Resource + Test atomically.
- *
- * If any validation fails, the entire database operation
- * is rolled back.
- *
- * This Server Action therefore does NOT directly update
- * resources.status or tests.status.
+ * The database function owns the publication boundary.
  * ========================================================= */
 
 export async function publishAdminMcqSet(
@@ -466,13 +491,6 @@ export async function publishAdminMcqSet(
 
   /* -------------------------------------------------------
    * 4. Atomic publication RPC
-   * -------------------------------------------------------
-   *
-   * IMPORTANT:
-   *
-   * No direct UPDATE is performed here.
-   *
-   * The database function owns the publication boundary.
    * ------------------------------------------------------- */
 
   const {

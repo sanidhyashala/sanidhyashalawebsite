@@ -1,69 +1,91 @@
+"use client";
+
+import { useState } from "react";
+
 import ArticleLayout from "@/app/components/ArticleLayout";
 import { teaching } from "@/content/teaching/teaching";
 
-export default function TeachingPage() {
-  const englishSections = teaching.sections.filter(
-    (section) => !/^[ऀ-ॿ]/.test(section.heading)
-  );
+type Language = "en" | "hi";
 
-  const hindiSections = teaching.sections.filter(
-    (section) => /^[ऀ-ॿ]/.test(section.heading)
-  );
+export default function TeachingPage() {
+  const [language, setLanguage] =
+    useState<Language>("en");
+
+  const active = teaching[language];
 
   return (
     <ArticleLayout
-      title={teaching.title}
-      subtitle={teaching.subtitle}
+      title={active.title}
+      subtitle={active.subtitle}
+      type="teaching"
     >
       <>
-        {/* English Sections */}
-        {englishSections.map((section) => (
+        {/* Language Switcher */}
+        <div className="mb-10 flex">
+          <div className="inline-flex rounded-xl border border-slate-200 bg-slate-100 p-1 dark:border-slate-700 dark:bg-slate-800">
+            <button
+              type="button"
+              onClick={() => setLanguage("en")}
+              className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+                language === "en"
+                  ? "bg-blue-600 text-white"
+                  : "text-slate-600 dark:text-slate-300"
+              }`}
+            >
+              English
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setLanguage("hi")}
+              className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+                language === "hi"
+                  ? "bg-blue-600 text-white"
+                  : "text-slate-600 dark:text-slate-300"
+              }`}
+            >
+              हिन्दी
+            </button>
+          </div>
+        </div>
+
+        {/* Active Language Sections */}
+        {active.sections.map((section) => (
           <section key={section.heading}>
-            <h2 className="mb-8 mt-16 text-4xl font-bold text-blue-900 dark:text-blue-400">
+            <h2
+              className="
+                mb-6
+                mt-16
+                text-3xl
+                font-bold
+                leading-tight
+                tracking-tight
+                text-blue-900
+                dark:text-blue-400
+                md:text-4xl
+              "
+            >
               {section.heading}
             </h2>
 
-            {section.paragraphs.map((paragraph, index) => (
-              <p key={index} className="mb-8">
-                {paragraph}
-              </p>
-            ))}
-          </section>
-        ))}
-
-        {/* Divider */}
-<div className="my-24 flex items-center">
-  <div className="h-px flex-1 bg-slate-300 dark:bg-slate-700"></div>
-
-  <span className="mx-6 text-sm font-medium tracking-widest text-slate-500 dark:text-slate-400 uppercase">
-    Hindi Edition
-  </span>
-
-  <div className="h-px flex-1 bg-slate-300 dark:bg-slate-700"></div>
-</div>
-
-<div className="mb-16 text-center">
-  <h2 className="text-4xl font-bold text-blue-900 dark:text-blue-400">
-    हिन्दी संस्करण
-  </h2>
-
-  <p className="mt-3 text-slate-600 dark:text-slate-400">
-    Teaching in Hindi
-  </p>
-</div>
-
-        {/* Hindi Sections */}
-        {hindiSections.map((section) => (
-          <section key={section.heading}>
-            <h2 className="mb-8 mt-16 text-4xl font-bold text-blue-900 dark:text-blue-400">
-              {section.heading}
-            </h2>
-
-            {section.paragraphs.map((paragraph, index) => (
-              <p key={index} className="mb-8">
-                {paragraph}
-              </p>
-            ))}
+            {section.paragraphs.map(
+              (paragraph, index) => (
+                <p
+                  key={index}
+                  className="
+                    mb-6
+                    text-justify
+                    text-[17px]
+                    leading-8
+                    text-slate-800
+                    dark:text-slate-300
+                    md:text-lg
+                  "
+                >
+                  {paragraph}
+                </p>
+              )
+            )}
           </section>
         ))}
       </>

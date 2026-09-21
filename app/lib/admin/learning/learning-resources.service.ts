@@ -6,30 +6,29 @@ export async function getAdminLearningResources() {
   const supabase = createAdminSupabaseClient();
 
   /*
-   * ---------------------------------------------------------
+   * -------------------------------------------------------
    * 1. Load all resources
-   * ---------------------------------------------------------
+   * -------------------------------------------------------
    */
 
-  const { data: resources, error: resourcesError } =
-    await supabase
-      .from("resources")
-      .select(
-        `
-          id,
-          title,
-          slug,
-          resource_type,
-          access_type,
-          status,
-          display_order,
-          created_at,
-          updated_at
-        `
-      )
-      .order("created_at", {
-        ascending: false,
-      });
+  const { data: resources, error: resourcesError } = await supabase
+    .from("resources")
+    .select(
+      `
+        id,
+        title,
+        slug,
+        resource_type,
+        access_type,
+        status,
+        display_order,
+        created_at,
+        updated_at
+      `
+    )
+    .order("created_at", {
+      ascending: false,
+    });
 
   if (resourcesError) {
     throw new Error(
@@ -42,14 +41,20 @@ export async function getAdminLearningResources() {
   }
 
   /*
-   * ---------------------------------------------------------
+   * -------------------------------------------------------
    * 2. Load resource → curriculum mappings
-   * ---------------------------------------------------------
+   * -------------------------------------------------------
+   *
+   * IMPORTANT:
+   *
+   * A resource can have multiple curriculum mappings.
+   * Therefore we intentionally do NOT convert these mappings
+   * into a Map keyed only by resource_id.
+   *
+   * That old approach silently discarded all but one mapping.
    */
 
-  const resourceIds = resources.map(
-    (resource) => resource.id
-  );
+  const resourceIds = resources.map((resource) => resource.id);
 
   const {
     data: curriculumMappings,
@@ -71,9 +76,9 @@ export async function getAdminLearningResources() {
   }
 
   /*
-   * ---------------------------------------------------------
+   * -------------------------------------------------------
    * 3. Load curriculum nodes
-   * ---------------------------------------------------------
+   * -------------------------------------------------------
    */
 
   const curriculumNodeIds =
@@ -89,10 +94,7 @@ export async function getAdminLearningResources() {
   }> = [];
 
   if (curriculumNodeIds.length > 0) {
-    const {
-      data,
-      error,
-    } = await supabase
+    const { data, error } = await supabase
       .from("curriculum_nodes")
       .select(
         `
@@ -114,17 +116,14 @@ export async function getAdminLearningResources() {
   }
 
   /*
-   * ---------------------------------------------------------
+   * -------------------------------------------------------
    * 4. Load curriculum versions
-   * ---------------------------------------------------------
+   * -------------------------------------------------------
    */
 
-  const curriculumVersionIds =
-    curriculumNodes
-      .map(
-        (node) => node.curriculum_version_id
-      )
-      .filter(Boolean);
+  const curriculumVersionIds = curriculumNodes
+    .map((node) => node.curriculum_version_id)
+    .filter(Boolean);
 
   let curriculumVersions: Array<{
     id: string;
@@ -135,10 +134,7 @@ export async function getAdminLearningResources() {
   }> = [];
 
   if (curriculumVersionIds.length > 0) {
-    const {
-      data,
-      error,
-    } = await supabase
+    const { data, error } = await supabase
       .from("curriculum_versions")
       .select(
         `
@@ -161,17 +157,14 @@ export async function getAdminLearningResources() {
   }
 
   /*
-   * ---------------------------------------------------------
+   * -------------------------------------------------------
    * 5. Load programs
-   * ---------------------------------------------------------
+   * -------------------------------------------------------
    */
 
-  const programIds =
-    curriculumVersions
-      .map(
-        (version) => version.program_id
-      )
-      .filter(Boolean);
+  const programIds = curriculumVersions
+    .map((version) => version.program_id)
+    .filter(Boolean);
 
   let programs: Array<{
     id: string;
@@ -181,10 +174,7 @@ export async function getAdminLearningResources() {
   }> = [];
 
   if (programIds.length > 0) {
-    const {
-      data,
-      error,
-    } = await supabase
+    const { data, error } = await supabase
       .from("programs")
       .select(
         `
@@ -206,96 +196,145 @@ export async function getAdminLearningResources() {
   }
 
   /*
-   * ---------------------------------------------------------
+   * -------------------------------------------------------
    * 6. Build lookup maps
-   * ---------------------------------------------------------
+   * -------------------------------------------------------
    */
 
-  const mappingByResourceId = new Map(
-    (curriculumMappings ?? []).map(
-      (mapping) => [
-        mapping.resource_id,
-        mapping,
-      ]
-    )
-  );
+  const mappingsByResourceId = new Map<
+    string,
+    Array<{
+      resource_id: string;
+      curriculum_node_id: string;
+    }>
+  >();
+
+  for (const mapping of curriculumMappings ?? []) {
+    const existing =
+      mappingsByResourceId.get(mapping.resource_id) ?? [];
+
+    existing.push(mapping);
+
+    mappingsByResourceId.set(
+      mapping.resource_id,
+      existing
+    );
+  }
 
   const nodeById = new Map(
-    curriculumNodes.map(
-      (node) => [
-        node.id,
-        node,
-      ]
-    )
+    curriculumNodes.map((node) => [
+      node.id,
+      node,
+    ])
   );
 
   const versionById = new Map(
-    curriculumVersions.map(
-      (version) => [
-        version.id,
-        version,
-      ]
-    )
+    curriculumVersions.map((version) => [
+      version.id,
+      version,
+    ])
   );
 
   const programById = new Map(
-    programs.map(
-      (program) => [
-        program.id,
-        program,
-      ]
-    )
+    programs.map((program) => [
+      program.id,
+      program,
+    ])
   );
 
   /*
-   * ---------------------------------------------------------
-   * 7. Attach normalized curriculum data to every resource
-   * ---------------------------------------------------------
+   * -------------------------------------------------------
+   * 7. Attach normalized curriculum data
+   * -------------------------------------------------------
+   *
+   * Backward compatibility:
+   *
+   * curriculum.node
+   * curriculum.version
+   * curriculum.program
+   *
+   * are intentionally preserved because existing admin
+   * consumers already use them.
+   *
+   * New:
+   *
+   * curriculum.mappings
+   *
+   * contains every curriculum mapping for the resource.
    */
 
-  const resourcesWithCurriculum =
-    resources.map((resource) => {
-      const mapping =
-        mappingByResourceId.get(
-          resource.id
+  const resourcesWithCurriculum = resources.map(
+    (resource) => {
+      const mappings =
+        mappingsByResourceId.get(resource.id) ?? [];
+
+      const normalizedMappings = mappings
+        .map((mapping) => {
+          const node = nodeById.get(
+            mapping.curriculum_node_id
+          );
+
+          const version = node
+            ? versionById.get(
+                node.curriculum_version_id
+              )
+            : undefined;
+
+          const program = version
+            ? programById.get(
+                version.program_id
+              )
+            : undefined;
+
+          return {
+            curriculum_node_id:
+              mapping.curriculum_node_id,
+            node: node ?? null,
+            version: version ?? null,
+            program: program ?? null,
+          };
+        })
+        .filter(
+          (mapping) =>
+            mapping.node !== null ||
+            mapping.version !== null ||
+            mapping.program !== null
         );
 
-      const node =
-        mapping
-          ? nodeById.get(
-              mapping.curriculum_node_id
-            )
-          : undefined;
-
-      const version =
-        node
-          ? versionById.get(
-              node.curriculum_version_id
-            )
-          : undefined;
-
-      const program =
-        version
-          ? programById.get(
-              version.program_id
-            )
-          : undefined;
+      /*
+       * Preserve the existing single-mapping fields.
+       *
+       * Existing pages continue to behave exactly as before.
+       */
+      const primaryMapping =
+        normalizedMappings[0];
 
       return {
         ...resource,
 
         curriculum: {
-          node: node ?? null,
-          version: version ?? null,
-          program: program ?? null,
+          node:
+            primaryMapping?.node ?? null,
+
+          version:
+            primaryMapping?.version ?? null,
+
+          program:
+            primaryMapping?.program ?? null,
+
+          mappings: normalizedMappings,
         },
       };
-    });
+    }
+  );
 
   /*
-   * ---------------------------------------------------------
+   * -------------------------------------------------------
    * 8. Sort by chapter → display order → title
-   * ---------------------------------------------------------
+   * -------------------------------------------------------
+   *
+   * Preserve the existing sorting behavior by using the
+   * backward-compatible primary curriculum node.
    */
 
   resourcesWithCurriculum.sort(
@@ -311,7 +350,9 @@ export async function getAdminLearningResources() {
         Number.MAX_SAFE_INTEGER;
 
       if (aSequence !== bSequence) {
-        return aSequence - bSequence;
+        return (
+          aSequence - bSequence
+        );
       }
 
       const aDisplayOrder =

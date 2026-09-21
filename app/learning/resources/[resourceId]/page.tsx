@@ -46,11 +46,62 @@ export default async function McqResourcePage({
   await requireLearningAuth();
 
   /* =======================================================
-   * 3. Load this student's attempts
+   * 3. Resolve CURRENT student access
+   *
+   * FREE:
+   *   accessible
+   *
+   * PREMIUM:
+   *   requires current Chapter/Subject entitlement
+   *
+   * IMPORTANT:
+   *
+   * Do not trust:
+   * - an existing attempt
+   * - a previous attempt
+   * - a direct URL
+   * - the resource page itself
+   *
+   * Current Premium access is always resolved again
+   * from the authenticated Supabase/Clerk session.
    * ======================================================= */
 
   const supabase =
     await createLearningSupabaseClient();
+
+  if (
+    resource.accessType ===
+    "PREMIUM"
+  ) {
+    const {
+      data: hasAccess,
+      error: accessError,
+    } =
+      await supabase.rpc(
+        "user_has_learning_product_access",
+        {
+          p_resource_id:
+            resource.resourceId,
+        }
+      );
+
+    if (accessError) {
+      throw new Error(
+        `Failed to resolve MCQ access: ${accessError.message}`
+      );
+    }
+
+    if (hasAccess !== true) {
+      notFound();
+    }
+  }
+
+  /* =======================================================
+   * 4. Load this student's attempts
+   *
+   * This query is intentionally performed only AFTER
+   * current resource access has been verified.
+   * ======================================================= */
 
   const {
     data: attempts,
@@ -91,7 +142,7 @@ export default async function McqResourcePage({
     (attempts ?? []) as AttemptRow[];
 
   /* =======================================================
-   * 4. Separate current attempt from completed attempts
+   * 5. Separate current attempt from completed attempts
    * ======================================================= */
 
   const activeAttempt =
@@ -109,7 +160,7 @@ export default async function McqResourcePage({
     );
 
   /* =======================================================
-   * 5. Attempt state
+   * 6. Attempt state
    * ======================================================= */
 
   const attemptCount =
@@ -131,7 +182,7 @@ export default async function McqResourcePage({
       resource.maxAttempts;
 
   /* =======================================================
-   * 6. Student-facing attempt label
+   * 7. Student-facing attempt label
    * ======================================================= */
 
   let attemptLabel: string;

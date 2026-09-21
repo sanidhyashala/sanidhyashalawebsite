@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 
-import { requireLearningAuth } from "@/lib/learning/learning-auth";
 import { createAdminSupabaseClient } from "@/app/lib/admin/supabase-admin";
+import { requireLearningAuth } from "@/lib/learning/learning-auth";
+import { createLearningSupabaseClient } from "@/lib/learning/supabase-learning";
 
 const PDF_BUCKET = "learning-pdfs";
 const SIGNED_URL_EXPIRY = 300; // 5 minutes
@@ -40,20 +41,20 @@ export async function GET(
 
     /*
      * -------------------------------------------------------
-     * 2. Use the server-side admin client
+     * 2. Use the server-side admin client for resource/PDF
+     *    data and the authenticated Learning client for
+     *    access resolution.
      * -------------------------------------------------------
-     *
-     * The bucket is private.
-     *
-     * The service-role client exists only on the server.
      */
 
-    const supabase =
-      createAdminSupabaseClient();
+    const supabase = createAdminSupabaseClient();
+
+    const learningSupabase =
+      await createLearningSupabaseClient();
 
     /*
      * -------------------------------------------------------
-     * 3. Verify that the resource is published
+     * 3. Verify that the resource is a published Note
      * -------------------------------------------------------
      */
 
@@ -105,7 +106,85 @@ export async function GET(
 
     /*
      * -------------------------------------------------------
-     * 4. Find the active PDF attachment
+     * 4. This route is specifically for Note PDFs
+     * -------------------------------------------------------
+     */
+
+    if (resource.resource_type !== "NOTE") {
+      return NextResponse.json(
+        {
+          error:
+            "PDF delivery is available only for Notes.",
+        },
+        {
+          status: 404,
+        }
+      );
+    }
+
+    /*
+     * -------------------------------------------------------
+     * 5. Verify current Learning Product access
+     * -------------------------------------------------------
+     *
+     * IMPORTANT:
+     *
+     * This is the actual Premium access boundary.
+     *
+     * FREE:
+     *   resolver returns true
+     *
+     * PREMIUM:
+     *   resolver returns true only when the authenticated
+     *   student has the required Chapter or Subject
+     *   entitlement.
+     *
+     * We intentionally resolve access through the
+     * authenticated Learning Supabase client.
+     */
+
+    const {
+      data: hasAccess,
+      error: accessError,
+    } = await learningSupabase.rpc(
+      "user_has_learning_product_access",
+      {
+        p_resource_id: resourceId,
+      }
+    );
+
+    if (accessError) {
+      console.error(
+        "Failed to resolve learning resource access:",
+        accessError
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            "Unable to verify access to this Note.",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+    if (hasAccess !== true) {
+      return NextResponse.json(
+        {
+          error:
+            "You do not have access to this Note.",
+        },
+        {
+          status: 403,
+        }
+      );
+    }
+
+    /*
+     * -------------------------------------------------------
+     * 6. Find the active PDF attachment
      * -------------------------------------------------------
      */
 
@@ -167,7 +246,7 @@ export async function GET(
 
     /*
      * -------------------------------------------------------
-     * 5. Defensive resource relationship check
+     * 7. Defensive resource relationship check
      * -------------------------------------------------------
      */
 
@@ -188,7 +267,7 @@ export async function GET(
 
     /*
      * -------------------------------------------------------
-     * 6. Create a short-lived signed URL
+     * 8. Create a short-lived signed URL
      * -------------------------------------------------------
      */
 
@@ -233,22 +312,20 @@ export async function GET(
 
     /*
      * -------------------------------------------------------
-     * 7. Fetch the PDF on the server
+     * 9. Fetch the PDF on the server
      * -------------------------------------------------------
-     *
-     * IMPORTANT:
      *
      * We intentionally do NOT redirect the browser to the
      * Supabase signed URL.
      *
      * The server fetches the PDF and returns the PDF itself.
      *
-     * This keeps the browser on the same-origin route:
+     * This keeps the browser on:
      *
      * /learning/resources/[resourceId]/pdf
      *
-     * It also gives mobile browsers a much more predictable
-     * PDF response when the resource is embedded in an iframe.
+     * and provides predictable PDF behavior for embedded
+     * viewers.
      * -------------------------------------------------------
      */
 
@@ -280,7 +357,7 @@ export async function GET(
 
     /*
      * -------------------------------------------------------
-     * 8. Return the actual PDF
+     * 10. Return the actual PDF
      * -------------------------------------------------------
      */
 

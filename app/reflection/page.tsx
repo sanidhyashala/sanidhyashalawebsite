@@ -6,6 +6,7 @@ import ReflectionFeed from "@/app/components/reflection/feed/ReflectionFeed";
 import ReflectionDashboardCTA from "@/app/components/reflection/ReflectionDashboardCTA";
 
 import NewsletterForm from "@/app/components/newsletter/NewsletterForm";
+import PageAtmosphere from "@/app/components/backgrounds/PageAtmosphere";
 
 import { auth } from "@clerk/nextjs/server";
 
@@ -45,34 +46,55 @@ export default async function ReflectionPage() {
     existingReflection?.status === "pending";
 
   return (
-    <>
-      <Hero />
+    <main
+      className="
+        relative
+        isolate
+        overflow-hidden
+        bg-white
+        dark:bg-slate-950
+      "
+    >
+      {/* =================================================
+       * Reflection Atmosphere
+       * ================================================= */}
 
-      <QuietIntro />
+      <PageAtmosphere type="reflection" />
 
-      <FeaturedReflection
-        prompt={prompt}
-      />
+      {/* =================================================
+       * Existing Reflection Page
+       * Logic and components unchanged
+       * ================================================= */}
 
-      <ReflectionDashboardCTA />
+      <div className="relative z-10">
+        <Hero />
 
-      <ReflectionWriting
-        prompt={prompt}
-        existingReflection={editableReflection}
-        hasPendingReflection={hasPendingReflection}
-      />
+        <QuietIntro />
 
-      <ReflectionFeed
-        reflections={reflections}
-      />
-
-      <section className="mx-auto max-w-5xl px-6 pb-28">
-        <NewsletterForm
-          title="Continue the Conversation"
-          description="Receive future reflection prompts, thoughtful essays, and quiet moments of learning directly in your inbox."
-          buttonText="Stay Connected"
+        <FeaturedReflection
+          prompt={prompt}
         />
-      </section>
-    </>
+
+        <ReflectionDashboardCTA />
+
+        <ReflectionWriting
+          prompt={prompt}
+          existingReflection={editableReflection}
+          hasPendingReflection={hasPendingReflection}
+        />
+
+        <ReflectionFeed
+          reflections={reflections}
+        />
+
+        <section className="mx-auto max-w-5xl px-6 pb-28">
+          <NewsletterForm
+            title="Continue the Conversation"
+            description="Receive future reflection prompts, thoughtful essays, and quiet moments of learning directly in your inbox."
+            buttonText="Stay Connected"
+          />
+        </section>
+      </div>
+    </main>
   );
 }

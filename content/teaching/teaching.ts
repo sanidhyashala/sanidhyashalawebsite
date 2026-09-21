@@ -1,201 +1,217 @@
 export const teaching = {
-  title: "Teaching",
-
-  subtitle: "Learn. Teach. Reflect.",
-
-  sections: [
-        {
-      heading: "Why I Teach Mathematics",
-      paragraphs: [
-        "Mathematics has never appeared to me as merely a school subject.",
-
-        "Long before it becomes a collection of formulas, equations or examinations, mathematics is a way of observing patterns, asking questions and learning how to think with clarity.",
-
-        "To teach mathematics, therefore, is not simply to help students solve problems on paper. It is to help them develop patience, reasoning, curiosity and confidence in their own ability to understand the world.",
-
-        "Every student possesses the capacity to learn. The role of a teacher is not to fill an empty mind with information, but to help uncover the understanding that already seeks expression within it."
-      ]
-    },
-
-        {
-      heading: "Education as Self-Discovery",
-      paragraphs: [
-        "Education is often understood as preparation for a career, a profession or an examination.",
-
-        "While these goals are important, they may not be the deepest purpose of learning.",
-
-        "A more fundamental question lies beneath them:",
-
-        "Who am I becoming through this process of education?",
-
-        "The ancient Indian idea of Swadharma points toward the importance of discovering one's own nature and path. Education, at its best, should help students move closer to that discovery.",
-
-        "Not every student learns in the same way. Not every student is called toward the same destination.",
-
-        "True education should not merely produce conformity. It should help individuals recognize their strengths, cultivate their character and gradually discover the work that is genuinely theirs to do.",
-
-        "Learning, in this sense, becomes a journey of self-discovery."
-      ]
-    },
-
-        {
-      heading: "Understanding Before Memorization",
-      paragraphs: [
-        "Memorization has value, but understanding must come first.",
-
-        "A formula remembered without understanding is often forgotten. A concept understood deeply becomes a tool that can be applied throughout life.",
-
-        "For this reason, I believe students should not only learn what works but also why it works.",
-
-        "When understanding develops, mathematics becomes less intimidating and more meaningful. What once appeared as a collection of rules begins to reveal an underlying structure and logic.",
-
-        "The goal is not simply to arrive at the correct answer, but to understand the path that leads there."
-      ]
-    },
-
-        {
-      heading: "The Role of Reflection",
-      paragraphs: [
-        "Modern education often emphasizes information, speed and performance.",
-
-        "Yet learning is incomplete without reflection.",
-
-        "Information can be collected. Knowledge can be acquired. But understanding emerges when we pause and reflect upon what we have learned.",
-
-        "Reflection allows students to connect ideas, examine assumptions and transform information into wisdom.",
-
-        "It creates the space in which learning becomes personal rather than mechanical.",
-
-        "For this reason, reflection is not separate from education. It is one of its essential dimensions."
-      ]
-    },
-
-        {
-      heading: "Learning Beyond Examinations",
-      paragraphs: [
-        "Examinations matter. They provide goals, structure and opportunities for growth.",
-
-        "However, the value of education cannot be measured solely through marks and grades.",
-
-        "The habits developed through meaningful learning — discipline, perseverance, clarity of thought, intellectual honesty and curiosity — often remain long after examinations have been forgotten.",
-
-        "The purpose of education is not merely to perform well on a test.",
-
-        "It is to become a more thoughtful, capable and responsible human being."
-      ]
-    },
-
-        {
-      heading: "Learn. Teach. Reflect.",
-      paragraphs: [
-        "Sanidhyashala is built upon a simple belief:",
-
-        "Learning should be sincere.",
-
-        "Teaching should be responsible.",
-
-        "Reflection should be continuous.",
-
-        "These three practices are not separate activities. Together, they form a lifelong journey toward deeper understanding — of knowledge, of the world and of ourselves."
-      ]
-    },
-
-    {
-  heading: "मैं गणित क्यों पढ़ाता हूँ",
-  paragraphs: [
-    "मेरे लिए गणित कभी केवल एक विद्यालयी विषय नहीं रहा।",
-
-    "सूत्रों, समीकरणों और परीक्षाओं से बहुत पहले गणित संसार को देखने का एक दृष्टिकोण है। यह प्रतिरूपों को पहचानने, प्रश्न पूछने और स्पष्टता के साथ सोचने की कला है।",
-
-    "इसीलिए गणित पढ़ाना मेरे लिए केवल प्रश्न हल कराना नहीं है। यह विद्यार्थियों में धैर्य, तर्कशीलता, जिज्ञासा और स्वयं सोचने का आत्मविश्वास विकसित करने का प्रयास है।",
-
-    "हर विद्यार्थी सीखने की क्षमता लेकर आता है। शिक्षक का कार्य किसी खाली पात्र को भरना नहीं, बल्कि उस समझ को जागृत करना है जो पहले से उसके भीतर उपस्थित है।"
-  ]
-},
-
-{
-  heading: "शिक्षा : आत्म-खोज की यात्रा",
-  paragraphs: [
-    "शिक्षा को प्रायः करियर, पेशे या परीक्षा की तैयारी के रूप में देखा जाता है।",
-
-    "यद्यपि ये उद्देश्य महत्वपूर्ण हैं, किन्तु सीखने का सबसे गहरा उद्देश्य इससे भी आगे हो सकता है।",
-
-    "एक अधिक मूलभूत प्रश्न इसके नीचे उपस्थित है:",
-
-    "मैं इस शिक्षा-यात्रा के माध्यम से कैसा मनुष्य बन रहा हूँ?",
-
-    "भारतीय चिंतन में स्वधर्म का विचार हमें अपने स्वभाव और अपने मार्ग को पहचानने की प्रेरणा देता है। सच्ची शिक्षा वही है जो हमें स्वयं को समझने के थोड़ा और निकट ले जाए।",
-
-    "हर विद्यार्थी एक जैसा नहीं सीखता और न ही सभी का जीवन-पथ समान होता है।",
-
-    "शिक्षा का उद्देश्य केवल समानता उत्पन्न करना नहीं होना चाहिए, बल्कि प्रत्येक व्यक्ति को उसकी विशिष्ट क्षमता, चरित्र और दिशा को पहचानने में सहायता देना होना चाहिए।",
-
-    "इस प्रकार सीखना आत्म-खोज की एक यात्रा बन जाता है।"
-  ]
-},
-
-{
-  heading: "रटने से पहले समझना",
-  paragraphs: [
-    "स्मरण शक्ति का अपना महत्व है, किन्तु समझ उससे पहले आनी चाहिए।",
-
-    "बिना समझे याद किया गया सूत्र भुलाया जा सकता है, पर गहराई से समझी गई अवधारणा जीवन भर साथ रहती है।",
-
-    "इसी कारण मेरा विश्वास है कि विद्यार्थियों को केवल यह नहीं सीखना चाहिए कि कोई विधि कैसे काम करती है, बल्कि यह भी समझना चाहिए कि वह क्यों काम करती है।",
-
-    "जब समझ विकसित होती है, तब गणित भय का विषय नहीं रह जाता। वह अर्थपूर्ण और जीवंत बन जाता है।",
-
-    "लक्ष्य केवल सही उत्तर तक पहुँचना नहीं, बल्कि उस मार्ग को समझना है जो वहाँ तक ले जाता है।"
-  ]
-},
-
-{
-  heading: "चिंतन का महत्व",
-  paragraphs: [
-    "आधुनिक शिक्षा प्रायः सूचना, गति और प्रदर्शन पर बल देती है।",
-
-    "किन्तु चिंतन के बिना सीखना अधूरा रह जाता है।",
-
-    "सूचना एकत्रित की जा सकती है। ज्ञान अर्जित किया जा सकता है। परन्तु समझ तब विकसित होती है जब हम रुककर अपने सीखने पर विचार करते हैं।",
-
-    "चिंतन हमें विचारों को जोड़ने, धारणाओं की जाँच करने और जानकारी को बुद्धिमत्ता में परिवर्तित करने का अवसर देता है।",
-
-    "यह वह स्थान निर्मित करता है जहाँ शिक्षा यांत्रिक प्रक्रिया न रहकर व्यक्तिगत अनुभव बन जाती है।",
-
-    "इसीलिए चिंतन शिक्षा से अलग नहीं है; वह उसके मूल आयामों में से एक है।"
-  ]
-},
-
-{
-  heading: "परीक्षा से परे सीखना",
-  paragraphs: [
-    "परीक्षाएँ महत्वपूर्ण हैं। वे लक्ष्य, अनुशासन और प्रगति का अवसर प्रदान करती हैं।",
-
-    "किन्तु शिक्षा का मूल्य केवल अंकों और परिणामों से निर्धारित नहीं किया जा सकता।",
-
-    "अर्थपूर्ण शिक्षा से विकसित होने वाले गुण — अनुशासन, धैर्य, स्पष्ट सोच, बौद्धिक ईमानदारी और जिज्ञासा — अक्सर परीक्षाओं के बहुत बाद तक हमारे साथ रहते हैं।",
-
-    "शिक्षा का उद्देश्य केवल परीक्षा में अच्छा प्रदर्शन करना नहीं है।",
-
-    "उसका उद्देश्य एक अधिक विचारशील, सक्षम और उत्तरदायी मनुष्य का निर्माण करना है।"
-  ]
-},
-
-{
-  heading: "सीखें। सिखाएँ। चिंतन करें।",
-  paragraphs: [
-    "सानिध्यशाला एक सरल विश्वास पर आधारित है।",
-
-    "सीखना ईमानदार होना चाहिए।",
-
-    "शिक्षण उत्तरदायी होना चाहिए।",
-
-    "चिंतन निरंतर होना चाहिए।",
-
-    "ये तीनों अलग-अलग गतिविधियाँ नहीं हैं।",
-
-    "मिलकर ये ज्ञान, संसार और स्वयं को अधिक गहराई से समझने की एक आजीवन यात्रा का निर्माण करते हैं।"
-  ]
-}
-  ],
+  en: {
+    title: "Teaching",
+    subtitle:
+      "Teaching is not only about giving answers. It is about making understanding possible.",
+
+    sections: [
+      {
+        heading: "Teaching as Understanding",
+        paragraphs: [
+          "Teaching begins with a simple responsibility: to help another person understand something that they do not yet understand clearly.",
+          "A lesson can provide information. A formula can provide a method. An answer can show the result. But none of these, by themselves, guarantee understanding. Understanding begins when a learner can see the idea, question it, connect it with what they already know, and eventually use it with confidence.",
+          "For this reason, teaching at SanidhyaShala is not built around simply covering more content. The intention is to create learning experiences in which concepts can be understood, practised, questioned, and revisited."
+        ]
+      },
+
+      {
+        heading: "Why Teaching Matters",
+        paragraphs: [
+          "A learner does not always struggle because a concept is difficult. Sometimes the difficulty comes from a missing connection, an unnoticed assumption, an earlier gap, or simply from not having had enough time to think.",
+          "Good teaching therefore requires more than explaining a topic once. It requires attention to where the learner is, what they already understand, where their reasoning changes direction, and what kind of practice may help them move forward.",
+          "Teaching is not the process of making every learner think in exactly the same way. It is the responsibility of creating conditions in which understanding can develop."
+        ]
+      },
+
+      {
+        heading: "Understanding Before Memorization",
+        paragraphs: [
+          "Memorization has its place in learning. Facts, definitions, formulas, and methods sometimes need to be remembered. But memory becomes much more useful when it is supported by understanding.",
+          "A learner who remembers a formula may solve a familiar question. A learner who understands the idea behind it can recognize when the formula applies, when it does not, and how the underlying reasoning changes when the problem changes.",
+          "This is especially important in mathematics. The aim is not only to know what works, but to understand why it works and how the idea connects with other ideas."
+        ]
+      },
+
+      {
+        heading: "Practice With Purpose",
+        paragraphs: [
+          "Practice is essential, but practice becomes meaningful when it has a purpose.",
+          "At SanidhyaShala, practice is not intended merely to increase the number of questions a learner has attempted. MCQs can help strengthen recognition and recall. Notes can provide a clear conceptual foundation. Subjective practice can reveal whether a learner can carry an idea through a complete line of reasoning.",
+          "Different forms of practice therefore serve different purposes. The goal is not simply more questions. The goal is better understanding through purposeful practice."
+        ]
+      },
+
+      {
+        heading: "Questions, Mistakes and Reasoning",
+        paragraphs: [
+          "A wrong answer is often treated as the end of a question. In meaningful learning, it can be the beginning of a better one.",
+          "A mistake can reveal a misunderstood concept, a skipped step, an assumption that was never examined, or a pattern of reasoning that needs attention. This is why solutions matter alongside answers.",
+          "Teaching should create enough space for learners to ask why an answer is wrong, where their reasoning changed direction, and what they can see now that they could not see before."
+        ]
+      },
+
+      {
+        heading: "Assessment as a Window Into Thinking",
+        paragraphs: [
+          "Assessment is often associated with marks, grades, and performance. These have their practical importance, but assessment can serve a deeper purpose as well: it can help us see how learning is taking place.",
+          "MCQ practice can show where recognition is strong or where a concept needs reinforcement. Subjective work can reveal the structure of a learner's reasoning more clearly. A written solution can show not only the final answer, but the path taken to reach it.",
+          "In this sense, assessment is not only a measurement of learning. It can also become a way of understanding learning."
+        ]
+      },
+
+      {
+        heading: "Feedback and the Next Attempt",
+        paragraphs: [
+          "Learning does not necessarily end when an answer is submitted. Sometimes the most useful part begins after the submission.",
+          "When a learner receives thoughtful feedback on a subjective solution, the purpose is not simply to point out what was correct or incorrect. Feedback should help the learner see the reasoning, identify what needs attention, and understand what a stronger solution could look like.",
+          "A second attempt can then become more than repetition. It can become an opportunity to apply what was learned from the first attempt and approach the same kind of problem with greater clarity."
+        ]
+      },
+
+      {
+        heading: "Reflection in Teaching",
+        paragraphs: [
+          "Teaching also requires reflection. A teacher must continually ask whether an explanation actually helped, whether a question revealed understanding, and whether a learner's difficulty was treated as a problem to remove or as information worth understanding.",
+          "Reflection changes teaching from a fixed method into a responsive process. It allows teaching to learn from the learner.",
+          "This is why reflection belongs naturally beside learning and teaching at SanidhyaShala. What happens in the learning process should be noticed, examined, and allowed to inform what comes next."
+        ]
+      },
+
+      {
+        heading: "Beyond Examinations",
+        paragraphs: [
+          "Examinations matter. They provide structure, goals, deadlines, and a way to assess progress. SanidhyaShala does not ignore these practical realities.",
+          "But education becomes smaller when success is defined only by examination performance. The habits developed through serious learning—clarity, patience, reasoning, discipline, intellectual honesty, and the willingness to examine a mistake—can remain valuable long after a particular examination has ended.",
+          "The purpose of teaching, therefore, is not to move a learner only towards the next test. It is also to help develop the ability to learn well when there is no test in front of them."
+        ]
+      },
+
+      {
+        heading: "Teaching, Learning and Responsibility",
+        paragraphs: [
+          "Teaching carries responsibility because what a learner understands today can influence how they approach learning tomorrow.",
+          "A teacher's role is not to create dependence on explanations. It is to gradually help learners become more capable of questioning, reasoning, practising, recognizing their mistakes, and finding their own way through a problem.",
+          "The deeper aim is not that a learner always needs a teacher nearby. It is that, over time, the learner becomes more capable of learning independently."
+        ]
+      },
+
+      {
+        heading: "Learn. Teach. Reflect.",
+        paragraphs: [
+          "SanidhyaShala brings learning, teaching, and reflection into the same larger journey.",
+          "Learning asks us to understand. Teaching asks us to make understanding possible for someone else. Reflection asks us to pause and notice what is happening through that process.",
+          "Together, they create an approach to education in which knowledge is not merely collected, practice is not merely repeated, and teaching is not merely the delivery of answers.",
+          "The direction is simple: learn with understanding, teach with responsibility, practise with purpose, and keep reflecting on what learning is making possible."
+        ]
+      }
+    ]
+  },
+
+  hi: {
+    title: "अध्यापन",
+    subtitle:
+      "अध्यापन केवल उत्तर देने का नाम नहीं है। यह समझ को संभव बनाने का प्रयास है।",
+
+    sections: [
+      {
+        heading: "अध्यापन का आधार : समझ",
+        paragraphs: [
+          "अध्यापन की शुरुआत एक सरल जिम्मेदारी से होती है—किसी दूसरे व्यक्ति को उस बात को समझने में सहायता करना जिसे वह अभी पूरी तरह स्पष्ट रूप से नहीं समझता।",
+          "एक पाठ जानकारी दे सकता है। कोई सूत्र एक विधि बता सकता है। कोई उत्तर परिणाम दिखा सकता है। लेकिन इनमें से कोई भी अपने आप में समझ की गारंटी नहीं देता। समझ तब विकसित होती है जब विद्यार्थी किसी विचार को देख पाता है, उस पर प्रश्न कर पाता है, उसे अपनी पहले से मौजूद समझ से जोड़ पाता है और अंततः उसे आत्मविश्वास के साथ प्रयोग कर पाता है।",
+          "इसी कारण सानिध्यशाला में अध्यापन केवल अधिक से अधिक सामग्री पूरी करने के इर्द-गिर्द नहीं है। प्रयास यह है कि ऐसी सीखने की प्रक्रिया बने जिसमें अवधारणाओं को समझा जा सके, उनका अभ्यास किया जा सके, उन पर प्रश्न किया जा सके और आवश्यकता पड़ने पर उन्हें फिर से देखा जा सके।"
+        ]
+      },
+
+      {
+        heading: "अध्यापन क्यों महत्वपूर्ण है?",
+        paragraphs: [
+          "किसी विद्यार्थी को हमेशा इसलिए कठिनाई नहीं होती कि कोई अवधारणा कठिन है। कभी कठिनाई किसी छूटे हुए संबंध, किसी अनदेखी धारणा, पहले से मौजूद किसी कमी या केवल पर्याप्त समय न मिल पाने के कारण भी हो सकती है।",
+          "इसलिए अच्छा अध्यापन किसी विषय को एक बार समझा देने से कहीं अधिक है। इसके लिए यह देखना आवश्यक है कि विद्यार्थी इस समय कहाँ है, वह पहले से क्या समझता है, उसके तर्क में कहाँ परिवर्तन आता है और किस प्रकार का अभ्यास उसे आगे बढ़ने में सहायता कर सकता है।",
+          "अध्यापन का उद्देश्य हर विद्यार्थी को एक ही तरह से सोचने के लिए तैयार करना नहीं है। उसका उद्देश्य ऐसी परिस्थितियाँ बनाना है जिनमें समझ विकसित हो सके।"
+        ]
+      },
+
+      {
+        heading: "रटने से पहले समझना",
+        paragraphs: [
+          "स्मरण शक्ति का सीखने में अपना स्थान है। तथ्य, परिभाषाएँ, सूत्र और विधियाँ कई बार याद रखना आवश्यक होता है। लेकिन समझ के साथ जुड़ी हुई स्मृति कहीं अधिक उपयोगी होती है।",
+          "जो विद्यार्थी किसी सूत्र को याद रखता है, वह उससे जुड़े परिचित प्रश्न को हल कर सकता है। लेकिन जो विद्यार्थी उसके पीछे के विचार को समझता है, वह यह पहचान सकता है कि वह सूत्र कब लागू होगा, कब नहीं होगा और प्रश्न बदलने पर उसके पीछे का तर्क किस प्रकार बदलता है।",
+          "गणित में यह विशेष रूप से महत्वपूर्ण है। उद्देश्य केवल यह जानना नहीं है कि क्या काम करता है, बल्कि यह समझना भी है कि वह क्यों काम करता है और उसका संबंध दूसरे विचारों से कैसे बनता है।"
+        ]
+      },
+
+      {
+        heading: "उद्देश्य के साथ अभ्यास",
+        paragraphs: [
+          "अभ्यास सीखने का आवश्यक हिस्सा है, लेकिन अभ्यास तब अधिक अर्थपूर्ण बनता है जब उसके पीछे कोई स्पष्ट उद्देश्य हो।",
+          "सानिध्यशाला में अभ्यास का उद्देश्य केवल यह बढ़ाना नहीं है कि विद्यार्थी ने कितने प्रश्न हल किए। MCQs पहचान और स्मरण को मजबूत करने में सहायता कर सकते हैं। Notes किसी अवधारणा की स्पष्ट आधारभूमि दे सकते हैं। Subjective Practice यह दिखा सकता है कि विद्यार्थी किसी विचार को पूरी तर्क-श्रृंखला के साथ आगे ले जा पा रहा है या नहीं।",
+          "इस प्रकार अभ्यास के अलग-अलग रूपों की अपनी अलग भूमिका है। लक्ष्य केवल अधिक प्रश्न नहीं हैं। लक्ष्य है—उद्देश्यपूर्ण अभ्यास के माध्यम से बेहतर समझ।"
+        ]
+      },
+
+      {
+        heading: "प्रश्न, गलतियाँ और तर्क",
+        paragraphs: [
+          "गलत उत्तर को अक्सर किसी प्रश्न का अंत मान लिया जाता है। लेकिन अर्थपूर्ण सीखने में वही गलती एक बेहतर प्रश्न की शुरुआत भी हो सकती है।",
+          "किसी गलती से यह पता चल सकता है कि कोई अवधारणा ठीक से समझी नहीं गई, कोई चरण छूट गया, कोई ऐसी धारणा बना ली गई जिसकी जाँच नहीं हुई या तर्क करने का कोई तरीका ध्यान देने योग्य है। इसलिए उत्तर के साथ समाधान भी महत्वपूर्ण है।",
+          "अध्यापन में इतना स्थान होना चाहिए कि विद्यार्थी यह पूछ सके कि उत्तर गलत क्यों हुआ, उसके तर्क ने कहाँ दिशा बदली और अब वह ऐसी कौन-सी बात देख पा रहा है जिसे पहले नहीं देख पा रहा था।"
+        ]
+      },
+
+      {
+        heading: "मूल्यांकन : सोच को देखने की एक खिड़की",
+        paragraphs: [
+          "मूल्यांकन को अक्सर अंकों, ग्रेड और प्रदर्शन से जोड़ा जाता है। इनका अपना व्यावहारिक महत्व है, लेकिन मूल्यांकन का एक और गहरा उद्देश्य हो सकता है—यह देखना कि सीखना किस प्रकार हो रहा है।",
+          "MCQ Practice यह दिखा सकता है कि किसी अवधारणा की पहचान कहाँ मजबूत है और कहाँ अधिक अभ्यास की आवश्यकता है। Subjective work विद्यार्थी के तर्क की संरचना को अधिक स्पष्ट रूप से सामने ला सकता है। किसी लिखित समाधान से केवल अंतिम उत्तर ही नहीं, बल्कि वहाँ तक पहुँचने का मार्ग भी दिखाई दे सकता है।",
+          "इस अर्थ में मूल्यांकन केवल सीखने का माप नहीं है। वह सीखने को समझने का एक माध्यम भी बन सकता है।"
+        ]
+      },
+
+      {
+        heading: "Feedback और अगला प्रयास",
+        paragraphs: [
+          "सीखना आवश्यक नहीं कि उत्तर जमा करने के साथ समाप्त हो जाए। कई बार सबसे उपयोगी हिस्सा उसके बाद शुरू होता है।",
+          "जब किसी विद्यार्थी को उसके Subjective solution पर विचारपूर्ण feedback मिलता है, तो उसका उद्देश्य केवल यह बताना नहीं होना चाहिए कि क्या सही था और क्या गलत। Feedback का उद्देश्य विद्यार्थी को उसके तर्क को देखने, जिस हिस्से पर ध्यान देने की आवश्यकता है उसे पहचानने और एक बेहतर समाधान कैसा हो सकता है यह समझने में सहायता करना होना चाहिए।",
+          "इसके बाद किया गया अगला प्रयास केवल दोहराव नहीं रह जाता। वह पहले प्रयास से मिली समझ को लागू करने और उसी प्रकार के प्रश्न को अधिक स्पष्टता के साथ देखने का अवसर बन सकता है।"
+        ]
+      },
+
+      {
+        heading: "अध्यापन में चिंतन",
+        paragraphs: [
+          "अध्यापन में भी चिंतन आवश्यक है। शिक्षक को लगातार यह देखना पड़ता है कि उसकी व्याख्या वास्तव में सहायक हुई या नहीं, किसी प्रश्न ने समझ को कितना स्पष्ट किया और विद्यार्थी की कठिनाई को केवल हटाई जाने वाली समस्या की तरह देखा गया या समझे जाने योग्य संकेत की तरह।",
+          "चिंतन अध्यापन को एक स्थिर पद्धति से बदलकर एक संवेदनशील और उत्तरदायी प्रक्रिया बना देता है। इससे अध्यापन स्वयं विद्यार्थी से सीखने लगता है।",
+          "इसीलिए सानिध्यशाला में चिंतन का स्थान सीखने और अध्यापन के साथ स्वाभाविक रूप से जुड़ा हुआ है। सीखने की प्रक्रिया में जो कुछ घटता है, उसे देखा, समझा और आगे की प्रक्रिया में स्थान दिया जाना चाहिए।"
+        ]
+      },
+
+      {
+        heading: "परीक्षाओं से आगे",
+        paragraphs: [
+          "परीक्षाएँ महत्वपूर्ण हैं। वे लक्ष्य, संरचना, समय-सीमा और प्रगति को देखने का अवसर देती हैं। सानिध्यशाला इन व्यावहारिक वास्तविकताओं को नज़रअंदाज़ नहीं करता।",
+          "लेकिन जब सफलता को केवल परीक्षा के प्रदर्शन से परिभाषित किया जाता है, तब शिक्षा छोटी हो जाती है। गंभीर सीखने से विकसित होने वाली स्पष्टता, धैर्य, तर्कशीलता, अनुशासन, बौद्धिक ईमानदारी और अपनी गलती को देखने की क्षमता किसी एक परीक्षा के समाप्त हो जाने के बाद भी उपयोगी रह सकती है।",
+          "इसलिए अध्यापन का उद्देश्य विद्यार्थी को केवल अगली परीक्षा तक पहुँचाना नहीं है। उद्देश्य यह भी है कि उसमें ऐसी सीखने की क्षमता विकसित हो जो उस समय भी काम आए जब सामने कोई परीक्षा न हो।"
+        ]
+      },
+
+      {
+        heading: "अध्यापन, सीखना और जिम्मेदारी",
+        paragraphs: [
+          "अध्यापन एक जिम्मेदारी है, क्योंकि आज विद्यार्थी जो समझता है वह आगे चलकर उसके सीखने के तरीके को प्रभावित कर सकता है।",
+          "शिक्षक की भूमिका ऐसी निर्भरता पैदा करना नहीं है कि विद्यार्थी हर बार किसी बाहरी व्याख्या का इंतज़ार करे। भूमिका यह है कि धीरे-धीरे उसमें प्रश्न करने, तर्क करने, अभ्यास करने, अपनी गलतियों को पहचानने और किसी समस्या के भीतर अपना रास्ता खोजने की क्षमता विकसित हो।",
+          "गहरी दिशा यह नहीं है कि विद्यार्थी को हमेशा शिक्षक की आवश्यकता रहे। बल्कि यह है कि समय के साथ वह स्वयं सीखने में अधिक सक्षम होता जाए।"
+        ]
+      },
+
+      {
+        heading: "सीखें। सिखाएँ। चिंतन करें।",
+        paragraphs: [
+          "सानिध्यशाला सीखने, अध्यापन और चिंतन को एक ही बड़ी यात्रा के हिस्सों के रूप में देखता है।",
+          "सीखना हमें समझने के लिए कहता है। अध्यापन किसी दूसरे के लिए समझ को संभव बनाने का प्रयास है। चिंतन हमें रुककर यह देखने का अवसर देता है कि इस पूरी प्रक्रिया के माध्यम से हमारे भीतर क्या घट रहा है।",
+          "ये तीनों मिलकर शिक्षा के ऐसे दृष्टिकोण का निर्माण करते हैं जहाँ ज्ञान केवल इकट्ठा नहीं किया जाता, अभ्यास केवल दोहराया नहीं जाता और अध्यापन केवल उत्तर देने तक सीमित नहीं रहता।",
+          "दिशा सरल है—समझ के साथ सीखना, जिम्मेदारी के साथ पढ़ाना, उद्देश्य के साथ अभ्यास करना और लगातार यह देखते रहना कि सीखना क्या संभव बना रहा है।"
+        ]
+      }
+    ]
+  }
 };

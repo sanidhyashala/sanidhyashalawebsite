@@ -3,31 +3,7 @@ import Link from "next/link";
 import AdminPage from "../../components/layout/AdminPage";
 
 import { getAdminLearningCurriculum } from "@/app/lib/admin/learning/learning-curriculum.service";
-
 import { createLearningResource } from "@/app/lib/admin/learning/learning-resource.actions";
-
-const RESOURCE_TYPES = [
-  {
-    value: "NOTE",
-    label: "Notes",
-  },
-  {
-    value: "MCQ",
-    label: "MCQ Practice",
-  },
-  {
-    value: "SUBJECTIVE",
-    label: "Subjective Questions",
-  },
-  {
-    value: "CASE_BASED",
-    label: "Case-Based Questions",
-  },
-  {
-    value: "MOCK_TEST",
-    label: "Mock Test",
-  },
-];
 
 type CurriculumNode = Awaited<
   ReturnType<typeof getAdminLearningCurriculum>
@@ -47,11 +23,8 @@ type CurriculumNode = Awaited<
  * Curriculum data itself remains database-driven.
  * ---------------------------------------------------------
  */
-function getProgramOrder(
-  slug: string
-) {
-  const match =
-    slug.match(/class-(\d+)/i);
+function getProgramOrder(slug: string) {
+  const match = slug.match(/class-(\d+)/i);
 
   if (!match) {
     return Number.MAX_SAFE_INTEGER;
@@ -61,8 +34,7 @@ function getProgramOrder(
 }
 
 export default async function NewLearningResourcePage() {
-  const curriculum =
-    await getAdminLearningCurriculum();
+  const curriculum = await getAdminLearningCurriculum();
 
   /*
    * -------------------------------------------------------
@@ -84,51 +56,39 @@ export default async function NewLearningResourcePage() {
    * -------------------------------------------------------
    */
 
-  const curriculumGroups =
-    new Map<
-      string,
-      {
-        programId: string;
-        programName: string;
-        programSlug: string;
-        session: string;
-        curriculumVersionId: string;
-        nodes: CurriculumNode[];
-      }
-    >();
+  const curriculumGroups = new Map<
+    string,
+    {
+      programId: string;
+      programName: string;
+      programSlug: string;
+      session: string;
+      curriculumVersionId: string;
+      nodes: CurriculumNode[];
+    }
+  >();
 
   for (const node of curriculum) {
-    const program =
-      node.program;
+    const program = node.program;
+    const version = node.curriculum_version;
 
-    const version =
-      node.curriculum_version;
+    const groupKey = version.id;
 
-    const groupKey =
-      version.id;
-
-    const existing =
-      curriculumGroups.get(
-        groupKey
-      );
+    const existing = curriculumGroups.get(groupKey);
 
     if (existing) {
       existing.nodes.push(node);
       continue;
     }
 
-    curriculumGroups.set(
-      groupKey,
-      {
-        programId: program.id,
-        programName: program.name,
-        programSlug: program.slug,
-        session: version.session,
-        curriculumVersionId:
-          version.id,
-        nodes: [node],
-      }
-    );
+    curriculumGroups.set(groupKey, {
+      programId: program.id,
+      programName: program.name,
+      programSlug: program.slug,
+      session: version.session,
+      curriculumVersionId: version.id,
+      nodes: [node],
+    });
   }
 
   /*
@@ -148,44 +108,32 @@ export default async function NewLearningResourcePage() {
    * -------------------------------------------------------
    */
 
-  const sortedGroups =
-    Array.from(
-      curriculumGroups.values()
-    ).sort((a, b) => {
+  const sortedGroups = Array.from(curriculumGroups.values()).sort(
+    (a, b) => {
       const classOrderDifference =
-        getProgramOrder(
-          a.programSlug
-        ) -
-        getProgramOrder(
-          b.programSlug
-        );
+        getProgramOrder(a.programSlug) -
+        getProgramOrder(b.programSlug);
 
-      if (
-        classOrderDifference !== 0
-      ) {
+      if (classOrderDifference !== 0) {
         return classOrderDifference;
       }
 
-      const programNameDifference =
-        a.programName.localeCompare(
-          b.programName,
-          undefined,
-          {
-            numeric: true,
-            sensitivity: "base",
-          }
-        );
+      const programNameDifference = a.programName.localeCompare(
+        b.programName,
+        undefined,
+        {
+          numeric: true,
+          sensitivity: "base",
+        }
+      );
 
-      if (
-        programNameDifference !== 0
-      ) {
+      if (programNameDifference !== 0) {
         return programNameDifference;
       }
 
-      return a.session.localeCompare(
-        b.session
-      );
-    });
+      return a.session.localeCompare(b.session);
+    }
+  );
 
   /*
    * -------------------------------------------------------
@@ -196,22 +144,21 @@ export default async function NewLearningResourcePage() {
    * -------------------------------------------------------
    */
 
-  const groupsWithSortedNodes =
-    sortedGroups.map((group) => ({
-      ...group,
-      nodes: [...group.nodes].sort(
-        (a, b) =>
-          (a.sequence_order ?? 0) -
-          (b.sequence_order ?? 0)
-      ),
-    }));
+  const groupsWithSortedNodes = sortedGroups.map((group) => ({
+    ...group,
+    nodes: [...group.nodes].sort(
+      (a, b) =>
+        (a.sequence_order ?? 0) -
+        (b.sequence_order ?? 0)
+    ),
+  }));
 
   return (
     <AdminPage
-      title="Create Learning Resource"
-      description="Create a new learning resource and connect it to the correct curriculum."
-      sectionTitle="Resource Details"
-      sectionDescription="The resource will be created as a draft. Content can be added and published separately."
+      title="Create Learning Note"
+      description="Create a new learning note and connect it to the correct curriculum."
+      sectionTitle="Note Details"
+      sectionDescription="The note will be created as a draft. Content can be added and published separately."
     >
       <form
         action={createLearningResource}
@@ -226,7 +173,7 @@ export default async function NewLearningResourcePage() {
             htmlFor="title"
             className="block text-sm font-semibold text-slate-800 dark:text-slate-200"
           >
-            Resource Title
+            Note Title
           </label>
 
           <input
@@ -275,7 +222,7 @@ export default async function NewLearningResourcePage() {
             id="description"
             name="description"
             rows={4}
-            placeholder="A short description of this resource."
+            placeholder="A short description of this note."
             className="
               mt-2
               w-full
@@ -298,103 +245,6 @@ export default async function NewLearningResourcePage() {
               dark:focus:ring-blue-950
             "
           />
-        </div>
-
-        {/* -------------------------------------------------
-         * Resource Type
-         * ------------------------------------------------- */}
-
-        <div>
-          <label
-            htmlFor="resource_type"
-            className="block text-sm font-semibold text-slate-800 dark:text-slate-200"
-          >
-            Resource Type
-          </label>
-
-          <select
-            id="resource_type"
-            name="resource_type"
-            required
-            defaultValue="NOTE"
-            className="
-              mt-2
-              w-full
-              rounded-xl
-              border
-              border-slate-300
-              bg-white
-              px-4
-              py-3
-              text-sm
-              text-slate-900
-              outline-none
-              focus:border-blue-500
-              focus:ring-2
-              focus:ring-blue-100
-              dark:border-slate-700
-              dark:bg-slate-950
-              dark:text-white
-            "
-          >
-            {RESOURCE_TYPES.map(
-              (type) => (
-                <option
-                  key={type.value}
-                  value={type.value}
-                >
-                  {type.label}
-                </option>
-              )
-            )}
-          </select>
-        </div>
-
-        {/* -------------------------------------------------
-         * Access
-         * ------------------------------------------------- */}
-
-        <div>
-          <label
-            htmlFor="access_type"
-            className="block text-sm font-semibold text-slate-800 dark:text-slate-200"
-          >
-            Access
-          </label>
-
-          <select
-            id="access_type"
-            name="access_type"
-            required
-            defaultValue="FREE"
-            className="
-              mt-2
-              w-full
-              rounded-xl
-              border
-              border-slate-300
-              bg-white
-              px-4
-              py-3
-              text-sm
-              text-slate-900
-              outline-none
-              focus:border-blue-500
-              focus:ring-2
-              focus:ring-blue-100
-              dark:border-slate-700
-              dark:bg-slate-950
-              dark:text-white
-            "
-          >
-            <option value="FREE">
-              Free
-            </option>
-
-            <option value="PREMIUM">
-              Premium
-            </option>
-          </select>
         </div>
 
         {/* -------------------------------------------------
@@ -434,41 +284,30 @@ export default async function NewLearningResourcePage() {
               dark:text-white
             "
           >
-            <option
-              value=""
-              disabled
-            >
+            <option value="" disabled>
               Select a class and chapter
             </option>
 
-            {groupsWithSortedNodes.map(
-              (group) => (
-                <optgroup
-                  key={
-                    group.curriculumVersionId
-                  }
-                  label={`${group.programName} · ${group.session}`}
-                >
-                  {group.nodes.map(
-                    (node) => (
-                      <option
-                        key={node.id}
-                        value={node.id}
-                      >
-                        Chapter{" "}
-                        {node.sequence_order}:{" "}
-                        {node.display_name}
-                      </option>
-                    )
-                  )}
-                </optgroup>
-              )
-            )}
+            {groupsWithSortedNodes.map((group) => (
+              <optgroup
+                key={group.curriculumVersionId}
+                label={`${group.programName} · ${group.session}`}
+              >
+                {group.nodes.map((node) => (
+                  <option
+                    key={node.id}
+                    value={node.id}
+                  >
+                    Chapter {node.sequence_order}:{" "}
+                    {node.display_name}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
           </select>
 
           <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-            Select the exact class, session and
-            chapter for this resource.
+            Select the exact class, session and chapter for this note.
           </p>
         </div>
 
@@ -494,7 +333,7 @@ export default async function NewLearningResourcePage() {
               dark:hover:bg-slate-200
             "
           >
-            Create Resource
+            Create Note
           </button>
 
           <Link

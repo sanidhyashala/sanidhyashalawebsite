@@ -15,6 +15,9 @@ export const metadata: Metadata = {
   title: "Contact | SanidhyaShala",
   description:
     "Get in touch with SanidhyaShala for questions, teaching inquiries, collaborations, support, or thoughtful conversations.",
+  alternates: {
+    canonical: "/contact",
+  },
 };
 
 const contactReasons = [

@@ -1,12 +1,24 @@
+import type { Metadata } from "next";
+
 import Link from "next/link";
 
 import { loadAllJournalArticles } from "@/app/lib/journal/loader/loadAllJournalArticles";
+
 import JournalSearch from "@/app/components/journal/JournalSearch";
+
 import NewsletterForm from "@/app/components/newsletter/NewsletterForm";
+
 import SavedArticlesDrawer from "@/app/components/journal/SavedArticlesDrawer";
+
 import PageAtmosphere from "@/app/components/backgrounds/PageAtmosphere";
 
 import type { JournalEntry } from "@/content/journal/types";
+
+export const metadata: Metadata = {
+  alternates: {
+    canonical: "/journal",
+  },
+};
 
 export default function JournalPage() {
   const posts = Object.entries(

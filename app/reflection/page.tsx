@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+
 import Hero from "@/app/components/reflection/Hero";
 import QuietIntro from "@/app/components/reflection/QuietIntro";
 import FeaturedReflection from "@/app/components/reflection/FeaturedReflection";
@@ -18,6 +20,12 @@ import {
 } from "@/app/lib/reflection/reflection-service";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  alternates: {
+    canonical: "/reflection",
+  },
+};
 
 export default async function ReflectionPage() {
   const { userId } = await auth();

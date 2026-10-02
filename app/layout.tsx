@@ -21,6 +21,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://sanidhyashala.com"),
+
   title: "सानिध्यशाला | From Clarity to Mastery",
 
   description:
@@ -29,6 +31,10 @@ export const metadata: Metadata = {
   applicationName: "Sanidhyashala",
 
   manifest: "/site.webmanifest",
+
+  alternates: {
+    canonical: "/",
+  },
 
   icons: {
     icon: [

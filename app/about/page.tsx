@@ -1,5 +1,13 @@
+import type { Metadata } from "next";
+
 import AboutContent from "@/app/components/about/AboutContent";
 import PageAtmosphere from "@/app/components/backgrounds/PageAtmosphere";
+
+export const metadata: Metadata = {
+  alternates: {
+    canonical: "/about",
+  },
+};
 
 export default function AboutPage() {
   return (

@@ -8,6 +8,7 @@ import {
 
 interface Props {
   title: string;
+  subjectName: string;
   children: ReactNode;
 }
 
@@ -39,6 +40,7 @@ function createSafeFileName(
 
 export default function ResourceContentPdf({
   title,
+  subjectName,
   children,
 }: Props) {
   const contentRef =
@@ -92,15 +94,6 @@ export default function ResourceContentPdf({
        * 1. Create an isolated clone
        * --------------------------------------------------- */
 
-      /*
-       * IMPORTANT:
-       *
-       * clone is intentionally created as a non-null
-       * HTMLDivElement.
-       *
-       * pdfClone is only kept separately so that the clone
-       * can always be removed in finally.
-       */
       const clone =
         source.cloneNode(
           true
@@ -155,15 +148,7 @@ export default function ResourceContentPdf({
 
       /* ---------------------------------------------------
        * 2. Remove duplicate content H1
-       * ---------------------------------------------------
-       *
-       * The PDF wrapper already contains the document title.
-       *
-       * If the editor content begins with the same H1,
-       * remove that duplicate from the PDF clone only.
-       *
-       * The actual student page remains untouched.
-       */
+       * --------------------------------------------------- */
 
       const contentHeadings =
         Array.from(
@@ -186,14 +171,7 @@ export default function ResourceContentPdf({
 
       /* ---------------------------------------------------
        * 3. Find logical block elements
-       * ---------------------------------------------------
-       *
-       * The PDF header is excluded.
-       *
-       * If the renderer places the actual document content
-       * inside an article/div wrapper, its direct children
-       * are used as logical blocks.
-       */
+       * --------------------------------------------------- */
 
       const blocks =
         Array.from(
@@ -214,9 +192,6 @@ export default function ResourceContentPdf({
       /*
        * If there is a wrapper around the actual content,
        * inspect its direct children instead.
-       *
-       * This is useful for the ResourceContentRenderer
-       * <article> wrapper.
        */
       if (
         logicalBlocks.length === 1 &&
@@ -381,11 +356,11 @@ export default function ResourceContentPdf({
         canvas.height
       ) {
         const idealEnd =
-  Math.min(
-    currentStart +
-      pageHeightPx,
-    canvas.height
-  );
+          Math.min(
+            currentStart +
+              pageHeightPx,
+            canvas.height
+          );
 
         /*
          * Find the latest logical block boundary that fits
@@ -644,8 +619,8 @@ export default function ResourceContentPdf({
               text-blue-700
             "
           >
-            SanidhyaShala · Class IX
-            · Mathematics · 2026–27
+            SanidhyaShala · Class IX ·{" "}
+            {subjectName} · 2026–27
           </p>
 
           <h1

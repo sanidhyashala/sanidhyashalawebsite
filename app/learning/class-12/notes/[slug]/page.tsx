@@ -1,5 +1,7 @@
 import Link from "next/link";
+
 import { auth } from "@clerk/nextjs/server";
+
 import { notFound, redirect } from "next/navigation";
 
 import {
@@ -16,6 +18,13 @@ type NotesPageProps = {
   params: Promise<{
     slug: string;
   }>;
+};
+
+type NoteCandidate = {
+  resource: any;
+  subjectName: string;
+  backHref: string;
+  backLabel: string;
 };
 
 export default async function NoteResourcePage({
@@ -62,7 +71,7 @@ export default async function NoteResourcePage({
   //           └── Chapters
   // -------------------------------------------------------
 
-  const noteCandidates = await Promise.all(
+  const noteCandidates: NoteCandidate[][] = await Promise.all(
     subjects.map(async (subject) => {
       const directChildren = await getLearningCurriculum("class-12", {
         parentNodeId: subject.id,
@@ -72,7 +81,7 @@ export default async function NoteResourcePage({
       const subjectName = subject.display_name.trim().toLowerCase();
 
       // ---------------------------------------------------
-      // Mathematics
+      // Non-Science subjects
       //
       // Mathematics has chapters directly under the subject.
       // ---------------------------------------------------
@@ -88,6 +97,7 @@ export default async function NoteResourcePage({
 
             return resources.map((resource) => ({
               resource,
+              subjectName: subject.display_name.trim(),
               backHref: "/learning/class-12/notes",
               backLabel: "← Back to Class XII Notes",
             }));
@@ -128,6 +138,7 @@ export default async function NoteResourcePage({
 
                   return resources.map((resource) => ({
                     resource,
+                    subjectName: branch.display_name.trim(),
                     backHref: `/learning?subject=${encodeURIComponent(
                       branchName,
                     )}`,
@@ -156,6 +167,9 @@ export default async function NoteResourcePage({
     );
 
   const noteResource = noteMatch?.resource;
+
+  const noteSubjectName =
+    noteMatch?.subjectName ?? "Learning";
 
   const noteBackHref =
     noteMatch?.backHref ?? "/learning/class-12/notes";
@@ -220,7 +234,7 @@ export default async function NoteResourcePage({
                   dark:text-blue-400
                 "
               >
-                Class XII · Mathematics · 2026–27
+                Class XII · {noteSubjectName} · 2026–27
               </p>
 
               <h1
@@ -364,7 +378,7 @@ export default async function NoteResourcePage({
                 dark:text-blue-400
               "
             >
-              Class XII · Mathematics · 2026–27
+              Class XII · {noteSubjectName} · 2026–27
             </p>
 
             <h1
@@ -458,7 +472,7 @@ export default async function NoteResourcePage({
                 dark:text-blue-400
               "
             >
-              Class XII · Mathematics · 2026–27
+              Class XII · {noteSubjectName} · 2026–27
             </p>
 
             <h1
@@ -495,7 +509,10 @@ export default async function NoteResourcePage({
           </header>
 
           <section className="mt-8">
-            <ResourceContentPdf title={noteResource.title}>
+            <ResourceContentPdf
+              title={noteResource.title}
+              subjectName={noteSubjectName}
+            >
               <ResourceContentRenderer
                 content={publishedContent.content_json}
               />

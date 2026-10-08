@@ -18,6 +18,13 @@ type NotesPageProps = {
   }>;
 };
 
+type NoteCandidate = {
+  resource: any;
+  subjectName: string;
+  backHref: string;
+  backLabel: string;
+};
+
 export default async function NoteResourcePage({
   params,
 }: NotesPageProps) {
@@ -45,127 +52,122 @@ export default async function NoteResourcePage({
 
   // -------------------------------------------------------
   // Find NOTE resource across the Class X hierarchy
-  //
-  // Mathematics:
-  //   Class X
-  //   └── Mathematics
-  //       └── Chapters
-  //
-  // Science:
-  //   Class X
-  //   └── Science
-  //       ├── Physics
-  //       │   └── Chapters
-  //       ├── Chemistry
-  //       │   └── Chapters
-  //       └── Biology
-  //           └── Chapters
   // -------------------------------------------------------
 
-  const noteCandidates = await Promise.all(
-    subjects.map(async (subject) => {
-      const directChildren = await getLearningCurriculum("class-10", {
-        parentNodeId: subject.id,
-        includeLockedNotes: true,
-      });
+  const noteCandidates: NoteCandidate[] = (
+    await Promise.all(
+      subjects.map(async (subject) => {
+        const directChildren = await getLearningCurriculum("class-10", {
+          parentNodeId: subject.id,
+          includeLockedNotes: true,
+        });
 
-      const subjectName = subject.display_name.trim().toLowerCase();
+        const subjectName = subject.display_name.trim();
+        const normalizedSubjectName = subjectName.toLowerCase();
 
-      // ---------------------------------------------------
-      // Mathematics
-      //
-      // Mathematics has chapters directly under the subject.
-      // ---------------------------------------------------
+        // ---------------------------------------------------
+        // Subjects whose chapters are directly below them
+        //
+        // Example:
+        // Mathematics
+        //   └── Chapter
+        // ---------------------------------------------------
 
-      if (subjectName !== "science") {
-        return directChildren.flatMap((chapter) =>
-          (chapter.resource_curriculum_nodes ?? []).flatMap((mapping) => {
-            const resources = Array.isArray(mapping.resources)
-              ? mapping.resources
-              : mapping.resources
-                ? [mapping.resources]
-                : [];
+        if (normalizedSubjectName !== "science") {
+          return directChildren.flatMap((chapter) =>
+            (chapter.resource_curriculum_nodes ?? []).flatMap((mapping) => {
+              const resources = Array.isArray(mapping.resources)
+                ? mapping.resources
+                : mapping.resources
+                  ? [mapping.resources]
+                  : [];
 
-            return resources.map((resource) => ({
-              resource,
-              backHref: "/learning/class-10/notes",
-              backLabel: "← Back to Class X Notes",
-            }));
-          }),
-        );
-      }
+              return resources.map((resource) => ({
+                resource,
+                subjectName,
+                backHref: "/learning/class-10/notes",
+                backLabel: "← Back to Class X Notes",
+              }));
+            }),
+          );
+        }
 
-      // ---------------------------------------------------
-      // Science
-      //
-      // Science has Physics / Chemistry / Biology branches,
-      // and chapters exist one level below those branches.
-      // ---------------------------------------------------
+        // ---------------------------------------------------
+        // Science
+        //
+        // Science
+        // ├── Physics
+        // │   └── Chapters
+        // ├── Chemistry
+        // │   └── Chapters
+        // └── Biology
+        //     └── Chapters
+        // ---------------------------------------------------
 
-      return (
-        await Promise.all(
-          directChildren.map(async (branch) => {
-            const branchName = branch.display_name
-              .trim()
-              .toLowerCase();
+        return (
+          await Promise.all(
+            directChildren.map(async (branch) => {
+              const branchName = branch.display_name.trim();
 
-            const branchResources = await getLearningCurriculum(
-              "class-10",
-              {
-                parentNodeId: branch.id,
-                includeLockedNotes: true,
-              },
-            );
-
-            return branchResources.flatMap((chapter) =>
-              (chapter.resource_curriculum_nodes ?? []).flatMap(
-                (mapping) => {
-                  const resources = Array.isArray(mapping.resources)
-                    ? mapping.resources
-                    : mapping.resources
-                      ? [mapping.resources]
-                      : [];
-
-                  return resources.map((resource) => ({
-                    resource,
-                    backHref: `/learning?subject=${encodeURIComponent(
-                      branchName,
-                    )}`,
-                    backLabel: `← Back to Class X ${branch.display_name}`,
-                  }));
+              const branchResources = await getLearningCurriculum(
+                "class-10",
+                {
+                  parentNodeId: branch.id,
+                  includeLockedNotes: true,
                 },
-              ),
-            );
-          }),
-        )
-      ).flat();
-    }),
-  );
+              );
+
+              return branchResources.flatMap((chapter) =>
+                (chapter.resource_curriculum_nodes ?? []).flatMap(
+                  (mapping) => {
+                    const resources = Array.isArray(mapping.resources)
+                      ? mapping.resources
+                      : mapping.resources
+                        ? [mapping.resources]
+                        : [];
+
+                    return resources.map((resource) => ({
+                      resource,
+                      subjectName: branchName,
+                      backHref: `/learning?subject=${encodeURIComponent(
+                        branchName.toLowerCase(),
+                      )}`,
+                      backLabel: `← Back to Class X ${branchName}`,
+                    }));
+                  },
+                ),
+              );
+            }),
+          )
+        ).flat();
+      }),
+    )
+  ).flat();
 
   // -------------------------------------------------------
   // Match requested NOTE
   // -------------------------------------------------------
 
-  const noteMatch = noteCandidates
-    .flat()
-    .find(
-      ({ resource }) =>
-        resource.resource_type === "NOTE" &&
-        resource.slug === slug &&
-        resource.status === "PUBLISHED",
-    );
+  const noteMatch = noteCandidates.find(
+    ({ resource }) =>
+      resource.resource_type === "NOTE" &&
+      resource.slug === slug &&
+      resource.status === "PUBLISHED",
+  );
 
   const noteResource = noteMatch?.resource;
-
-  const noteBackHref =
-    noteMatch?.backHref ?? "/learning/class-10/notes";
-
-  const noteBackLabel =
-    noteMatch?.backLabel ?? "← Back to Class X Notes";
 
   if (!noteResource) {
     notFound();
   }
+
+  const noteSubjectName = noteMatch.subjectName;
+
+  const noteBackHref =
+    noteMatch.backHref ?? "/learning/class-10/notes";
+
+  const noteBackLabel =
+    noteMatch.backLabel ?? "← Back to Class X Notes";
 
   // -------------------------------------------------------
   // PDF source
@@ -220,7 +222,7 @@ export default async function NoteResourcePage({
                   dark:text-blue-400
                 "
               >
-                Class X · Mathematics · 2026–27
+                Class X · {noteSubjectName} · 2026–27
               </p>
 
               <h1
@@ -364,7 +366,7 @@ export default async function NoteResourcePage({
                 dark:text-blue-400
               "
             >
-              Class X · Mathematics · 2026–27
+              Class X · {noteSubjectName} · 2026–27
             </p>
 
             <h1
@@ -458,7 +460,7 @@ export default async function NoteResourcePage({
                 dark:text-blue-400
               "
             >
-              Class X · Mathematics · 2026–27
+              Class X · {noteSubjectName} · 2026–27
             </p>
 
             <h1
@@ -495,7 +497,10 @@ export default async function NoteResourcePage({
           </header>
 
           <section className="mt-8">
-            <ResourceContentPdf title={noteResource.title}>
+            <ResourceContentPdf
+              title={noteResource.title}
+              subjectName={noteSubjectName}
+            >
               <ResourceContentRenderer
                 content={publishedContent.content_json}
               />

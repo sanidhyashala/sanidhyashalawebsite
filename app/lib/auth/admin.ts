@@ -9,7 +9,8 @@ import { notFound } from "next/navigation";
  */
 
 const ADMIN_USER_IDS = [
-  "user_3K6deVSPCxvvBWeGAkNK5R2JlTE",
+  "user_3Ff36vm2mkJvFtqbsnH9bto6TMx", // Development
+  "user_3K6deVSPCxvvBWeGAkNK5R2JlTE", // Production
 ];
 
 export async function requireAdmin() {

@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 
 import { createAdminMcqSet } from "@/app/lib/admin/mcq-bank/mcq-set.actions";
 
-
 /* =========================================================
  * Curriculum Types
  * ========================================================= */
@@ -17,6 +16,22 @@ type AdminMcqCurriculumChapter = {
   sequence_order: number | null;
 };
 
+type AdminMcqCurriculumBranch = {
+  id: string;
+  display_name: string;
+  description: string | null;
+  sequence_order: number | null;
+  chapters: AdminMcqCurriculumChapter[];
+};
+
+type AdminMcqCurriculumSubject = {
+  id: string;
+  display_name: string;
+  description: string | null;
+  sequence_order: number | null;
+  chapters: AdminMcqCurriculumChapter[];
+  branches: AdminMcqCurriculumBranch[];
+};
 
 type AdminMcqCurriculumClass = {
   id: string;
@@ -25,15 +40,14 @@ type AdminMcqCurriculumClass = {
   session: string | null;
   curriculum_version_id: string;
   chapters: AdminMcqCurriculumChapter[];
+  subjects: AdminMcqCurriculumSubject[];
 };
-
 
 /* =========================================================
  * Access Type
  * ========================================================= */
 
 type McqAccessType = "FREE" | "PREMIUM";
-
 
 /* =========================================================
  * Component
@@ -46,47 +60,41 @@ export default function McqSetCreateForm({
 }) {
   const router = useRouter();
 
-
-  /* =========================================================
+  /* =======================================================
    * Basic State
-   * ========================================================= */
+   * ======================================================= */
 
-  const [title, setTitle] =
-    useState("");
-
-  const [description, setDescription] =
-    useState("");
-
-  const [durationMinutes, setDurationMinutes] =
-    useState("");
-
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [durationMinutes, setDurationMinutes] = useState("");
   const [accessType, setAccessType] =
     useState<McqAccessType>("FREE");
-
   const [passingPercentage, setPassingPercentage] =
     useState("");
-
   const [shuffleQuestions, setShuffleQuestions] =
     useState(false);
-
   const [shuffleOptions, setShuffleOptions] =
     useState(false);
 
-
-  /* =========================================================
+  /* =======================================================
    * Curriculum Selection
-   * ========================================================= */
+   * ======================================================= */
 
   const [selectedClassSlug, setSelectedClassSlug] =
+    useState("");
+
+  const [selectedSubjectId, setSelectedSubjectId] =
+    useState("");
+
+  const [selectedBranchId, setSelectedBranchId] =
     useState("");
 
   const [curriculumNodeId, setCurriculumNodeId] =
     useState("");
 
-
-  /* =========================================================
+  /* =======================================================
    * Submission State
-   * ========================================================= */
+   * ======================================================= */
 
   const [isSubmitting, setIsSubmitting] =
     useState(false);
@@ -94,256 +102,330 @@ export default function McqSetCreateForm({
   const [error, setError] =
     useState<string | null>(null);
 
-
-  /* =========================================================
+  /* =======================================================
    * Access → Maximum Attempts
-   *
-   * These values mirror the DB authority:
-   *
-   * FREE    → 3
-   * PREMIUM → 7
-   *
-   * The value is never manually editable.
-   * ========================================================= */
+   * ======================================================= */
 
   const maxAttempts =
-    accessType === "PREMIUM"
-      ? 7
-      : 3;
+    accessType === "PREMIUM" ? 7 : 3;
 
-
-  /* =========================================================
+  /* =======================================================
    * Selected Class
-   * ========================================================= */
+   * ======================================================= */
 
-  const selectedClass =
-    useMemo(
-      () =>
-        curriculumClasses.find(
-          (item) =>
-            item.slug ===
-            selectedClassSlug
-        ) ?? null,
-      [
-        curriculumClasses,
-        selectedClassSlug,
-      ]
-    );
+  const selectedClass = useMemo(
+    () =>
+      curriculumClasses.find(
+        (item) =>
+          item.slug === selectedClassSlug,
+      ) ?? null,
+    [curriculumClasses, selectedClassSlug],
+  );
 
+  /* =======================================================
+   * Selected Subject
+   * ======================================================= */
 
-  /* =========================================================
+  const availableSubjects =
+    selectedClass?.subjects ?? [];
+
+  const selectedSubject = useMemo(
+    () =>
+      availableSubjects.find(
+        (subject) =>
+          subject.id === selectedSubjectId,
+      ) ?? null,
+    [availableSubjects, selectedSubjectId],
+  );
+
+  /* =======================================================
+   * Science Branches
+   *
+   * Mathematics:
+   *   subject.chapters
+   *
+   * Science:
+   *   subject.branches
+   * ======================================================= */
+
+  const availableBranches =
+    selectedSubject?.branches ?? [];
+
+  const selectedBranch = useMemo(
+    () =>
+      availableBranches.find(
+        (branch) =>
+          branch.id === selectedBranchId,
+      ) ?? null,
+    [availableBranches, selectedBranchId],
+  );
+
+  /* =======================================================
    * Available Chapters
-   * ========================================================= */
+   *
+   * Mathematics:
+   *   Mathematics → chapters
+   *
+   * Science:
+   *   Science → Physics/Chemistry/Biology → chapters
+   * ======================================================= */
 
-  const availableChapters =
-    selectedClass?.chapters ?? [];
+  const availableChapters = useMemo(() => {
+    if (!selectedSubject) {
+      return [];
+    }
 
+    if (availableBranches.length > 0) {
+      return selectedBranch?.chapters ?? [];
+    }
 
-  /* =========================================================
+    return selectedSubject.chapters ?? [];
+  }, [
+    selectedSubject,
+    availableBranches,
+    selectedBranch,
+  ]);
+
+  /* =======================================================
    * Selected Chapter
-   * ========================================================= */
+   * ======================================================= */
 
-  const selectedChapter =
-    useMemo(
-      () =>
-        availableChapters.find(
-          (chapter) =>
-            chapter.id ===
-            curriculumNodeId
-        ) ?? null,
-      [
-        availableChapters,
-        curriculumNodeId,
-      ]
-    );
+  const selectedChapter = useMemo(
+    () =>
+      availableChapters.find(
+        (chapter) =>
+          chapter.id === curriculumNodeId,
+      ) ?? null,
+    [availableChapters, curriculumNodeId],
+  );
 
-
-  /* =========================================================
+  /* =======================================================
    * Class Change
-   * ========================================================= */
+   * ======================================================= */
 
-  function handleClassChange(
-    value: string
-  ) {
-    setSelectedClassSlug(
-      value
-    );
+  function handleClassChange(value: string) {
+    setSelectedClassSlug(value);
 
     /*
-     * Changing the class invalidates
-     * the previously selected chapter.
+     * Class change invalidates all lower-level selections.
      */
 
+    setSelectedSubjectId("");
+    setSelectedBranchId("");
     setCurriculumNodeId("");
 
     setError(null);
   }
 
+  /* =======================================================
+   * Subject Change
+   * ======================================================= */
 
-  /* =========================================================
-   * Chapter Change
-   * ========================================================= */
+  function handleSubjectChange(value: string) {
+    setSelectedSubjectId(value);
 
-  function handleChapterChange(
-    value: string
-  ) {
-    setCurriculumNodeId(
-      value
-    );
+    /*
+     * Subject change invalidates branch and chapter.
+     */
+
+    setSelectedBranchId("");
+    setCurriculumNodeId("");
 
     setError(null);
   }
 
+  /* =======================================================
+   * Branch Change
+   * ======================================================= */
 
-  /* =========================================================
+  function handleBranchChange(value: string) {
+    setSelectedBranchId(value);
+    setCurriculumNodeId("");
+
+    setError(null);
+  }
+
+  /* =======================================================
+   * Chapter Change
+   * ======================================================= */
+
+  function handleChapterChange(value: string) {
+    setCurriculumNodeId(value);
+    setError(null);
+  }
+
+  /* =======================================================
    * Access Type Change
-   * ========================================================= */
+   * ======================================================= */
 
   function handleAccessTypeChange(
-    value: McqAccessType
+    value: McqAccessType,
   ) {
     setAccessType(value);
-
     setError(null);
   }
 
-
-  /* =========================================================
+  /* =======================================================
    * Submit
-   * ========================================================= */
+   * ======================================================= */
 
   async function handleSubmit(
-    event: React.FormEvent<HTMLFormElement>
+    event: React.FormEvent<HTMLFormElement>,
   ) {
     event.preventDefault();
 
     setError(null);
-
     setIsSubmitting(true);
 
     try {
-
-      /*
+      /* ---------------------------------------------------
        * Curriculum validation
-       */
+       * --------------------------------------------------- */
 
       if (!selectedClass) {
+        throw new Error("Please select a class.");
+      }
+
+      if (!selectedSubject) {
+        throw new Error("Please select a subject.");
+      }
+
+      if (
+        availableBranches.length > 0 &&
+        !selectedBranch
+      ) {
         throw new Error(
-          "Please select a class."
+          "Please select a Science branch.",
         );
       }
 
       if (!curriculumNodeId) {
+        throw new Error("Please select a chapter.");
+      }
+
+      if (!selectedChapter) {
         throw new Error(
-          "Please select a chapter."
+          "The selected chapter is no longer available.",
         );
       }
 
+      /* ---------------------------------------------------
+       * Build FormData
+       * --------------------------------------------------- */
+
+      const formData = new FormData(
+        event.currentTarget,
+      );
 
       /*
-       * Build FormData from the actual form.
+       * curriculum_node_id remains the actual chapter ID.
        *
-       * The server action receives:
+       * This is important:
        *
-       * access_type
-       * curriculum_node_id
-       * max_attempts
+       * Class
+       *   ↓
+       * Subject
+       *   ↓
+       * Branch
+       *   ↓
+       * Chapter
        *
-       * The database remains the final authority
-       * for the FREE/PREMIUM attempt rule.
-       */
-
-      const formData =
-        new FormData(
-          event.currentTarget
-        );
-
-
-      /*
-       * Explicitly ensure the selected access
-       * type and DB-derived attempt value are sent.
+       * Only the final Chapter node is persisted in the
+       * existing MCQ Set mapping.
        */
 
       formData.set(
+        "curriculum_node_id",
+        selectedChapter.id,
+      );
+
+      formData.set(
         "access_type",
-        accessType
+        accessType,
       );
 
       formData.set(
         "max_attempts",
-        String(maxAttempts)
+        String(maxAttempts),
       );
 
-
-      /*
-       * Send exact FormData expected
-       * by createAdminMcqSet().
-       */
+      /* ---------------------------------------------------
+       * Existing server action
+       * --------------------------------------------------- */
 
       const result =
-        await createAdminMcqSet(
-          formData
-        );
-
-
-      /*
-       * Server-side validation / database error.
-       */
+        await createAdminMcqSet(formData);
 
       if (!result.success) {
         throw new Error(
           result.message ||
-            "Failed to create MCQ Set."
+            "Failed to create MCQ Set.",
         );
       }
-
-
-      /*
-       * Successful creation must return
-       * the newly created Set.
-       */
 
       if (!result.set) {
         throw new Error(
-          "MCQ Set was created, but no Set information was returned."
+          "MCQ Set was created, but no Set information was returned.",
         );
       }
 
-
-      /*
-       * Open the newly created Set.
-       */
-
       router.push(
-        `/admin/mcq-bank/sets/${result.set.resourceId}`
+        `/admin/mcq-bank/sets/${result.set.resourceId}`,
       );
-
     } catch (err) {
-
       setError(
         err instanceof Error
           ? err.message
-          : "Something went wrong while creating the MCQ Set."
+          : "Something went wrong while creating the MCQ Set.",
       );
 
       setIsSubmitting(false);
     }
   }
 
+  /* =======================================================
+   * Shared Classes
+   * ======================================================= */
 
-  /* =========================================================
-   * UI
-   * ========================================================= */
+  const inputClassName = `
+    mt-2
+    w-full
+    rounded-xl
+    border
+    border-slate-200
+    bg-white
+    px-4
+    py-3
+    text-sm
+    text-slate-900
+    outline-none
+    transition
+    focus:border-blue-500
+    focus:ring-2
+    focus:ring-blue-100
+    disabled:cursor-not-allowed
+    disabled:opacity-60
+    dark:border-slate-700
+    dark:bg-slate-950
+    dark:text-white
+    dark:focus:ring-blue-950
+  `;
+
+  const labelClassName = `
+    text-sm
+    font-semibold
+    text-slate-800
+    dark:text-slate-200
+  `;
 
   return (
     <form
       onSubmit={handleSubmit}
       className="space-y-6"
     >
-
       {/* =================================================
-       * Basic Information
-       * ================================================= */}
+          Basic Information
+      ================================================= */}
 
       <section
         className="
@@ -357,9 +439,7 @@ export default function McqSetCreateForm({
           dark:bg-slate-900
         "
       >
-
         <div className="mb-6">
-
           <p
             className="
               text-xs
@@ -383,28 +463,17 @@ export default function McqSetCreateForm({
           >
             Basic Details
           </h2>
-
         </div>
 
-
-        {/* =================================================
-         * Title
-         * ================================================= */}
+        {/* Title */}
 
         <div>
-
           <label
             htmlFor="title"
-            className="
-              text-sm
-              font-semibold
-              text-slate-800
-              dark:text-slate-200
-            "
+            className={labelClassName}
           >
             Set Title
           </label>
-
 
           <input
             id="title"
@@ -412,38 +481,13 @@ export default function McqSetCreateForm({
             type="text"
             value={title}
             onChange={(event) =>
-              setTitle(
-                event.target.value
-              )
+              setTitle(event.target.value)
             }
             placeholder="e.g. Probability — MCQ Set"
             disabled={isSubmitting}
-            className="
-              mt-2
-              w-full
-              rounded-xl
-              border
-              border-slate-200
-              bg-white
-              px-4
-              py-3
-              text-sm
-              text-slate-900
-              outline-none
-              transition
-              focus:border-blue-500
-              focus:ring-2
-              focus:ring-blue-100
-              disabled:cursor-not-allowed
-              disabled:opacity-60
-              dark:border-slate-700
-              dark:bg-slate-950
-              dark:text-white
-              dark:focus:ring-blue-950
-            "
+            className={inputClassName}
             required
           />
-
 
           <p
             className="
@@ -457,154 +501,79 @@ export default function McqSetCreateForm({
             chapter-wise. You do not need to enter
             the Set Number manually.
           </p>
-
         </div>
 
-
-        {/* =================================================
-         * Description
-         * ================================================= */}
+        {/* Description */}
 
         <div className="mt-5">
-
           <label
             htmlFor="description"
-            className="
-              text-sm
-              font-semibold
-              text-slate-800
-              dark:text-slate-200
-            "
+            className={labelClassName}
           >
             Description
           </label>
-
 
           <textarea
             id="description"
             name="description"
             value={description}
             onChange={(event) =>
-              setDescription(
-                event.target.value
-              )
+              setDescription(event.target.value)
             }
             placeholder="Optional description for this MCQ set..."
             rows={4}
             disabled={isSubmitting}
-            className="
-              mt-2
-              w-full
+            className={`
+              ${inputClassName}
               resize-none
-              rounded-xl
-              border
-              border-slate-200
-              bg-white
-              px-4
-              py-3
-              text-sm
               leading-6
-              text-slate-900
-              outline-none
-              transition
-              focus:border-blue-500
-              focus:ring-2
-              focus:ring-blue-100
-              disabled:cursor-not-allowed
-              disabled:opacity-60
-              dark:border-slate-700
-              dark:bg-slate-950
-              dark:text-white
-              dark:focus:ring-blue-950
-            "
+            `}
           />
-
         </div>
 
-
         {/* =================================================
-         * Class
-         * ================================================= */}
+            Class
+        ================================================= */}
 
         <div className="mt-5">
-
           <label
             htmlFor="class_slug"
-            className="
-              text-sm
-              font-semibold
-              text-slate-800
-              dark:text-slate-200
-            "
+            className={labelClassName}
           >
             Class
           </label>
-
 
           <select
             id="class_slug"
             value={selectedClassSlug}
             onChange={(event) =>
               handleClassChange(
-                event.target.value
+                event.target.value,
               )
             }
             disabled={
               isSubmitting ||
               curriculumClasses.length === 0
             }
-            className="
-              mt-2
-              w-full
-              rounded-xl
-              border
-              border-slate-200
-              bg-white
-              px-4
-              py-3
-              text-sm
-              text-slate-900
-              outline-none
-              transition
-              focus:border-blue-500
-              focus:ring-2
-              focus:ring-blue-100
-              disabled:cursor-not-allowed
-              disabled:opacity-60
-              dark:border-slate-700
-              dark:bg-slate-950
-              dark:text-white
-              dark:focus:border-blue-500
-              dark:focus:ring-blue-950
-            "
+            className={inputClassName}
             required
           >
-
             <option value="">
               Select class
             </option>
 
-
-            {curriculumClasses.map(
-              (item) => (
-                <option
-                  key={
-                    item.id
-                  }
-                  value={
-                    item.slug
-                  }
-                >
-                  {item.name}
-                  {item.session
-                    ? ` — ${item.session}`
-                    : ""}
-                </option>
-              )
-            )}
-
+            {curriculumClasses.map((item) => (
+              <option
+                key={item.id}
+                value={item.slug}
+              >
+                {item.name}
+                {item.session
+                  ? ` — ${item.session}`
+                  : ""}
+              </option>
+            ))}
           </select>
-
 
           <p
             className="
@@ -614,32 +583,141 @@ export default function McqSetCreateForm({
               text-slate-500
             "
           >
-            Select the class first. Only chapters
-            belonging to that class will appear
-            below.
+            Select the class first.
           </p>
-
         </div>
 
-
         {/* =================================================
-         * Chapter
-         * ================================================= */}
+            Subject
+        ================================================= */}
 
         <div className="mt-5">
+          <label
+            htmlFor="subject"
+            className={labelClassName}
+          >
+            Subject
+          </label>
 
+          <select
+            id="subject"
+            value={selectedSubjectId}
+            onChange={(event) =>
+              handleSubjectChange(
+                event.target.value,
+              )
+            }
+            disabled={
+              isSubmitting ||
+              !selectedClass
+            }
+            className={inputClassName}
+            required
+          >
+            <option value="">
+              {selectedClass
+                ? "Select subject"
+                : "Select class first"}
+            </option>
+
+            {availableSubjects.map(
+              (subject) => (
+                <option
+                  key={subject.id}
+                  value={subject.id}
+                >
+                  {subject.display_name}
+                </option>
+              ),
+            )}
+          </select>
+
+          {selectedClass &&
+            availableSubjects.length === 0 && (
+              <p
+                className="
+                  mt-2
+                  text-xs
+                  text-red-600
+                  dark:text-red-400
+                "
+              >
+                No active subjects are available
+                for {selectedClass.name}.
+              </p>
+            )}
+        </div>
+
+        {/* =================================================
+            Science Branch
+        ================================================= */}
+
+        {selectedSubject &&
+          availableBranches.length > 0 && (
+            <div className="mt-5">
+              <label
+                htmlFor="branch"
+                className={labelClassName}
+              >
+                Science Branch
+              </label>
+
+              <select
+                id="branch"
+                value={selectedBranchId}
+                onChange={(event) =>
+                  handleBranchChange(
+                    event.target.value,
+                  )
+                }
+                disabled={
+                  isSubmitting ||
+                  !selectedSubject
+                }
+                className={inputClassName}
+                required
+              >
+                <option value="">
+                  Select branch
+                </option>
+
+                {availableBranches.map(
+                  (branch) => (
+                    <option
+                      key={branch.id}
+                      value={branch.id}
+                    >
+                      {branch.display_name}
+                    </option>
+                  ),
+                )}
+              </select>
+
+              <p
+                className="
+                  mt-2
+                  text-xs
+                  leading-5
+                  text-slate-500
+                "
+              >
+                Select Physics, Chemistry, or
+                Biology before choosing a chapter.
+              </p>
+            </div>
+          )}
+
+        {/* =================================================
+            Chapter
+        ================================================= */}
+
+        <div className="mt-5">
           <label
             htmlFor="curriculumNodeId"
-            className="
-              text-sm
-              font-semibold
-              text-slate-800
-              dark:text-slate-200
-            "
+            className={labelClassName}
           >
             Chapter
           </label>
-
 
           <select
             id="curriculumNodeId"
@@ -647,74 +725,49 @@ export default function McqSetCreateForm({
             value={curriculumNodeId}
             onChange={(event) =>
               handleChapterChange(
-                event.target.value
+                event.target.value,
               )
             }
             disabled={
               isSubmitting ||
-              !selectedClass
+              !selectedSubject ||
+              (availableBranches.length > 0 &&
+                !selectedBranch)
             }
             required
-            className="
-              mt-2
-              w-full
-              rounded-xl
-              border
-              border-slate-200
-              bg-white
-              px-4
-              py-3
-              text-sm
-              text-slate-900
-              outline-none
-              transition
-              focus:border-blue-500
-              focus:ring-2
-              focus:ring-blue-100
-              disabled:cursor-not-allowed
-              disabled:opacity-60
-              dark:border-slate-700
-              dark:bg-slate-950
-              dark:text-white
-              dark:focus:border-blue-500
-              dark:focus:ring-blue-950
-            "
+            className={inputClassName}
           >
-
             <option value="">
-              {selectedClass
-                ? "Select a chapter"
-                : "Select class first"}
+              {!selectedClass
+                ? "Select class first"
+                : !selectedSubject
+                  ? "Select subject first"
+                  : availableBranches.length > 0 &&
+                      !selectedBranch
+                    ? "Select branch first"
+                    : "Select a chapter"}
             </option>
-
 
             {availableChapters.map(
               (chapter) => (
                 <option
-                  key={
-                    chapter.id
-                  }
-                  value={
-                    chapter.id
-                  }
+                  key={chapter.id}
+                  value={chapter.id}
                 >
                   Chapter{" "}
                   {chapter.sequence_order ??
                     "—"}{" "}
                   —{" "}
-                  {
-                    chapter.display_name
-                  }
+                  {chapter.display_name}
                 </option>
-              )
+              ),
             )}
-
           </select>
 
-
-          {selectedClass &&
-            availableChapters.length ===
-              0 && (
+          {selectedSubject &&
+            (availableBranches.length === 0 ||
+              selectedBranch) &&
+            availableChapters.length === 0 && (
               <p
                 className="
                   mt-2
@@ -724,18 +777,17 @@ export default function McqSetCreateForm({
                 "
               >
                 No active chapters are available
-                for {selectedClass.name}.
+                for the selected curriculum.
               </p>
             )}
-
         </div>
 
-
         {/* =================================================
-         * Curriculum Mapping Preview
-         * ================================================= */}
+            Curriculum Mapping Preview
+        ================================================= */}
 
         {selectedClass &&
+          selectedSubject &&
           selectedChapter && (
             <div
               className="
@@ -749,7 +801,6 @@ export default function McqSetCreateForm({
                 dark:bg-blue-950/20
               "
             >
-
               <p
                 className="
                   text-[11px]
@@ -763,7 +814,6 @@ export default function McqSetCreateForm({
                 Curriculum Mapping
               </p>
 
-
               <p
                 className="
                   mt-2
@@ -775,9 +825,13 @@ export default function McqSetCreateForm({
               >
                 {selectedClass.name}
                 {" · "}
+                {selectedSubject.display_name}
+                {selectedBranch
+                  ? ` · ${selectedBranch.display_name}`
+                  : ""}
+                {" · "}
                 {selectedChapter.display_name}
               </p>
-
 
               <p
                 className="
@@ -788,10 +842,23 @@ export default function McqSetCreateForm({
                 "
               >
                 Session:{" "}
-                {selectedClass.session ??
-                  "—"}
+                {selectedClass.session ?? "—"}
               </p>
 
+              <p
+                className="
+                  mt-2
+                  text-xs
+                  font-medium
+                  text-blue-700
+                  dark:text-blue-400
+                "
+              >
+                Chapter Node ID:{" "}
+                <span className="font-mono font-bold">
+                  {selectedChapter.id}
+                </span>
+              </p>
 
               <p
                 className="
@@ -807,16 +874,13 @@ export default function McqSetCreateForm({
                   Assigned automatically
                 </span>
               </p>
-
             </div>
           )}
-
       </section>
 
-
-      {/* =================================================
-       * Access & Test Configuration
-       * ================================================= */}
+      {/* =====================================================
+          Access & Test Configuration
+      ===================================================== */}
 
       <section
         className="
@@ -830,9 +894,7 @@ export default function McqSetCreateForm({
           dark:bg-slate-900
         "
       >
-
         <div className="mb-6">
-
           <p
             className="
               text-xs
@@ -856,27 +918,16 @@ export default function McqSetCreateForm({
           >
             Assessment Settings
           </h2>
-
         </div>
 
-
         {/* =================================================
-         * Access Type
-         * ================================================= */}
+            Access Type
+        ================================================= */}
 
         <div>
-
-          <p
-            className="
-              text-sm
-              font-semibold
-              text-slate-800
-              dark:text-slate-200
-            "
-          >
+          <p className={labelClassName}>
             Access Type
           </p>
-
 
           <div
             className="
@@ -886,7 +937,6 @@ export default function McqSetCreateForm({
               sm:grid-cols-2
             "
           >
-
             {/* FREE */}
 
             <label
@@ -918,9 +968,7 @@ export default function McqSetCreateForm({
                 }
               `}
             >
-
               <div className="flex items-start gap-3">
-
                 <input
                   type="radio"
                   name="access_type"
@@ -930,7 +978,7 @@ export default function McqSetCreateForm({
                   }
                   onChange={() =>
                     handleAccessTypeChange(
-                      "FREE"
+                      "FREE",
                     )
                   }
                   disabled={isSubmitting}
@@ -941,9 +989,7 @@ export default function McqSetCreateForm({
                   "
                 />
 
-
                 <span className="min-w-0">
-
                   <span
                     className="
                       block
@@ -955,7 +1001,6 @@ export default function McqSetCreateForm({
                   >
                     FREE
                   </span>
-
 
                   <span
                     className="
@@ -970,13 +1015,9 @@ export default function McqSetCreateForm({
                     Available without a paid
                     chapter or subject entitlement.
                   </span>
-
                 </span>
-
               </div>
-
             </label>
-
 
             {/* PREMIUM */}
 
@@ -1009,9 +1050,7 @@ export default function McqSetCreateForm({
                 }
               `}
             >
-
               <div className="flex items-start gap-3">
-
                 <input
                   type="radio"
                   name="access_type"
@@ -1021,7 +1060,7 @@ export default function McqSetCreateForm({
                   }
                   onChange={() =>
                     handleAccessTypeChange(
-                      "PREMIUM"
+                      "PREMIUM",
                     )
                   }
                   disabled={isSubmitting}
@@ -1032,9 +1071,7 @@ export default function McqSetCreateForm({
                   "
                 />
 
-
                 <span className="min-w-0">
-
                   <span
                     className="
                       block
@@ -1046,7 +1083,6 @@ export default function McqSetCreateForm({
                   >
                     PREMIUM
                   </span>
-
 
                   <span
                     className="
@@ -1061,21 +1097,15 @@ export default function McqSetCreateForm({
                     Available through the relevant
                     chapter or subject entitlement.
                   </span>
-
                 </span>
-
               </div>
-
             </label>
-
           </div>
-
         </div>
 
-
         {/* =================================================
-         * Access Type Summary
-         * ================================================= */}
+            Access Type Summary
+        ================================================= */}
 
         <div
           className="
@@ -1089,7 +1119,6 @@ export default function McqSetCreateForm({
             dark:bg-slate-950
           "
         >
-
           <div
             className="
               flex
@@ -1100,9 +1129,7 @@ export default function McqSetCreateForm({
               sm:justify-between
             "
           >
-
             <div>
-
               <p
                 className="
                   text-xs
@@ -1114,7 +1141,6 @@ export default function McqSetCreateForm({
               >
                 Maximum Attempts
               </p>
-
 
               <p
                 className="
@@ -1129,9 +1155,7 @@ export default function McqSetCreateForm({
                   ? "FREE access"
                   : "PREMIUM access"}
               </p>
-
             </div>
-
 
             <div
               className="
@@ -1140,7 +1164,6 @@ export default function McqSetCreateForm({
                 gap-2
               "
             >
-
               <span
                 className="
                   text-2xl
@@ -1152,7 +1175,6 @@ export default function McqSetCreateForm({
                 {maxAttempts}
               </span>
 
-
               <span
                 className="
                   text-xs
@@ -1162,11 +1184,8 @@ export default function McqSetCreateForm({
               >
                 attempts
               </span>
-
             </div>
-
           </div>
-
 
           <p
             className="
@@ -1181,13 +1200,11 @@ export default function McqSetCreateForm({
             automatically by the selected access type
             and are not manually editable.
           </p>
-
         </div>
 
-
         {/* =================================================
-         * Duration / Passing
-         * ================================================= */}
+            Duration / Passing
+        ================================================= */}
 
         <div
           className="
@@ -1197,23 +1214,13 @@ export default function McqSetCreateForm({
             sm:grid-cols-2
           "
         >
-
-          {/* Duration */}
-
           <div>
-
             <label
               htmlFor="durationMinutes"
-              className="
-                text-sm
-                font-semibold
-                text-slate-800
-                dark:text-slate-200
-              "
+              className={labelClassName}
             >
               Duration (minutes)
             </label>
-
 
             <input
               id="durationMinutes"
@@ -1223,53 +1230,22 @@ export default function McqSetCreateForm({
               value={durationMinutes}
               onChange={(event) =>
                 setDurationMinutes(
-                  event.target.value
+                  event.target.value,
                 )
               }
               placeholder="e.g. 20"
               disabled={isSubmitting}
-              className="
-                mt-2
-                w-full
-                rounded-xl
-                border
-                border-slate-200
-                bg-white
-                px-4
-                py-3
-                text-sm
-                text-slate-900
-                outline-none
-                focus:border-blue-500
-                focus:ring-2
-                focus:ring-blue-100
-                disabled:cursor-not-allowed
-                disabled:opacity-60
-                dark:border-slate-700
-                dark:bg-slate-950
-                dark:text-white
-              "
+              className={inputClassName}
             />
-
           </div>
 
-
-          {/* Passing Percentage */}
-
           <div>
-
             <label
               htmlFor="passingPercentage"
-              className="
-                text-sm
-                font-semibold
-                text-slate-800
-                dark:text-slate-200
-              "
+              className={labelClassName}
             >
               Passing Percentage
             </label>
-
 
             <input
               id="passingPercentage"
@@ -1281,56 +1257,29 @@ export default function McqSetCreateForm({
               value={passingPercentage}
               onChange={(event) =>
                 setPassingPercentage(
-                  event.target.value
+                  event.target.value,
                 )
               }
               placeholder="Optional"
               disabled={isSubmitting}
-              className="
-                mt-2
-                w-full
-                rounded-xl
-                border
-                border-slate-200
-                bg-white
-                px-4
-                py-3
-                text-sm
-                text-slate-900
-                outline-none
-                focus:border-blue-500
-                focus:ring-2
-                focus:ring-blue-100
-                disabled:cursor-not-allowed
-                disabled:opacity-60
-                dark:border-slate-700
-                dark:bg-slate-950
-                dark:text-white
-              "
+              className={inputClassName}
             />
-
           </div>
-
         </div>
 
-
         {/* =================================================
-         * Shuffle Settings
-         * ================================================= */}
+            Shuffle Settings
+        ================================================= */}
 
         <div className="mt-6 space-y-4">
-
-          {/* Shuffle Questions */}
-
           <label className="flex items-start gap-3">
-
             <input
               type="checkbox"
               name="shuffle_questions"
               checked={shuffleQuestions}
               onChange={(event) =>
                 setShuffleQuestions(
-                  event.target.checked
+                  event.target.checked,
                 )
               }
               disabled={isSubmitting}
@@ -1343,9 +1292,7 @@ export default function McqSetCreateForm({
               "
             />
 
-
             <span>
-
               <span
                 className="
                   block
@@ -1357,7 +1304,6 @@ export default function McqSetCreateForm({
               >
                 Shuffle Questions
               </span>
-
 
               <span
                 className="
@@ -1371,23 +1317,17 @@ export default function McqSetCreateForm({
                 Questions may appear in a different
                 order for each attempt.
               </span>
-
             </span>
-
           </label>
 
-
-          {/* Shuffle Options */}
-
           <label className="flex items-start gap-3">
-
             <input
               type="checkbox"
               name="shuffle_options"
               checked={shuffleOptions}
               onChange={(event) =>
                 setShuffleOptions(
-                  event.target.checked
+                  event.target.checked,
                 )
               }
               disabled={isSubmitting}
@@ -1400,9 +1340,7 @@ export default function McqSetCreateForm({
               "
             />
 
-
             <span>
-
               <span
                 className="
                   block
@@ -1414,7 +1352,6 @@ export default function McqSetCreateForm({
               >
                 Shuffle Options
               </span>
-
 
               <span
                 className="
@@ -1428,19 +1365,14 @@ export default function McqSetCreateForm({
                 Answer options may appear in a
                 different order.
               </span>
-
             </span>
-
           </label>
-
         </div>
-
       </section>
 
-
-      {/* =================================================
-       * Publishing Architecture Note
-       * ================================================= */}
+      {/* =====================================================
+          Publishing Architecture Note
+      ===================================================== */}
 
       <section
         className="
@@ -1453,7 +1385,6 @@ export default function McqSetCreateForm({
           dark:bg-blue-950/20
         "
       >
-
         <p
           className="
             text-sm
@@ -1479,13 +1410,11 @@ export default function McqSetCreateForm({
           publish the MCQ Set from the Content Creation
           workflow.
         </p>
-
       </section>
 
-
-      {/* =================================================
-       * Error
-       * ================================================= */}
+      {/* =====================================================
+          Error
+      ===================================================== */}
 
       {error && (
         <div
@@ -1507,10 +1436,9 @@ export default function McqSetCreateForm({
         </div>
       )}
 
-
-      {/* =================================================
-       * Actions
-       * ================================================= */}
+      {/* =====================================================
+          Actions
+      ===================================================== */}
 
       <div
         className="
@@ -1521,13 +1449,10 @@ export default function McqSetCreateForm({
           sm:justify-end
         "
       >
-
         <button
           type="button"
           onClick={() =>
-            router.push(
-              "/admin/mcq-bank"
-            )
+            router.push("/admin/mcq-bank")
           }
           disabled={isSubmitting}
           className="
@@ -1552,7 +1477,6 @@ export default function McqSetCreateForm({
         >
           Cancel
         </button>
-
 
         <button
           type="submit"
@@ -1582,9 +1506,7 @@ export default function McqSetCreateForm({
             ? "Creating Set..."
             : "Create MCQ Set"}
         </button>
-
       </div>
-
     </form>
   );
 }

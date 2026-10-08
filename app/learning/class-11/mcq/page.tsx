@@ -1,418 +1,1427 @@
 import Link from "next/link";
 
+
+
 import {
+
   getStudentMcqSets,
+
 } from "@/app/lib/learning/mcq.service";
 
-export default async function MCQPage() {
-  const sets =
+
+
+type SubjectGroup = {
+
+  subjectName: string;
+
+  branches: Map<
+
+    string,
+
+    {
+
+      branchName: string | null;
+
+      chapters: Map<
+
+        string,
+
+        {
+
+          chapterName: string;
+
+          chapterSequence: number | null;
+
+          sets: typeof setsPlaceholder;
+
+        }
+
+      >;
+
+    }
+
+  >;
+
+};
+
+
+
+type SetType = Awaited<
+
+  ReturnType<typeof getStudentMcqSets>
+
+>[number];
+
+
+
+const setsPlaceholder = [] as SetType[];
+
+
+
+type MCQPageProps = {
+  searchParams?: Promise<{
+    subject?: string | string[];
+  }>;
+};
+
+export default async function MCQPage({
+  searchParams,
+}: MCQPageProps) {
+  const searchParamsValue = searchParams
+    ? await searchParams
+    : {};
+
+  const requestedSubjectValue =
+    searchParamsValue.subject;
+
+  const requestedSubject = Array.isArray(
+    requestedSubjectValue
+  )
+    ? requestedSubjectValue[0] ?? null
+    : requestedSubjectValue ?? null;
+
+  const normalizedSubject =
+    requestedSubject?.trim().toLowerCase() || null;
+
+  const allSets =
     await getStudentMcqSets("class-11");
 
   /*
-   * =====================================================
-   * Group published MCQ Sets by chapter.
-   * =====================================================
+   * -------------------------------------------------------
+   * Subject isolation
+   * -------------------------------------------------------
+   *
+   * No query:
+   *   Keep the existing class-level MCQ view.
+   *
+   * mathematics:
+   *   Mathematics → Chapters → MCQ Sets
+   *
+   * physics / chemistry / biology:
+   *   Science → Branch → Chapters → MCQ Sets
+   *
+   * science:
+   *   Science → all available branches → Chapters
+   *
+   * IMPORTANT:
+   * An explicit subject must NEVER fall back to another
+   * subject. This prevents cross-subject MCQ leakage.
+   * -------------------------------------------------------
    */
+  const sets =
+    !normalizedSubject
+      ? allSets
+      : normalizedSubject === "mathematics"
+        ? allSets.filter(
+            (set) =>
+              set.subjectName
+                .trim()
+                .toLowerCase() === "mathematics"
+          )
+        : normalizedSubject === "science"
+          ? allSets.filter(
+              (set) =>
+                set.subjectName
+                  .trim()
+                  .toLowerCase() === "science"
+            )
+          : normalizedSubject === "physics" ||
+              normalizedSubject === "chemistry" ||
+              normalizedSubject === "biology"
+            ? allSets.filter(
+                (set) =>
+                  set.subjectName
+                    .trim()
+                    .toLowerCase() === "science" &&
+                  set.branchName
+                    ?.trim()
+                    .toLowerCase() === normalizedSubject
+              )
+            : [];
 
-  const chapters = sets.reduce<
-    Map<
+  const selectedSubjectLabel =
+    normalizedSubject === "mathematics"
+      ? "Mathematics"
+      : normalizedSubject === "physics"
+        ? "Physics"
+        : normalizedSubject === "chemistry"
+          ? "Chemistry"
+          : normalizedSubject === "biology"
+            ? "Biology"
+            : null;
+
+/* =======================================================
+
+   * Group published MCQ sets by:
+
+   *
+
+   * Subject
+
+   *   └── Branch
+
+   *       └── Chapter
+
+   *
+
+   * Mathematics:
+
+   *   Mathematics
+
+   *      └── Chapter
+
+   *
+
+   * Science:
+
+   *   Science
+
+   *      ├── Physics
+
+   *      │    └── Chapter
+
+   *      ├── Chemistry
+
+   *      │    └── Chapter
+
+   *      └── Biology
+
+   *           └── Chapter
+
+   * ======================================================= */
+
+
+
+  const subjects =
+
+    new Map<
+
       string,
-      {
-        chapterName: string;
-        chapterSequence: number | null;
-        chapterId: string;
-        sets: typeof sets;
-      }
-    >
-  >((map, set) => {
-    const existing =
-      map.get(set.chapterId);
 
-    if (existing) {
-      existing.sets.push(set);
-    } else {
-      map.set(set.chapterId, {
-        chapterId: set.chapterId,
-        chapterName: set.chapterName,
-        chapterSequence: set.chapterSequence,
-        sets: [set],
-      });
+      {
+
+        subjectName: string;
+
+        branches: Map<
+
+          string,
+
+          {
+
+            branchName: string | null;
+
+            chapters: Map<
+
+              string,
+
+              {
+
+                chapterName: string;
+
+                chapterSequence: number | null;
+
+                sets: SetType[];
+
+              }
+
+            >;
+
+          }
+
+        >;
+
+      }
+
+    >();
+
+
+
+  for (const set of sets) {
+
+    let subject =
+
+      subjects.get(
+
+        set.subjectName
+
+      );
+
+
+
+    if (!subject) {
+
+      subject = {
+
+        subjectName:
+
+          set.subjectName,
+
+        branches:
+
+          new Map(),
+
+      };
+
+
+
+      subjects.set(
+
+        set.subjectName,
+
+        subject
+
+      );
+
     }
 
-    return map;
-  }, new Map());
 
-  /*
-   * =====================================================
-   * Sort chapters according to curriculum sequence.
-   * =====================================================
-   */
 
-  const chapterList =
-    Array.from(chapters.values()).sort(
-      (a, b) =>
-        (a.chapterSequence ?? 0) -
-        (b.chapterSequence ?? 0)
+    const branchKey =
+
+      set.branchName ??
+
+      "__DIRECT__";
+
+
+
+    let branch =
+
+      subject.branches.get(
+
+        branchKey
+
+      );
+
+
+
+    if (!branch) {
+
+      branch = {
+
+        branchName:
+
+          set.branchName,
+
+        chapters:
+
+          new Map(),
+
+      };
+
+
+
+      subject.branches.set(
+
+        branchKey,
+
+        branch
+
+      );
+
+    }
+
+
+
+    let chapter =
+
+      branch.chapters.get(
+
+        set.chapterId
+
+      );
+
+
+
+    if (!chapter) {
+
+      chapter = {
+
+        chapterName:
+
+          set.chapterName,
+
+        chapterSequence:
+
+          set.chapterSequence,
+
+        sets: [],
+
+      };
+
+
+
+      branch.chapters.set(
+
+        set.chapterId,
+
+        chapter
+
+      );
+
+    }
+
+
+
+    chapter.sets.push(
+
+      set
+
     );
 
+  }
+
+
+
+  /* =======================================================
+
+   * Sort subjects
+
+   * ======================================================= */
+
+
+
+  const subjectList =
+
+    Array.from(
+
+      subjects.values()
+
+    ).sort(
+
+      (a, b) =>
+
+        a.subjectName.localeCompare(
+
+          b.subjectName
+
+        )
+
+    );
+
+
+
+  /* =======================================================
+
+   * Sort branches and chapters
+
+   * ======================================================= */
+
+
+
+  for (const subject of subjectList) {
+
+    const sortedBranches =
+
+      Array.from(
+
+        subject.branches.entries()
+
+      ).sort(
+
+        ([keyA, branchA], [keyB, branchB]) => {
+
+          /*
+
+           * Direct subject chapters come first.
+
+           * Example:
+
+           *
+
+           * Mathematics
+
+           *   └── direct chapters
+
+           *
+
+           * Science
+
+           *   └── Physics
+
+           */
+
+          if (
+
+            keyA === "__DIRECT__"
+
+          ) {
+
+            return -1;
+
+          }
+
+
+
+          if (
+
+            keyB === "__DIRECT__"
+
+          ) {
+
+            return 1;
+
+          }
+
+
+
+          return (
+
+            (branchA.branchName ?? "")
+
+              .localeCompare(
+
+                branchB.branchName ?? ""
+
+              )
+
+          );
+
+        }
+
+      );
+
+
+
+    subject.branches =
+
+      new Map(
+
+        sortedBranches
+
+      );
+
+
+
+    for (
+
+      const branch of subject.branches.values()
+
+    ) {
+
+      const sortedChapters =
+
+        Array.from(
+
+          branch.chapters.entries()
+
+        ).sort(
+
+          (
+
+            [, chapterA],
+
+            [, chapterB]
+
+          ) =>
+
+            (
+
+              chapterA.chapterSequence ??
+
+              0
+
+            ) -
+
+            (
+
+              chapterB.chapterSequence ??
+
+              0
+
+            )
+
+        );
+
+
+
+      branch.chapters =
+
+        new Map(
+
+          sortedChapters
+
+        );
+
+    }
+
+  }
+
+
+
   return (
-    <main className="px-6 py-12 sm:px-8 sm:py-16">
+
+    <main className="px-6 py-16">
+
       <div className="mx-auto max-w-5xl">
 
+
+
         {/* =================================================
-         * Back to Learning
+
+         * Page Header
+
          * ================================================= */}
 
-        <div className="mb-8">
-          <Link
-            href="/learning"
+
+
+        <div className="mb-12">
+
+
+
+          <p
+
             className="
-              inline-flex
-              items-center
-              gap-2
+
               text-sm
+
               font-semibold
+
+              uppercase
+
+              tracking-widest
+
               text-blue-700
-              transition
-              hover:text-blue-900
+
               dark:text-blue-400
-              dark:hover:text-blue-300
+
             "
+
           >
-            ← Back to Learning
-          </Link>
+
+            Class XI · MCQ Practice
+
+          </p>
+
+
+
+          <h1
+
+            className="
+
+              mt-3
+
+              text-4xl
+
+              font-bold
+
+              tracking-tight
+
+              text-blue-900
+
+              sm:text-5xl
+
+              dark:text-blue-400
+
+            "
+
+          >
+
+            MCQ Practice
+
+          </h1>
+
+
+
+          <p
+
+            className="
+
+              mt-4
+
+              max-w-3xl
+
+              text-lg
+
+              leading-8
+
+              text-slate-600
+
+              dark:text-slate-400
+
+            "
+
+          >
+
+            Practice multiple choice questions
+
+            chapter by chapter. Choose a subject
+
+            and explore its available practice sets.
+
+          </p>
+
+
+
         </div>
 
 
-        {/* =================================================
-         * MCQ Header
-         * ================================================= */}
-
-        <header className="mb-10">
-
-          <p
-            className="
-              mb-3
-              text-sm
-              font-semibold
-              uppercase
-              tracking-widest
-              text-blue-700
-              dark:text-blue-400
-            "
-          >
-            Class XI · Mathematics · 2026–27
-          </p>
-
-          <h1
-            className="
-              text-4xl
-              font-bold
-              tracking-tight
-              text-blue-900
-              dark:text-blue-400
-              sm:text-5xl
-            "
-          >
-            Class XI MCQ Practice
-          </h1>
-
-          <p
-            className="
-              mt-4
-              max-w-3xl
-              text-base
-              leading-7
-              text-slate-600
-              dark:text-slate-400
-              sm:text-lg
-            "
-          >
-            Chapter-wise multiple choice questions
-            designed to strengthen understanding,
-            check concepts, and help you practice
-            with confidence.
-          </p>
-
-        </header>
-
 
         {/* =================================================
-         * MCQ Overview
+
+         * Chapter-wise Introduction
+
          * ================================================= */}
+
+
 
         <section
+
           className="
+
             mb-10
-            rounded-3xl
+
+            rounded-2xl
+
             border
+
             border-blue-100
+
             bg-blue-50/70
+
             p-6
-            dark:border-blue-900
-            dark:bg-blue-950/30
-            sm:p-7
+
+            dark:border-blue-950
+
+            dark:bg-blue-950/20
+
           "
+
         >
 
+
+
           <p
+
             className="
+
               text-sm
+
               font-semibold
+
               uppercase
-              tracking-wider
+
+              tracking-widest
+
               text-blue-700
+
               dark:text-blue-400
+
             "
+
           >
-            Practice chapter by chapter
+
+            Subject-wise Practice
+
           </p>
+
+
 
           <h2
+
             className="
+
               mt-2
+
               text-xl
+
               font-bold
-              text-blue-950
-              dark:text-blue-200
+
+              text-slate-900
+
+              dark:text-slate-100
+
             "
+
           >
-            Choose a chapter to begin your practice
+
+            Choose a subject to begin
+
           </h2>
 
+
+
           <p
+
             className="
+
               mt-2
-              max-w-2xl
+
               text-sm
-              leading-6
-              text-blue-800
-              dark:text-blue-200
+
+              text-slate-600
+
+              dark:text-slate-400
+
             "
+
           >
-            Choose a chapter to explore its
-            published MCQ practice sets and
-            begin practicing.
+
+            Explore MCQ practice sets through
+
+            the curriculum structure of Class XI.
+
           </p>
+
+
 
         </section>
 
 
+
         {/* =================================================
-         * Chapter-wise MCQs
+
+         * Empty State
+
          * ================================================= */}
 
-        <section>
 
-          <div className="mb-5">
 
-            <p
-              className="
-                text-sm
-                font-semibold
-                uppercase
-                tracking-widest
-                text-blue-700
-                dark:text-blue-400
-              "
-            >
-              Chapters
-            </p>
+        {subjectList.length === 0 ? (
 
-            <h2
-              className="
-                mt-2
-                text-2xl
-                font-bold
-                text-slate-900
-                dark:text-slate-100
-              "
-            >
-              Explore MCQ practice
-            </h2>
+
+
+          <div
+
+            className="
+
+              rounded-2xl
+
+              border
+
+              border-dashed
+
+              p-10
+
+              text-center
+
+              text-slate-500
+
+              dark:border-slate-800
+
+              dark:text-slate-400
+
+            "
+
+          >
+
+            No MCQ practice sets are currently
+
+            available.
 
           </div>
 
 
-          {chapterList.length === 0 ? (
 
-            <div
-              className="
-                rounded-2xl
-                border
-                border-dashed
-                border-slate-300
-                p-10
-                text-center
-                text-slate-500
-                dark:border-slate-800
-                dark:text-slate-400
-              "
-            >
-              No MCQ practice sets are currently
-              available.
-            </div>
+        ) : (
 
-          ) : (
 
-            <div className="grid gap-4">
 
-              {chapterList.map(
-                (chapter) => (
+          <section>
 
-                  <Link
-                    key={chapter.chapterId}
-                    href={`/learning/class-11/mcq/${chapter.chapterId}`}
+
+
+            {/* =================================================
+
+             * Subjects
+
+             * ================================================= */}
+
+
+
+            <div className="space-y-10">
+
+
+
+              {subjectList.map(
+
+                (subject) => (
+
+
+
+                  <section
+
+                    key={
+
+                      subject.subjectName
+
+                    }
+
                     className="
-                      group
-                      block
-                      rounded-2xl
+
+                      rounded-3xl
+
                       border
+
                       border-slate-200
+
                       bg-white
+
                       p-6
+
                       shadow-sm
-                      transition
-                      hover:-translate-y-0.5
-                      hover:border-blue-300
-                      hover:shadow-md
+
                       dark:border-slate-800
+
                       dark:bg-slate-900
+
                       dark:shadow-none
-                      dark:hover:border-blue-800
+
                     "
+
                   >
 
-                    <div
-                      className="
-                        flex
-                        flex-col
-                        gap-5
-                        sm:flex-row
-                        sm:items-center
-                        sm:justify-between
-                      "
-                    >
-
-                      {/* -------------------------------------
-                       * Chapter information
-                       * ------------------------------------- */}
-
-                      <div className="min-w-0">
-
-                        <p
-                          className="
-                            text-sm
-                            font-medium
-                            text-slate-500
-                            dark:text-slate-400
-                          "
-                        >
-                          Chapter{" "}
-                          {chapter.chapterSequence ??
-                            ""}
-                        </p>
-
-                        <h3
-                          className="
-                            mt-1
-                            text-xl
-                            font-bold
-                            text-blue-900
-                            dark:text-blue-400
-                          "
-                        >
-                          {chapter.chapterName}
-                        </h3>
-
-                        <p
-                          className="
-                            mt-2
-                            text-sm
-                            text-slate-500
-                            dark:text-slate-400
-                          "
-                        >
-                          {chapter.sets.length}{" "}
-                          practice set
-                          {chapter.sets.length === 1
-                            ? ""
-                            : "s"}{" "}
-                          available
-                        </p>
-
-                      </div>
 
 
-                      {/* -------------------------------------
-                       * Action
-                       * ------------------------------------- */}
+                    {/* =================================================
 
-                      <span
+                     * Subject Header
+
+                     * ================================================= */}
+
+
+
+                    <div className="mb-6">
+
+
+
+                      <p
+
                         className="
-                          shrink-0
-                          self-start
+
                           text-sm
+
                           font-semibold
+
+                          uppercase
+
+                          tracking-widest
+
                           text-blue-700
-                          transition-transform
-                          group-hover:translate-x-1
+
                           dark:text-blue-400
-                          sm:self-auto
+
                         "
+
                       >
-                        Explore →
-                      </span>
+
+                        Subject
+
+                      </p>
+
+
+
+                      <h2
+
+                        className="
+
+                          mt-2
+
+                          text-2xl
+
+                          font-bold
+
+                          text-slate-900
+
+                          dark:text-slate-100
+
+                        "
+
+                      >
+
+                        {subject.subjectName}
+
+                      </h2>
+
+
 
                     </div>
 
-                  </Link>
+
+
+                    {/* =================================================
+
+                     * Branches
+
+                     * ================================================= */}
+
+
+
+                    <div className="space-y-8">
+
+
+
+                      {Array.from(
+
+                        subject.branches.values()
+
+                      ).map(
+
+                        (branch) => (
+
+
+
+                          <div
+
+                            key={
+
+                              branch.branchName ??
+
+                              "__DIRECT__"
+
+                            }
+
+                          >
+
+
+
+                            {/* =================================================
+
+                             * Branch Header
+
+                             * ================================================= */}
+
+
+
+                            {branch.branchName && (
+
+
+
+                              <div
+
+                                className="
+
+                                  mb-4
+
+                                  rounded-2xl
+
+                                  border
+
+                                  border-blue-100
+
+                                  bg-blue-50/60
+
+                                  px-5
+
+                                  py-4
+
+                                  dark:border-blue-950
+
+                                  dark:bg-blue-950/20
+
+                                "
+
+                              >
+
+
+
+                                <p
+
+                                  className="
+
+                                    text-xs
+
+                                    font-semibold
+
+                                    uppercase
+
+                                    tracking-widest
+
+                                    text-blue-700
+
+                                    dark:text-blue-400
+
+                                  "
+
+                                >
+
+                                  Branch
+
+                                </p>
+
+
+
+                                <h3
+
+                                  className="
+
+                                    mt-1
+
+                                    text-xl
+
+                                    font-bold
+
+                                    text-slate-900
+
+                                    dark:text-slate-100
+
+                                  "
+
+                                >
+
+                                  {branch.branchName}
+
+                                </h3>
+
+
+
+                              </div>
+
+
+
+                            )}
+
+
+
+                            {/* =================================================
+
+                             * Chapters
+
+                             * ================================================= */}
+
+
+
+                            <div className="space-y-3">
+
+
+
+                              {Array.from(
+
+                                branch.chapters.entries()
+
+                              ).map(
+
+                                (
+
+                                  [
+
+                                    chapterId,
+
+                                    chapter
+
+                                  ],
+
+                                  chapterIndex
+
+                                ) => (
+
+
+
+                                  <Link
+
+                                    key={
+
+                                      chapterId
+
+                                    }
+
+                                    href={
+                                      selectedSubjectLabel
+                                        ? `/learning/class-11/mcq/${chapterId}?subject=${encodeURIComponent(
+                                            normalizedSubject!
+                                          )}`
+                                        : `/learning/class-11/mcq/${chapterId}`
+                                    }
+
+                                    className="
+
+                                      block
+
+                                      rounded-2xl
+
+                                      border
+
+                                      border-slate-200
+
+                                      bg-white
+
+                                      p-5
+
+                                      transition
+
+                                      hover:-translate-y-0.5
+
+                                      hover:border-blue-300
+
+                                      hover:shadow-md
+
+                                      dark:border-slate-800
+
+                                      dark:bg-slate-900
+
+                                      dark:hover:border-slate-700
+
+                                    "
+
+                                  >
+
+
+
+                                    <div
+
+                                      className="
+
+                                        flex
+
+                                        flex-col
+
+                                        gap-4
+
+                                        sm:flex-row
+
+                                        sm:items-center
+
+                                        sm:justify-between
+
+                                      "
+
+                                    >
+
+
+
+                                      {/* =================================================
+
+                                       * Chapter Information
+
+                                       * ================================================= */}
+
+
+
+                                      <div>
+
+
+
+                                        <p
+
+                                          className="
+
+                                            text-sm
+
+                                            text-slate-500
+
+                                            dark:text-slate-400
+
+                                          "
+
+                                        >
+
+                                          Chapter{" "}
+
+                                          {
+
+                                            chapter.chapterSequence ??
+
+                                            chapterIndex + 1
+
+                                          }
+
+                                        </p>
+
+
+
+                                        <h4
+
+                                          className="
+
+                                            mt-1
+
+                                            text-xl
+
+                                            font-semibold
+
+                                            text-blue-900
+
+                                            dark:text-blue-400
+
+                                          "
+
+                                        >
+
+                                          {
+
+                                            chapter.chapterName
+
+                                          }
+
+                                        </h4>
+
+
+
+                                        <div
+
+                                          className="
+
+                                            mt-2
+
+                                            flex
+
+                                            flex-wrap
+
+                                            gap-x-4
+
+                                            gap-y-1
+
+                                            text-sm
+
+                                            text-slate-500
+
+                                            dark:text-slate-400
+
+                                          "
+
+                                        >
+
+
+
+                                          <span>
+
+                                            {
+
+                                              chapter.sets.length
+
+                                            }{" "}
+
+                                            {
+
+                                              chapter.sets.length ===
+
+                                              1
+
+                                                ? "set"
+
+                                                : "sets"
+
+                                            }
+
+                                          </span>
+
+
+
+                                          <span>
+
+                                            {
+
+                                              chapter.sets.reduce(
+
+                                                (
+
+                                                  total,
+
+                                                  set
+
+                                                ) =>
+
+                                                  total +
+
+                                                  set.questionCount,
+
+                                                0
+
+                                              )
+
+                                            }{" "}
+
+                                            questions
+
+                                          </span>
+
+
+
+                                        </div>
+
+
+
+                                      </div>
+
+
+
+                                      {/* =================================================
+
+                                       * Explore Action
+
+                                       * ================================================= */}
+
+
+
+                                      <span
+
+                                        className="
+
+                                          shrink-0
+
+                                          font-semibold
+
+                                          text-blue-700
+
+                                          dark:text-blue-400
+
+                                        "
+
+                                      >
+
+                                        Explore →
+
+                                      </span>
+
+
+
+                                    </div>
+
+
+
+                                  </Link>
+
+
+
+                                )
+
+                              )}
+
+
+
+                            </div>
+
+
+
+                          </div>
+
+
+
+                        )
+
+                      )}
+
+
+
+                    </div>
+
+
+
+                  </section>
+
+
 
                 )
+
               )}
+
+
 
             </div>
 
-          )}
-
-        </section>
 
 
-        {/* =================================================
-         * Bottom Navigation
-         * ================================================= */}
+          </section>
 
-        <div
-          className="
-            mt-10
-            border-t
-            border-slate-200
-            pt-6
-            dark:border-slate-800
-          "
-        >
 
-          <Link
-            href="/learning"
-            className="
-              inline-flex
-              items-center
-              gap-2
-              text-sm
-              font-semibold
-              text-slate-600
-              transition
-              hover:text-blue-700
-              dark:text-slate-400
-              dark:hover:text-blue-400
-            "
-          >
-            ← Return to your Learning Space
-          </Link>
 
-        </div>
+        )}
+
+
 
       </div>
+
     </main>
+
   );
+
 }

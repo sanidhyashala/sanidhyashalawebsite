@@ -1,8 +1,6 @@
 import "server-only";
 
 import { createAdminSupabaseClient } from "@/app/lib/admin/supabase-admin";
-import { createLearningSupabaseClient } from "@/lib/learning/supabase-learning";
-import { requireLearningAuth } from "@/lib/learning/learning-auth";
 
 /* =========================================================
  * Types
@@ -15,29 +13,9 @@ export type StudentMcqSet = {
 
   description: string | null;
 
-  accessType: string;
-
-  /*
-   * Student access state.
-   *
-   * FREE:
-   *   hasAccess = true
-   *
-   * PREMIUM:
-   *   true  = chapter/subject entitlement exists
-   *   false = student should see the set as locked
-   */
-  hasAccess: boolean;
-
-  /*
-   * Convenience flag for the UI.
-   *
-   * A set is locked only when it is PREMIUM
-   * and the current student does not have access.
-   */
-  isLocked: boolean;
-
   setNumber: number | null;
+
+  accessType: string;
 
   questionCount: number;
 
@@ -46,6 +24,10 @@ export type StudentMcqSet = {
   chapterName: string;
 
   chapterSequence: number | null;
+
+  subjectName: string;
+
+  branchName: string | null;
 
   session: string;
 
@@ -60,36 +42,35 @@ export type StudentMcqSet = {
  *
  * Student visibility boundary:
  *
- * Resource
- *   ├── resource_type = MCQ
- *   └── status = PUBLISHED
+ *   Resource
+ *      ├── resource_type = MCQ
+ *      └── status = PUBLISHED
  *
- * Curriculum
- *   ├── matching class/program
- *   ├── published curriculum version
- *   └── active chapter
+ *   Curriculum
+ *      ├── matching class/program
+ *      ├── published curriculum version
+ *      └── active chapter
  *
- * Test
- *   ├── test_type = MCQ
- *   └── status = PUBLISHED
+ *   Test
+ *      ├── test_type = MCQ
+ *      └── status = PUBLISHED
  *
- * Access:
+ * Curriculum hierarchy:
  *
- * FREE
- *   → accessible
+ *   Mathematics
+ *      └── Chapter
  *
- * PREMIUM
- *   → accessible only when the authenticated student
- *     has an active Chapter or Subject learning-product
- *     entitlement.
+ *   Science
+ *      ├── Physics
+ *      │    └── Chapter
+ *      ├── Chemistry
+ *      │    └── Chapter
+ *      └── Biology
+ *           └── Chapter
  *
- * IMPORTANT:
- *
- * The admin client is used for trusted content reads.
- *
- * The authenticated learning client is used ONLY for
- * the access resolver so that auth.jwt() represents the
- * current Clerk/Supabase student session.
+ * The service resolves the hierarchy so the student-facing
+ * pages know whether a chapter belongs directly to a subject
+ * or belongs to a branch inside a subject.
  *
  * DRAFT resources are never returned.
  * ========================================================= */
@@ -104,17 +85,8 @@ export async function getStudentMcqSets(
     return [];
   }
 
-  /*
-   * The access resolver depends on the authenticated
-   * student's Supabase JWT.
-   */
-  await requireLearningAuth();
-
   const supabase =
     createAdminSupabaseClient();
-
-  const learningSupabase =
-    await createLearningSupabaseClient();
 
   /* -------------------------------------------------------
    * 1. Find published class/program
@@ -125,12 +97,14 @@ export async function getStudentMcqSets(
     error: programError,
   } = await supabase
     .from("programs")
-    .select(`
-      id,
-      name,
-      slug,
-      status
-    `)
+    .select(
+      `
+        id,
+        name,
+        slug,
+        status
+      `
+    )
     .eq(
       "slug",
       normalizedClassSlug
@@ -160,11 +134,13 @@ export async function getStudentMcqSets(
     error: versionError,
   } = await supabase
     .from("curriculum_versions")
-    .select(`
-      id,
-      session,
-      status
-    `)
+    .select(
+      `
+        id,
+        session,
+        status
+      `
+    )
     .eq(
       "program_id",
       program.id
@@ -193,20 +169,43 @@ export async function getStudentMcqSets(
   }
 
   /* -------------------------------------------------------
-   * 3. Find active chapters
+   * 3. Load the complete active curriculum hierarchy
+   * -------------------------------------------------------
+   *
+   * We intentionally load all active nodes instead of treating
+   * every node as a chapter.
+   *
+   * This is necessary because Science has:
+   *
+   *   Science
+   *      ├── Physics
+   *      ├── Chemistry
+   *      └── Biology
+   *
+   * while Mathematics can have:
+   *
+   *   Mathematics
+   *      └── Chapter
+   *
+   * A real chapter is identified as an active node that has
+   * no active child nodes.
    * ------------------------------------------------------- */
 
   const {
-    data: chapters,
-    error: chaptersError,
+    data: curriculumNodes,
+    error: curriculumNodesError,
   } = await supabase
     .from("curriculum_nodes")
-    .select(`
-      id,
-      display_name,
-      sequence_order,
-      status
-    `)
+    .select(
+      `
+        id,
+        curriculum_version_id,
+        parent_node_id,
+        display_name,
+        sequence_order,
+        status
+      `
+    )
     .eq(
       "curriculum_version_id",
       curriculumVersion.id
@@ -222,27 +221,67 @@ export async function getStudentMcqSets(
       }
     );
 
-  if (chaptersError) {
+  if (curriculumNodesError) {
     throw new Error(
-      `Failed to load curriculum chapters: ${chaptersError.message}`
+      `Failed to load curriculum hierarchy: ${curriculumNodesError.message}`
     );
   }
 
   if (
-    !chapters ||
-    chapters.length === 0
+    !curriculumNodes ||
+    curriculumNodes.length === 0
   ) {
     return [];
   }
 
+  /* -------------------------------------------------------
+   * 4. Build curriculum lookup maps
+   * ------------------------------------------------------- */
+
+  const nodeById =
+    new Map(
+      curriculumNodes.map(
+        (node) => [
+          node.id,
+          node,
+        ]
+      )
+    );
+
+  const childNodeIds =
+    new Set(
+      curriculumNodes
+        .filter(
+          (node) =>
+            node.parent_node_id !== null
+        )
+        .map(
+          (node) =>
+            node.parent_node_id as string
+        )
+    );
+
+  /*
+   * A chapter is an active node that has no active children.
+   *
+   * This keeps Science branches such as Physics,
+   * Chemistry and Biology from being treated as chapters.
+   */
   const chapterIds =
-    chapters.map(
-      (chapter) =>
-        chapter.id
+    new Set(
+      curriculumNodes
+        .filter(
+          (node) =>
+            !childNodeIds.has(node.id)
+        )
+        .map(
+          (node) =>
+            node.id
+        )
     );
 
   /* -------------------------------------------------------
-   * 4. Find MCQ resources mapped to these chapters
+   * 5. Find MCQ resources mapped to actual chapters
    * ------------------------------------------------------- */
 
   const {
@@ -250,13 +289,15 @@ export async function getStudentMcqSets(
     error: resourceMappingsError,
   } = await supabase
     .from("resource_curriculum_nodes")
-    .select(`
-      resource_id,
-      curriculum_node_id
-    `)
+    .select(
+      `
+        resource_id,
+        curriculum_node_id
+      `
+    )
     .in(
       "curriculum_node_id",
-      chapterIds
+      Array.from(chapterIds)
     );
 
   if (resourceMappingsError) {
@@ -283,7 +324,7 @@ export async function getStudentMcqSets(
     );
 
   /* -------------------------------------------------------
-   * 5. Load only PUBLISHED MCQ resources
+   * 6. Load only PUBLISHED MCQ resources
    * ------------------------------------------------------- */
 
   const {
@@ -291,15 +332,17 @@ export async function getStudentMcqSets(
     error: resourcesError,
   } = await supabase
     .from("resources")
-    .select(`
-      id,
-      title,
-      description,
-      access_type,
-      status,
-      resource_type,
-      set_number
-    `)
+    .select(
+      `
+        id,
+        title,
+        description,
+        access_type,
+        status,
+        resource_type,
+        set_number
+      `
+    )
     .in(
       "id",
       resourceIds
@@ -333,7 +376,7 @@ export async function getStudentMcqSets(
   }
 
   /* -------------------------------------------------------
-   * 6. Load linked PUBLISHED MCQ tests
+   * 7. Load linked PUBLISHED MCQ tests
    * ------------------------------------------------------- */
 
   const {
@@ -341,12 +384,14 @@ export async function getStudentMcqSets(
     error: testsError,
   } = await supabase
     .from("tests")
-    .select(`
-      id,
-      resource_id,
-      status,
-      test_type
-    `)
+    .select(
+      `
+        id,
+        resource_id,
+        status,
+        test_type
+      `
+    )
     .in(
       "resource_id",
       resources.map(
@@ -385,7 +430,14 @@ export async function getStudentMcqSets(
     );
 
   /* -------------------------------------------------------
-   * 7. Load questions for each published test
+   * 8. Load questions for each published test
+   * -------------------------------------------------------
+   *
+   * We intentionally fetch the actual test_questions rows
+   * instead of using a HEAD/count request.
+   *
+   * This gives us a direct and reliable question count
+   * from the same rows that make up the published test.
    * ------------------------------------------------------- */
 
   const questionCounts =
@@ -423,118 +475,37 @@ export async function getStudentMcqSets(
   }
 
   /* -------------------------------------------------------
-   * 8. Build lookup maps
+   * 9. Build resource → curriculum mapping
    * ------------------------------------------------------- */
-
-  const chapterById =
-    new Map(
-      chapters.map(
-        (chapter) => [
-          chapter.id,
-          chapter,
-        ]
-      )
-    );
 
   const mappingByResourceId =
-    new Map(
-      resourceMappings.map(
-        (mapping) => [
-          mapping.resource_id,
-          mapping,
-        ]
-      )
-    );
-
-  /* -------------------------------------------------------
-   * 9. Resolve student access
-   * -------------------------------------------------------
-   *
-   * IMPORTANT:
-   *
-   * The access resolver:
-   *
-   *   user_has_learning_product_access(resource_id)
-   *
-   * reads the authenticated Clerk/Supabase user from:
-   *
-   *   auth.jwt()->>'sub'
-   *
-   * Therefore the RPC MUST use the authenticated
-   * learning Supabase client.
-   *
-   * The admin client must NOT be used here.
-   * ------------------------------------------------------- */
-
-  const accessByResourceId =
     new Map<
       string,
-      boolean
+      {
+        resource_id: string;
+        curriculum_node_id: string;
+      }
     >();
 
   for (
-    const resource of resources
+    const mapping of resourceMappings
   ) {
-    /* -----------------------------------------------------
-     * FREE
-     * ----------------------------------------------------- */
-
-    if (
-      resource.access_type ===
-      "FREE"
-    ) {
-      accessByResourceId.set(
-        resource.id,
-        true
-      );
-
-      continue;
-    }
-
-    /* -----------------------------------------------------
-     * PREMIUM
-     * ----------------------------------------------------- */
-
-    if (
-      resource.access_type ===
-      "PREMIUM"
-    ) {
-      const {
-        data: hasAccess,
-        error: accessError,
-      } = await learningSupabase.rpc(
-        "user_has_learning_product_access",
-        {
-          p_resource_id:
-            resource.id,
-        }
-      );
-
-      if (accessError) {
-        throw new Error(
-          `Failed to resolve MCQ access: ${accessError.message}`
-        );
-      }
-
-      accessByResourceId.set(
-        resource.id,
-        hasAccess === true
-      );
-
-      continue;
-    }
-
-    /* -----------------------------------------------------
-     * Defensive fallback
+    /*
+     * A resource should normally have one curriculum mapping.
      *
-     * Unknown access types must never become
-     * accidentally accessible.
-     * ----------------------------------------------------- */
-
-    accessByResourceId.set(
-      resource.id,
-      false
-    );
+     * We keep the first mapping for backward compatibility
+     * with the existing student MCQ structure.
+     */
+    if (
+      !mappingByResourceId.has(
+        mapping.resource_id
+      )
+    ) {
+      mappingByResourceId.set(
+        mapping.resource_id,
+        mapping
+      );
+    }
   }
 
   /* -------------------------------------------------------
@@ -555,14 +526,21 @@ export async function getStudentMcqSets(
             resource.id
           );
 
-        const chapter =
-          mapping
-            ? chapterById.get(
-                mapping.curriculum_node_id
-              )
-            : undefined;
+        if (!mapping) {
+          return null;
+        }
 
-        if (!chapter) {
+        const chapter =
+          nodeById.get(
+            mapping.curriculum_node_id
+          );
+
+        if (
+          !chapter ||
+          !chapterIds.has(
+            chapter.id
+          )
+        ) {
           return null;
         }
 
@@ -571,25 +549,102 @@ export async function getStudentMcqSets(
             resource.id
           ) ?? 0;
 
-        /* -------------------------------------------------
-         * Defensive publication boundary
-         * ------------------------------------------------- */
-
+        /*
+         * Defensive publication boundary.
+         *
+         * A published MCQ Set without questions should
+         * never normally reach the student-facing UI.
+         */
         if (
           questionCount <= 0
         ) {
           return null;
         }
 
-        const hasAccess =
-          accessByResourceId.get(
-            resource.id
-          ) ?? false;
+        /*
+         * Resolve the chapter hierarchy.
+         *
+         * Mathematics:
+         *
+         *   Mathematics
+         *      └── Chapter
+         *
+         * Science:
+         *
+         *   Science
+         *      └── Physics
+         *           └── Chapter
+         *
+         * Therefore:
+         *
+         *   direct child of root
+         *      → subject = parent
+         *      → branch = null
+         *
+         *   grandchild of root
+         *      → subject = grandparent
+         *      → branch = parent
+         */
 
-        const isLocked =
-          resource.access_type ===
-            "PREMIUM" &&
-          !hasAccess;
+        const parent =
+          chapter.parent_node_id
+            ? nodeById.get(
+                chapter.parent_node_id
+              )
+            : undefined;
+
+        const grandparent =
+          parent?.parent_node_id
+            ? nodeById.get(
+                parent.parent_node_id
+              )
+            : undefined;
+
+        let subjectName: string;
+        let branchName:
+          | string
+          | null;
+
+        if (grandparent) {
+          /*
+           * Example:
+           *
+           * Motion
+           *   → Physics
+           *      → Science
+           */
+          subjectName =
+            grandparent.display_name;
+
+          branchName =
+            parent?.display_name ??
+            null;
+        } else if (parent) {
+          /*
+           * Example:
+           *
+           * Mathematics Chapter
+           *   → Mathematics
+           */
+          subjectName =
+            parent.display_name;
+
+          branchName =
+            null;
+        } else {
+          /*
+           * Defensive fallback.
+           *
+           * A valid chapter should normally always have
+           * a parent subject in the current curriculum
+           * architecture.
+           */
+          subjectName =
+            chapter.display_name;
+
+          branchName =
+            null;
+        }
 
         return {
           resourceId:
@@ -601,15 +656,11 @@ export async function getStudentMcqSets(
           description:
             resource.description,
 
-          accessType:
-            resource.access_type,
-
-          hasAccess,
-
-          isLocked,
-
           setNumber:
             resource.set_number,
+
+          accessType:
+            resource.access_type,
 
           questionCount,
 
@@ -621,6 +672,10 @@ export async function getStudentMcqSets(
 
           chapterSequence:
             chapter.sequence_order,
+
+          subjectName,
+
+          branchName,
 
           session:
             curriculumVersion.session,
@@ -641,6 +696,12 @@ export async function getStudentMcqSets(
     )
     .sort(
       (a, b) => {
+        /*
+         * Keep the existing chapter/set ordering.
+         *
+         * The page layer will handle subject/branch
+         * grouping separately.
+         */
         const chapterOrder =
           (a.chapterSequence ?? 0) -
           (b.chapterSequence ?? 0);
@@ -656,529 +717,5 @@ export async function getStudentMcqSets(
           (b.setNumber ?? 0)
         );
       }
-    );
-}
-
-
-/* =========================================================
- * Get published MCQ sets for a specific chapter
- * =========================================================
- *
- * This function is used by:
- *
- * /learning/class-10/mcq/[chapterId]
- *
- * It first verifies that the chapter belongs to the
- * requested class's currently published curriculum.
- *
- * Only then are MCQ resources for that chapter loaded.
- *
- * Access:
- *
- * FREE
- *   → accessible
- *
- * PREMIUM + entitlement
- *   → accessible
- *
- * PREMIUM + no entitlement
- *   → locked
- * ========================================================= */
-
-export async function getStudentMcqSetsByChapter(
-  classSlug: string,
-  chapterId: string
-): Promise<StudentMcqSet[]> {
-  const normalizedClassSlug =
-    classSlug.trim().toLowerCase();
-
-  const normalizedChapterId =
-    chapterId.trim();
-
-  if (
-    !normalizedClassSlug ||
-    !normalizedChapterId
-  ) {
-    return [];
-  }
-
-  /*
-   * The access resolver depends on the authenticated
-   * student's Supabase JWT.
-   */
-  await requireLearningAuth();
-
-  const supabase =
-    createAdminSupabaseClient();
-
-  const learningSupabase =
-    await createLearningSupabaseClient();
-
-  /* -------------------------------------------------------
-   * 1. Find published class/program
-   * ------------------------------------------------------- */
-
-  const {
-    data: program,
-    error: programError,
-  } = await supabase
-    .from("programs")
-    .select(`
-      id,
-      name,
-      slug,
-      status
-    `)
-    .eq(
-      "slug",
-      normalizedClassSlug
-    )
-    .eq(
-      "status",
-      "PUBLISHED"
-    )
-    .maybeSingle();
-
-  if (programError) {
-    throw new Error(
-      `Failed to load class: ${programError.message}`
-    );
-  }
-
-  if (!program) {
-    return [];
-  }
-
-  /* -------------------------------------------------------
-   * 2. Find published curriculum version
-   * ------------------------------------------------------- */
-
-  const {
-    data: curriculumVersion,
-    error: versionError,
-  } = await supabase
-    .from("curriculum_versions")
-    .select(`
-      id,
-      session,
-      status
-    `)
-    .eq(
-      "program_id",
-      program.id
-    )
-    .eq(
-      "status",
-      "PUBLISHED"
-    )
-    .order(
-      "session",
-      {
-        ascending: false,
-      }
-    )
-    .limit(1)
-    .maybeSingle();
-
-  if (versionError) {
-    throw new Error(
-      `Failed to load curriculum version: ${versionError.message}`
-    );
-  }
-
-  if (!curriculumVersion) {
-    return [];
-  }
-
-  /* -------------------------------------------------------
-   * 3. Validate requested chapter
-   * ------------------------------------------------------- */
-
-  const {
-    data: chapter,
-    error: chapterError,
-  } = await supabase
-    .from("curriculum_nodes")
-    .select(`
-      id,
-      display_name,
-      sequence_order,
-      status
-    `)
-    .eq(
-      "id",
-      normalizedChapterId
-    )
-    .eq(
-      "curriculum_version_id",
-      curriculumVersion.id
-    )
-    .eq(
-      "status",
-      "ACTIVE"
-    )
-    .maybeSingle();
-
-  if (chapterError) {
-    throw new Error(
-      `Failed to load MCQ chapter: ${chapterError.message}`
-    );
-  }
-
-  if (!chapter) {
-    return [];
-  }
-
-  /* -------------------------------------------------------
-   * 4. Find resources mapped ONLY to this chapter
-   * ------------------------------------------------------- */
-
-  const {
-    data: resourceMappings,
-    error: resourceMappingsError,
-  } = await supabase
-    .from("resource_curriculum_nodes")
-    .select(`
-      resource_id,
-      curriculum_node_id
-    `)
-    .eq(
-      "curriculum_node_id",
-      chapter.id
-    );
-
-  if (resourceMappingsError) {
-    throw new Error(
-      `Failed to load MCQ resource mappings: ${resourceMappingsError.message}`
-    );
-  }
-
-  if (
-    !resourceMappings ||
-    resourceMappings.length === 0
-  ) {
-    return [];
-  }
-
-  const resourceIds =
-    Array.from(
-      new Set(
-        resourceMappings.map(
-          (mapping) =>
-            mapping.resource_id
-        )
-      )
-    );
-
-  if (
-    resourceIds.length === 0
-  ) {
-    return [];
-  }
-
-  /* -------------------------------------------------------
-   * 5. Load published MCQ resources
-   * ------------------------------------------------------- */
-
-  const {
-    data: resources,
-    error: resourcesError,
-  } = await supabase
-    .from("resources")
-    .select(`
-      id,
-      title,
-      description,
-      access_type,
-      status,
-      resource_type,
-      set_number
-    `)
-    .in(
-      "id",
-      resourceIds
-    )
-    .eq(
-      "resource_type",
-      "MCQ"
-    )
-    .eq(
-      "status",
-      "PUBLISHED"
-    )
-    .order(
-      "set_number",
-      {
-        ascending: true,
-      }
-    );
-
-  if (resourcesError) {
-    throw new Error(
-      `Failed to load published MCQ resources: ${resourcesError.message}`
-    );
-  }
-
-  if (
-    !resources ||
-    resources.length === 0
-  ) {
-    return [];
-  }
-
-  /* -------------------------------------------------------
-   * 6. Load linked published MCQ tests
-   * ------------------------------------------------------- */
-
-  const {
-    data: tests,
-    error: testsError,
-  } = await supabase
-    .from("tests")
-    .select(`
-      id,
-      resource_id,
-      status,
-      test_type
-    `)
-    .in(
-      "resource_id",
-      resources.map(
-        (resource) =>
-          resource.id
-      )
-    )
-    .eq(
-      "test_type",
-      "MCQ"
-    )
-    .eq(
-      "status",
-      "PUBLISHED"
-    );
-
-  if (testsError) {
-    throw new Error(
-      `Failed to load published MCQ tests: ${testsError.message}`
-    );
-  }
-
-  if (
-    !tests ||
-    tests.length === 0
-  ) {
-    return [];
-  }
-
-  /* -------------------------------------------------------
-   * 7. Published resource IDs
-   * ------------------------------------------------------- */
-
-  const publishedResourceIds =
-    new Set(
-      tests.map(
-        (test) =>
-          test.resource_id
-      )
-    );
-
-  /* -------------------------------------------------------
-   * 8. Count questions for each test
-   * ------------------------------------------------------- */
-
-  const questionCounts =
-    new Map<string, number>();
-
-  for (
-    const test of tests
-  ) {
-    const {
-      data: questionRows,
-      error: questionRowsError,
-    } = await supabase
-      .from("test_questions")
-      .select(
-        "question_id"
-      )
-      .eq(
-        "test_id",
-        test.id
-      );
-
-    if (questionRowsError) {
-      throw new Error(
-        `Failed to load MCQ questions: ${questionRowsError.message}`
-      );
-    }
-
-    questionCounts.set(
-      test.resource_id,
-      questionRows?.length ?? 0
-    );
-  }
-
-  /* -------------------------------------------------------
-   * 9. Resolve student access
-   * ------------------------------------------------------- */
-
-  const accessByResourceId =
-    new Map<
-      string,
-      boolean
-    >();
-
-  for (
-    const resource of resources
-  ) {
-    /* -----------------------------------------------------
-     * FREE
-     * ----------------------------------------------------- */
-
-    if (
-      resource.access_type ===
-      "FREE"
-    ) {
-      accessByResourceId.set(
-        resource.id,
-        true
-      );
-
-      continue;
-    }
-
-    /* -----------------------------------------------------
-     * PREMIUM
-     * ----------------------------------------------------- */
-
-    if (
-      resource.access_type ===
-      "PREMIUM"
-    ) {
-      const {
-        data: hasAccess,
-        error: accessError,
-      } = await learningSupabase.rpc(
-        "user_has_learning_product_access",
-        {
-          p_resource_id:
-            resource.id,
-        }
-      );
-
-      if (accessError) {
-        throw new Error(
-          `Failed to resolve MCQ access: ${accessError.message}`
-        );
-      }
-
-      accessByResourceId.set(
-        resource.id,
-        hasAccess === true
-      );
-
-      continue;
-    }
-
-    /* -----------------------------------------------------
-     * Defensive fallback
-     * ----------------------------------------------------- */
-
-    accessByResourceId.set(
-      resource.id,
-      false
-    );
-  }
-
-  /* -------------------------------------------------------
-   * 10. Normalize chapter MCQ sets
-   * ------------------------------------------------------- */
-
-  return resources
-    .filter(
-      (resource) =>
-        publishedResourceIds.has(
-          resource.id
-        )
-    )
-    .map(
-      (resource) => {
-        const questionCount =
-          questionCounts.get(
-            resource.id
-          ) ?? 0;
-
-        /*
-         * Published resource without questions
-         * should not appear to students.
-         */
-
-        if (
-          questionCount <= 0
-        ) {
-          return null;
-        }
-
-        const hasAccess =
-          accessByResourceId.get(
-            resource.id
-          ) ?? false;
-
-        const isLocked =
-          resource.access_type ===
-            "PREMIUM" &&
-          !hasAccess;
-
-        return {
-          resourceId:
-            resource.id,
-
-          title:
-            resource.title,
-
-          description:
-            resource.description,
-
-          accessType:
-            resource.access_type,
-
-          hasAccess,
-
-          isLocked,
-
-          setNumber:
-            resource.set_number,
-
-          questionCount,
-
-          chapterId:
-            chapter.id,
-
-          chapterName:
-            chapter.display_name,
-
-          chapterSequence:
-            chapter.sequence_order,
-
-          session:
-            curriculumVersion.session,
-
-          className:
-            program.name,
-
-          classSlug:
-            program.slug,
-        };
-      }
-    )
-    .filter(
-      (
-        set
-      ): set is StudentMcqSet =>
-        set !== null
-    )
-    .sort(
-      (a, b) =>
-        (a.setNumber ?? 0) -
-        (b.setNumber ?? 0)
     );
 }

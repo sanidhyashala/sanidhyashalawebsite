@@ -1,7 +1,12 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { auth } from "@clerk/nextjs/server";
+import { notFound, redirect } from "next/navigation";
 
-import { getLearningCurriculum } from "@/lib/learning/curriculum";
+import {
+  getLearningCurriculum,
+  getLearningSubjects,
+} from "@/lib/learning/curriculum";
+
 import { getPublishedResourceContent } from "@/lib/learning/content";
 
 import ResourceContentRenderer from "@/components/learning/ResourceContentRenderer";
@@ -18,64 +23,160 @@ export default async function NoteResourcePage({
 }: NotesPageProps) {
   const { slug } = await params;
 
-  /*
-   * -------------------------------------------------------
-   * Load the Class X curriculum
-   * -------------------------------------------------------
-   *
-   * The curriculum is resolved dynamically from the
-   * published program and curriculum version.
-   */
-  const chapters =
-    await getLearningCurriculum("class-10");
+  // -------------------------------------------------------
+  // Authentication
+  // -------------------------------------------------------
 
-  /*
-   * -------------------------------------------------------
-   * Find the requested NOTE resource
-   * -------------------------------------------------------
-   *
-   * We search only inside Class X curriculum data.
-   */
-  const noteResource = chapters
-    .flatMap(
-      (chapter) =>
-        chapter.resource_curriculum_nodes?.flatMap(
-          (mapping) => mapping.resources ?? []
-        ) ?? []
-    )
+  const { isAuthenticated, userId } = await auth();
+
+  if (!isAuthenticated || !userId) {
+    redirect(
+      `/sign-in?redirect_url=${encodeURIComponent(
+        `/learning/class-10/notes/${slug}`,
+      )}`,
+    );
+  }
+
+  // -------------------------------------------------------
+  // Resolve Class X subjects
+  // -------------------------------------------------------
+
+  const { subjects } = await getLearningSubjects("class-10");
+
+  // -------------------------------------------------------
+  // Find NOTE resource across the Class X hierarchy
+  //
+  // Mathematics:
+  //   Class X
+  //   └── Mathematics
+  //       └── Chapters
+  //
+  // Science:
+  //   Class X
+  //   └── Science
+  //       ├── Physics
+  //       │   └── Chapters
+  //       ├── Chemistry
+  //       │   └── Chapters
+  //       └── Biology
+  //           └── Chapters
+  // -------------------------------------------------------
+
+  const noteCandidates = await Promise.all(
+    subjects.map(async (subject) => {
+      const directChildren = await getLearningCurriculum("class-10", {
+        parentNodeId: subject.id,
+        includeLockedNotes: true,
+      });
+
+      const subjectName = subject.display_name.trim().toLowerCase();
+
+      // ---------------------------------------------------
+      // Mathematics
+      //
+      // Mathematics has chapters directly under the subject.
+      // ---------------------------------------------------
+
+      if (subjectName !== "science") {
+        return directChildren.flatMap((chapter) =>
+          (chapter.resource_curriculum_nodes ?? []).flatMap((mapping) => {
+            const resources = Array.isArray(mapping.resources)
+              ? mapping.resources
+              : mapping.resources
+                ? [mapping.resources]
+                : [];
+
+            return resources.map((resource) => ({
+              resource,
+              backHref: "/learning/class-10/notes",
+              backLabel: "← Back to Class X Notes",
+            }));
+          }),
+        );
+      }
+
+      // ---------------------------------------------------
+      // Science
+      //
+      // Science has Physics / Chemistry / Biology branches,
+      // and chapters exist one level below those branches.
+      // ---------------------------------------------------
+
+      return (
+        await Promise.all(
+          directChildren.map(async (branch) => {
+            const branchName = branch.display_name
+              .trim()
+              .toLowerCase();
+
+            const branchResources = await getLearningCurriculum(
+              "class-10",
+              {
+                parentNodeId: branch.id,
+                includeLockedNotes: true,
+              },
+            );
+
+            return branchResources.flatMap((chapter) =>
+              (chapter.resource_curriculum_nodes ?? []).flatMap(
+                (mapping) => {
+                  const resources = Array.isArray(mapping.resources)
+                    ? mapping.resources
+                    : mapping.resources
+                      ? [mapping.resources]
+                      : [];
+
+                  return resources.map((resource) => ({
+                    resource,
+                    backHref: `/learning?subject=${encodeURIComponent(
+                      branchName,
+                    )}`,
+                    backLabel: `← Back to Class X ${branch.display_name}`,
+                  }));
+                },
+              ),
+            );
+          }),
+        )
+      ).flat();
+    }),
+  );
+
+  // -------------------------------------------------------
+  // Match requested NOTE
+  // -------------------------------------------------------
+
+  const noteMatch = noteCandidates
+    .flat()
     .find(
-      (resource) =>
+      ({ resource }) =>
         resource.resource_type === "NOTE" &&
         resource.slug === slug &&
-        resource.status === "PUBLISHED"
+        resource.status === "PUBLISHED",
     );
 
-  /*
-   * If the requested resource does not exist or is not
-   * published, return the normal 404 page.
-   */
+  const noteResource = noteMatch?.resource;
+
+  const noteBackHref =
+    noteMatch?.backHref ?? "/learning/class-10/notes";
+
+  const noteBackLabel =
+    noteMatch?.backLabel ?? "← Back to Class X Notes";
+
   if (!noteResource) {
     notFound();
   }
 
-  /*
-   * -------------------------------------------------------
-   * Student-facing source of truth
-   * -------------------------------------------------------
-   *
-   * The Admin decides whether this resource is served
-   * through the Editor or through the uploaded PDF.
-   *
-   * We intentionally do NOT load editor content when
-   * the selected source is PDF.
-   */
+  // -------------------------------------------------------
+  // PDF source
+  // -------------------------------------------------------
+
   if (noteResource.content_source === "PDF") {
     return (
       <main className="px-6 py-16">
         <div className="mx-auto max-w-5xl">
-
           <Link
-            href="/learning/class-10/notes"
+            href={noteBackHref}
             className="
               mb-8
               inline-flex
@@ -87,7 +188,7 @@ export default async function NoteResourcePage({
               dark:hover:text-blue-300
             "
           >
-            ← Back to Class X Notes
+            {noteBackLabel}
           </Link>
 
           <article
@@ -149,8 +250,8 @@ export default async function NoteResourcePage({
                     dark:text-slate-300
                   "
                 >
-                  This learning resource is
-                  available as a PDF document.
+                  This learning resource is available as a PDF
+                  document.
                 </p>
               </div>
             </header>
@@ -209,29 +310,24 @@ export default async function NoteResourcePage({
     );
   }
 
-  /*
-   * -------------------------------------------------------
-   * EDITOR source
-   * -------------------------------------------------------
-   *
-   * Only the Editor source reaches this point.
-   */
-  const publishedContent =
-    await getPublishedResourceContent(
-      noteResource.id
-    );
+  // -------------------------------------------------------
+  // Editor source
+  // -------------------------------------------------------
 
-  /*
-   * Resource exists and is published, but its actual
-   * content has not been published yet.
-   */
+  const publishedContent = await getPublishedResourceContent(
+    noteResource.id,
+  );
+
+  // -------------------------------------------------------
+  // Resource exists but published content is not available
+  // -------------------------------------------------------
+
   if (!publishedContent) {
     return (
       <main className="px-6 py-16">
         <div className="mx-auto max-w-4xl">
-
           <Link
-            href="/learning/class-10/notes"
+            href={noteBackHref}
             className="
               mb-8
               inline-flex
@@ -243,7 +339,7 @@ export default async function NoteResourcePage({
               dark:hover:text-blue-300
             "
           >
-            ← Back to Class X Notes
+            {noteBackLabel}
           </Link>
 
           <div
@@ -299,9 +395,8 @@ export default async function NoteResourcePage({
                   dark:text-slate-300
                 "
               >
-                The learning content for this
-                resource is currently being
-                prepared and will be available
+                The learning content for this resource is
+                currently being prepared and will be available
                 soon.
               </p>
             </div>
@@ -311,17 +406,15 @@ export default async function NoteResourcePage({
     );
   }
 
-  /*
-   * -------------------------------------------------------
-   * Render published Editor content
-   * -------------------------------------------------------
-   */
+  // -------------------------------------------------------
+  // Render published Editor content
+  // -------------------------------------------------------
+
   return (
     <main className="px-6 py-16">
       <div className="mx-auto max-w-4xl">
-
         <Link
-          href="/learning/class-10/notes"
+          href={noteBackHref}
           className="
             mb-8
             inline-flex
@@ -333,7 +426,7 @@ export default async function NoteResourcePage({
             dark:hover:text-blue-300
           "
         >
-          ← Back to Class X Notes
+          {noteBackLabel}
         </Link>
 
         <article
@@ -395,21 +488,16 @@ export default async function NoteResourcePage({
                   dark:text-slate-300
                 "
               >
-                This learning resource is
-                published and available for
-                students.
+                This learning resource is published and
+                available for students.
               </p>
             </div>
           </header>
 
           <section className="mt-8">
-            <ResourceContentPdf
-              title={noteResource.title}
-            >
+            <ResourceContentPdf title={noteResource.title}>
               <ResourceContentRenderer
-                content={
-                  publishedContent.content_json
-                }
+                content={publishedContent.content_json}
               />
             </ResourceContentPdf>
           </section>

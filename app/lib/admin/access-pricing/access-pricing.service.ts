@@ -2,8 +2,6 @@ import "server-only";
 
 import { createAdminSupabaseClient } from "@/app/lib/admin/supabase-admin";
 
-const SUBJECT_NAME = "Mathematics";
-
 const PRODUCT_TYPES = ["SUBJECT", "CHAPTER"] as const;
 
 type ProductType = (typeof PRODUCT_TYPES)[number];
@@ -69,6 +67,13 @@ export type AccessPricingProduct = {
   price: AccessPricingProductPrice | null;
 };
 
+export type AccessPricingSubject = {
+  id: string;
+  name: string;
+  parentNodeId: string | null;
+  product: AccessPricingProduct | null;
+};
+
 export type AccessPricingClass = {
   id: string;
   name: string;
@@ -77,11 +82,7 @@ export type AccessPricingClass = {
   programStatus: string;
   curriculumVersionId: string;
 
-  subject: {
-    id: string;
-    name: string;
-    product: AccessPricingProduct | null;
-  };
+  subjects: AccessPricingSubject[];
 
   chapterCount: number;
 };
@@ -275,10 +276,15 @@ export async function getAccessPricingClasses(): Promise<
   /* ---------------------------------------------------------
    * 5. Load Learning Products
    *
-   * Products are attached directly to curriculum nodes:
+   * Products are attached directly to curriculum nodes.
    *
-   * Mathematics node → SUBJECT product
-   * Chapter node     → CHAPTER product
+   * SUBJECT product:
+   *   - Root subject node
+   *   - Individual subject node such as Physics,
+   *     Chemistry or Biology
+   *
+   * CHAPTER product:
+   *   - Chapter node
    * --------------------------------------------------------- */
 
   const relevantNodeIds = typedNodes.map(
@@ -315,7 +321,8 @@ export async function getAccessPricingClasses(): Promise<
       );
     }
 
-    products = (productRows ?? []) as LearningProductRow[];
+    products =
+      (productRows ?? []) as LearningProductRow[];
   }
 
   /* ---------------------------------------------------------
@@ -388,12 +395,12 @@ export async function getAccessPricingClasses(): Promise<
       pricesByProductId.get(product.id) ?? null;
 
     /*
-     * There should be only one product per
-     * curriculum node + product type because
-     * the database enforces that uniqueness.
+     * Database constraint:
      *
-     * For the current Access & Pricing read model,
-     * the product attached to a node is sufficient.
+     * UNIQUE (curriculum_node_id, product_type)
+     *
+     * Therefore one product per node + product type
+     * is guaranteed at database level.
      */
     productsByNodeId.set(
       `${product.curriculum_node_id}:${product.product_type}`,
@@ -402,7 +409,31 @@ export async function getAccessPricingClasses(): Promise<
   }
 
   /* ---------------------------------------------------------
-   * 8. Build Class → Mathematics → Chapters structure
+   * 8. Build Class → Subject Products structure
+   *
+   * We deliberately do NOT hardcode:
+   *
+   *   SUBJECT_NAME = "Mathematics"
+   *
+   * Every root curriculum node is treated as a
+   * top-level subject/product candidate.
+   *
+   * Example:
+   *
+   * Mathematics
+   * Science
+   *
+   * Science's direct child subjects such as:
+   *
+   * Physics
+   * Chemistry
+   * Biology
+   *
+   * are also exposed through their own SUBJECT products.
+   *
+   * Chapter count remains based on direct children
+   * of Mathematics, preserving the existing dashboard
+   * meaning until the chapter UI is expanded further.
    * --------------------------------------------------------- */
 
   const classes: AccessPricingClass[] = [];
@@ -421,36 +452,123 @@ export async function getAccessPricingClasses(): Promise<
     );
 
     /*
-     * Mathematics is the root subject node.
+     * Root curriculum nodes are the top-level subjects
+     * for the selected curriculum version.
      */
+    const rootSubjectNodes = versionNodes
+      .filter(
+        (node) =>
+          node.parent_node_id === null
+      )
+      .sort(
+        (a, b) =>
+          (a.sequence_order ?? 0) -
+          (b.sequence_order ?? 0)
+      );
 
-    const mathematicsNode = versionNodes.find(
-      (node) =>
-        node.parent_node_id === null &&
-        node.display_name === SUBJECT_NAME
-    );
-
-    if (!mathematicsNode) {
+    if (rootSubjectNodes.length === 0) {
       continue;
     }
 
     /*
-     * Chapters are direct children of Mathematics.
+     * Build the top-level subject products.
      */
-
-    const chapterCount = versionNodes.filter(
-      (node) =>
-        node.parent_node_id === mathematicsNode.id
-    ).length;
+    const subjects: AccessPricingSubject[] =
+      rootSubjectNodes.map((subjectNode) => ({
+        id: subjectNode.id,
+        name: subjectNode.display_name,
+        parentNodeId: subjectNode.parent_node_id,
+        product:
+          productsByNodeId.get(
+            `${subjectNode.id}:SUBJECT`
+          ) ?? null,
+      }));
 
     /*
-     * Resolve the Mathematics SUBJECT product.
+     * Mathematics chapter count is preserved from
+     * the previous Access & Pricing behavior.
+     *
+     * We identify Mathematics by its root-node position
+     * and display name only for this dashboard statistic.
+     *
+     * This does NOT control product discovery anymore.
+     */
+    const mathematicsNode =
+      rootSubjectNodes.find(
+        (node) =>
+          node.display_name === "Mathematics"
+      );
+
+    const chapterCount = mathematicsNode
+      ? versionNodes.filter(
+          (node) =>
+            node.parent_node_id ===
+            mathematicsNode.id
+        ).length
+      : 0;
+
+    /*
+     * -------------------------------------------------------
+     * Add direct subject children under Science
+     * -------------------------------------------------------
+     *
+     * The current curriculum architecture has:
+     *
+     * Science
+     * ├── Physics
+     * ├── Chemistry
+     * └── Biology
+     *
+     * These nodes already have their own SUBJECT products.
+     *
+     * We expose them as children of the Science subject
+     * without changing the database model.
      */
 
-    const subjectProduct =
-      productsByNodeId.get(
-        `${mathematicsNode.id}:SUBJECT`
-      ) ?? null;
+    const scienceSubject =
+      subjects.find(
+        (subject) =>
+          subject.name === "Science"
+      );
+
+    if (scienceSubject) {
+      const scienceChildren =
+        versionNodes
+          .filter(
+            (node) =>
+              node.parent_node_id ===
+                scienceSubject.id &&
+              productsByNodeId.has(
+                `${node.id}:SUBJECT`
+              )
+          )
+          .sort(
+            (a, b) =>
+              (a.sequence_order ?? 0) -
+              (b.sequence_order ?? 0)
+          );
+
+      /*
+       * The public type currently represents a subject
+       * with one product. Individual Science subjects
+       * are therefore represented by adding them to the
+       * main subjects collection below.
+       *
+       * This keeps the service contract simple for the
+       * next UI step and avoids inventing a new DB model.
+       */
+      for (const child of scienceChildren) {
+        subjects.push({
+          id: child.id,
+          name: child.display_name,
+          parentNodeId: child.parent_node_id,
+          product:
+            productsByNodeId.get(
+              `${child.id}:SUBJECT`
+            ) ?? null,
+        });
+      }
+    }
 
     classes.push({
       id: program.id,
@@ -459,13 +577,7 @@ export async function getAccessPricingClasses(): Promise<
       session: version.session,
       programStatus: program.status,
       curriculumVersionId: version.id,
-
-      subject: {
-        id: mathematicsNode.id,
-        name: mathematicsNode.display_name,
-        product: subjectProduct,
-      },
-
+      subjects,
       chapterCount,
     });
   }

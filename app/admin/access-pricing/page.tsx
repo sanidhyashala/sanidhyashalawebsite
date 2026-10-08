@@ -48,7 +48,7 @@ export default async function AccessPricingPage() {
       title="Access & Pricing"
       description="Manage subject-level and chapter-level learning access and pricing from one central place."
       sectionTitle="Classes"
-      sectionDescription="Choose a class to manage its Mathematics subject product and chapter products."
+      sectionDescription="Choose a class to manage its subject products, individual science subjects, and chapter products."
     >
       {classes.length === 0 ? (
         <div
@@ -71,24 +71,67 @@ export default async function AccessPricingPage() {
           </h2>
 
           <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500 dark:text-slate-400">
-            No active Mathematics curriculum is currently
-            available for Access & Pricing.
+            No active curriculum is currently available
+            for Access & Pricing.
           </p>
         </div>
       ) : (
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
           {classes.map((classItem) => {
-            const subjectProduct =
-              classItem.subject.product;
+            const mathematicsSubject =
+              classItem.subjects.find(
+                (subject) =>
+                  subject.parentNodeId === null &&
+                  subject.name === "Mathematics"
+              ) ?? null;
 
-            const subjectPrice =
-              subjectProduct?.price ?? null;
+            const scienceSubject =
+              classItem.subjects.find(
+                (subject) =>
+                  subject.parentNodeId === null &&
+                  subject.name === "Science"
+              ) ?? null;
 
-            const hasSubjectProduct =
-              Boolean(subjectProduct);
+            const scienceChildren =
+              scienceSubject
+                ? classItem.subjects.filter(
+                    (subject) =>
+                      subject.parentNodeId ===
+                      scienceSubject.id
+                  )
+                : [];
 
-            const hasSubjectPrice =
-              Boolean(subjectPrice);
+            const topLevelSubjects =
+              classItem.subjects.filter(
+                (subject) =>
+                  subject.parentNodeId === null &&
+                  subject.name !== "Science" &&
+                  subject.name !== "Mathematics"
+              );
+
+            const mathematicsProduct =
+              mathematicsSubject?.product ?? null;
+
+            const mathematicsPrice =
+              mathematicsProduct?.price ?? null;
+
+            const scienceProduct =
+              scienceSubject?.product ?? null;
+
+            const sciencePrice =
+              scienceProduct?.price ?? null;
+
+            const hasMathematicsProduct =
+              Boolean(mathematicsProduct);
+
+            const hasMathematicsPrice =
+              Boolean(mathematicsPrice);
+
+            const hasScienceProduct =
+              Boolean(scienceProduct);
+
+            const hasSciencePrice =
+              Boolean(sciencePrice);
 
             return (
               <Link
@@ -152,116 +195,415 @@ export default async function AccessPricingPage() {
                 </div>
 
                 {/* -------------------------------------------------
-                    Subject
+                    Subject Products
                 ------------------------------------------------- */}
 
                 <div className="mt-8">
-                  <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                        Subject
+                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                        Subject Products
                       </p>
 
-                      <p className="mt-1 text-base font-semibold text-slate-800 dark:text-slate-200">
-                        {classItem.subject.name}
-                      </p>
-                    </div>
-
-                    {hasSubjectProduct ? (
-                      <span
-                        className="
-                          rounded-full
-                          bg-emerald-50
-                          px-2.5
-                          py-1
-                          text-[10px]
-                          font-bold
-                          text-emerald-700
-                          dark:bg-emerald-950
-                          dark:text-emerald-300
-                        "
-                      >
-                        PRODUCT
-                      </span>
-                    ) : (
-                      <span
-                        className="
-                          rounded-full
-                          bg-amber-50
-                          px-2.5
-                          py-1
-                          text-[10px]
-                          font-bold
-                          text-amber-700
-                          dark:bg-amber-950
-                          dark:text-amber-300
-                        "
-                      >
-                        NOT SET
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* -------------------------------------------------
-                    Subject Product
-                ------------------------------------------------- */}
-
-                <div
-                  className="
-                    mt-5
-                    rounded-2xl
-                    border
-                    border-slate-200
-                    bg-slate-50
-                    p-4
-                    dark:border-slate-700
-                    dark:bg-slate-800/60
-                  "
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-400">
-                        Subject Product
-                      </p>
-
-                      <p className="mt-2 text-lg font-bold text-slate-900 dark:text-white">
-                        {hasSubjectPrice &&
-                        subjectPrice
-                          ? formatPrice(
-                              subjectPrice.amountPaise,
-                              subjectPrice.currency
-                            )
-                          : "Not configured"}
+                      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                        Subject-level access and pricing
                       </p>
                     </div>
 
                     <span
-                      className={`
+                      className="
                         rounded-full
+                        bg-slate-100
                         px-2.5
                         py-1
                         text-[10px]
                         font-bold
-                        ${
-                          subjectProduct?.status ===
-                          "ACTIVE"
-                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
-                            : "bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400"
-                        }
-                      `}
+                        text-slate-600
+                        dark:bg-slate-800
+                        dark:text-slate-300
+                      "
                     >
-                      {subjectProduct
-                        ? subjectProduct.status
-                        : "MISSING"}
+                      {classItem.subjects.length}
                     </span>
                   </div>
 
-                  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                    {hasSubjectPrice
-                      ? "Active subject-level price"
-                      : "Subject price needs configuration"}
-                  </p>
+                  {/* -------------------------------------------------
+                      Mathematics
+                  ------------------------------------------------- */}
+
+                  {mathematicsSubject ? (
+                    <div
+                      className="
+                        mt-5
+                        rounded-2xl
+                        border
+                        border-slate-200
+                        bg-slate-50
+                        p-4
+                        dark:border-slate-700
+                        dark:bg-slate-800/60
+                      "
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-400">
+                            Subject
+                          </p>
+
+                          <p className="mt-2 text-lg font-bold text-slate-900 dark:text-white">
+                            {mathematicsSubject.name}
+                          </p>
+                        </div>
+
+                        {hasMathematicsProduct ? (
+                          <span
+                            className="
+                              rounded-full
+                              bg-emerald-50
+                              px-2.5
+                              py-1
+                              text-[10px]
+                              font-bold
+                              text-emerald-700
+                              dark:bg-emerald-950
+                              dark:text-emerald-300
+                            "
+                          >
+                            PRODUCT
+                          </span>
+                        ) : (
+                          <span
+                            className="
+                              rounded-full
+                              bg-amber-50
+                              px-2.5
+                              py-1
+                              text-[10px]
+                              font-bold
+                              text-amber-700
+                              dark:bg-amber-950
+                              dark:text-amber-300
+                            "
+                          >
+                            NOT SET
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="mt-4 flex items-end justify-between gap-4">
+                        <div>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                            Subject Price
+                          </p>
+
+                          <p className="mt-1 text-lg font-bold text-slate-900 dark:text-white">
+                            {hasMathematicsPrice &&
+                            mathematicsPrice
+                              ? formatPrice(
+                                  mathematicsPrice.amountPaise,
+                                  mathematicsPrice.currency
+                                )
+                              : "Not configured"}
+                          </p>
+                        </div>
+
+                        <span
+                          className={`
+                            rounded-full
+                            px-2.5
+                            py-1
+                            text-[10px]
+                            font-bold
+                            ${
+                              mathematicsProduct?.status ===
+                              "ACTIVE"
+                                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
+                                : "bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400"
+                            }
+                          `}
+                        >
+                          {mathematicsProduct
+                            ? mathematicsProduct.status
+                            : "MISSING"}
+                        </span>
+                      </div>
+
+                      <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+                        {hasMathematicsPrice
+                          ? "Active subject-level price"
+                          : "Subject price needs configuration"}
+                      </p>
+                    </div>
+                  ) : null}
+
+                  {/* -------------------------------------------------
+                      Science Bundle
+                  ------------------------------------------------- */}
+
+                  {scienceSubject ? (
+                    <div
+                      className="
+                        mt-4
+                        rounded-2xl
+                        border
+                        border-slate-200
+                        bg-slate-50
+                        p-4
+                        dark:border-slate-700
+                        dark:bg-slate-800/60
+                      "
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-400">
+                            Subject Bundle
+                          </p>
+
+                          <p className="mt-2 text-lg font-bold text-slate-900 dark:text-white">
+                            {scienceSubject.name}
+                          </p>
+                        </div>
+
+                        {hasScienceProduct ? (
+                          <span
+                            className="
+                              rounded-full
+                              bg-emerald-50
+                              px-2.5
+                              py-1
+                              text-[10px]
+                              font-bold
+                              text-emerald-700
+                              dark:bg-emerald-950
+                              dark:text-emerald-300
+                            "
+                          >
+                            PRODUCT
+                          </span>
+                        ) : (
+                          <span
+                            className="
+                              rounded-full
+                              bg-amber-50
+                              px-2.5
+                              py-1
+                              text-[10px]
+                              font-bold
+                              text-amber-700
+                              dark:bg-amber-950
+                              dark:text-amber-300
+                            "
+                          >
+                            NOT SET
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="mt-4 flex items-end justify-between gap-4">
+                        <div>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                            PCB Bundle Price
+                          </p>
+
+                          <p className="mt-1 text-lg font-bold text-slate-900 dark:text-white">
+                            {hasSciencePrice &&
+                            sciencePrice
+                              ? formatPrice(
+                                  sciencePrice.amountPaise,
+                                  sciencePrice.currency
+                                )
+                              : "Not configured"}
+                          </p>
+                        </div>
+
+                        <span
+                          className={`
+                            rounded-full
+                            px-2.5
+                            py-1
+                            text-[10px]
+                            font-bold
+                            ${
+                              scienceProduct?.status ===
+                              "ACTIVE"
+                                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
+                                : "bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400"
+                            }
+                          `}
+                        >
+                          {scienceProduct
+                            ? scienceProduct.status
+                            : "MISSING"}
+                        </span>
+                      </div>
+
+                      <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+                        {hasSciencePrice
+                          ? "Science product includes Physics, Chemistry and Biology access"
+                          : "Science bundle price needs configuration"}
+                      </p>
+
+                      {/* -------------------------------------------------
+                          Individual Science Subjects
+                      ------------------------------------------------- */}
+
+                      {scienceChildren.length > 0 ? (
+                        <div className="mt-5 border-t border-slate-200 pt-4 dark:border-slate-700">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
+                            Individual Science Products
+                          </p>
+
+                          <div className="mt-3 space-y-2">
+                            {scienceChildren.map(
+                              (subject) => {
+                                const product =
+                                  subject.product;
+
+                                const price =
+                                  product?.price ??
+                                  null;
+
+                                return (
+                                  <div
+                                    key={subject.id}
+                                    className="
+                                      flex
+                                      items-center
+                                      justify-between
+                                      gap-3
+                                      rounded-xl
+                                      border
+                                      border-slate-200
+                                      bg-white
+                                      px-3
+                                      py-3
+                                      dark:border-slate-700
+                                      dark:bg-slate-900/60
+                                    "
+                                  >
+                                    <div className="min-w-0">
+                                      <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                                        {subject.name}
+                                      </p>
+
+                                      <p className="mt-0.5 text-[11px] text-slate-400">
+                                        Individual subject access
+                                      </p>
+                                    </div>
+
+                                    <div className="shrink-0 text-right">
+                                      <p className="text-sm font-bold text-slate-900 dark:text-white">
+                                        {price
+                                          ? formatPrice(
+                                              price.amountPaise,
+                                              price.currency
+                                            )
+                                          : "Not configured"}
+                                      </p>
+
+                                      <p
+                                        className={`
+                                          mt-0.5
+                                          text-[10px]
+                                          font-semibold
+                                          ${
+                                            product?.status ===
+                                            "ACTIVE"
+                                              ? "text-emerald-600 dark:text-emerald-400"
+                                              : "text-slate-400"
+                                          }
+                                        `}
+                                      >
+                                        {product
+                                          ? product.status
+                                          : "Product missing"}
+                                      </p>
+                                    </div>
+                                  </div>
+                                );
+                              }
+                            )}
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+
+                  {/* -------------------------------------------------
+                      Other top-level subjects
+                  ------------------------------------------------- */}
+
+                  {topLevelSubjects.length > 0 ? (
+                    <div className="mt-4 space-y-3">
+                      {topLevelSubjects.map(
+                        (subject) => {
+                          const product =
+                            subject.product;
+
+                          const price =
+                            product?.price ?? null;
+
+                          return (
+                            <div
+                              key={subject.id}
+                              className="
+                                rounded-2xl
+                                border
+                                border-slate-200
+                                bg-slate-50
+                                p-4
+                                dark:border-slate-700
+                                dark:bg-slate-800/60
+                              "
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-400">
+                                    Subject
+                                  </p>
+
+                                  <p className="mt-2 text-lg font-bold text-slate-900 dark:text-white">
+                                    {subject.name}
+                                  </p>
+                                </div>
+
+                                <span
+                                  className="
+                                    rounded-full
+                                    bg-emerald-50
+                                    px-2.5
+                                    py-1
+                                    text-[10px]
+                                    font-bold
+                                    text-emerald-700
+                                    dark:bg-emerald-950
+                                    dark:text-emerald-300
+                                  "
+                                >
+                                  PRODUCT
+                                </span>
+                              </div>
+
+                              <div className="mt-4">
+                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                  Subject Price
+                                </p>
+
+                                <p className="mt-1 text-lg font-bold text-slate-900 dark:text-white">
+                                  {price
+                                    ? formatPrice(
+                                        price.amountPaise,
+                                        price.currency
+                                      )
+                                    : "Not configured"}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        }
+                      )}
+                    </div>
+                  ) : null}
                 </div>
 
                 {/* -------------------------------------------------
@@ -278,7 +620,7 @@ export default async function AccessPricingPage() {
                     "
                   >
                     <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                      Chapters
+                      Mathematics Chapters
                     </p>
 
                     <p className="mt-1 text-lg font-bold text-slate-900 dark:text-white">
@@ -315,9 +657,8 @@ export default async function AccessPricingPage() {
                     </span>
 
                     <p className="mt-1 text-[11px] text-slate-400">
-                      {hasSubjectPrice
-                        ? "Subject pricing configured"
-                        : "Subject pricing pending"}
+                      {classItem.subjects.length} subject
+                      products available
                     </p>
                   </div>
 

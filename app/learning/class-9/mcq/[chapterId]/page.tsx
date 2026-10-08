@@ -14,14 +14,17 @@ type PageProps = {
 export default async function Class9McqChapterPage({
   params,
 }: PageProps) {
-  const { chapterId } = await params;
+  const { chapterId } =
+    await params;
 
   /* =====================================================
    * Load published Class 9 MCQ sets
    * ===================================================== */
 
   const sets =
-    await getStudentMcqSets("class-9");
+    await getStudentMcqSets(
+      "class-9"
+    );
 
   /* =====================================================
    * Keep only sets belonging to this chapter
@@ -30,19 +33,32 @@ export default async function Class9McqChapterPage({
   const chapterSets =
     sets.filter(
       (set) =>
-        set.chapterId === chapterId
+        set.chapterId ===
+        chapterId
     );
 
   /* =====================================================
    * Invalid / unavailable chapter
    * ===================================================== */
 
-  if (chapterSets.length === 0) {
+  if (
+    chapterSets.length === 0
+  ) {
     notFound();
   }
 
   const chapter =
     chapterSets[0];
+
+  /* =====================================================
+   * Curriculum context
+   * ===================================================== */
+
+  const subjectName =
+    chapter.subjectName;
+
+  const branchName =
+    chapter.branchName;
 
   /* =====================================================
    * Render
@@ -95,10 +111,25 @@ export default async function Class9McqChapterPage({
           <span>/</span>
 
           <span>
+            {subjectName}
+          </span>
+
+          {branchName && (
+            <>
+              <span>/</span>
+
+              <span>
+                {branchName}
+              </span>
+            </>
+          )}
+
+          <span>/</span>
+
+          <span>
             {chapter.chapterName}
           </span>
         </div>
-
 
         {/* =================================================
          * Header
@@ -117,8 +148,18 @@ export default async function Class9McqChapterPage({
               dark:text-blue-400
             "
           >
-            Chapter{" "}
-            {chapter.chapterSequence ?? ""}
+            {subjectName}
+
+            {branchName && (
+              <>
+                {" · "}
+                {branchName}
+              </>
+            )}
+
+            {" · Chapter "}
+            {chapter.chapterSequence ??
+              ""}
           </p>
 
           <h1
@@ -146,11 +187,11 @@ export default async function Class9McqChapterPage({
             "
           >
             Choose an MCQ practice set
-            to begin practicing this chapter.
+            to begin practicing this
+            chapter.
           </p>
 
         </header>
-
 
         {/* =================================================
          * Chapter Overview
@@ -212,7 +253,6 @@ export default async function Class9McqChapterPage({
 
         </section>
 
-
         {/* =================================================
          * MCQ Sets
          * ================================================= */}
@@ -248,343 +288,180 @@ export default async function Class9McqChapterPage({
 
           </div>
 
-
           <div className="grid gap-4">
 
             {chapterSets.map(
-              (set) => {
+              (set) => (
 
-                /* =========================================
-                 * Locked Premium Set
-                 * ========================================= */
+                <Link
+                  key={
+                    set.resourceId
+                  }
+                  href={
+                    `/learning/resources/${set.resourceId}`
+                  }
+                  className="
+                    group
+                    rounded-2xl
+                    border
+                    border-slate-200
+                    bg-white
+                    p-6
+                    shadow-sm
+                    transition
+                    hover:-translate-y-0.5
+                    hover:border-blue-300
+                    hover:shadow-md
+                    dark:border-slate-800
+                    dark:bg-slate-900
+                    dark:shadow-none
+                    dark:hover:border-blue-800
+                  "
+                >
 
-                if (set.isLocked) {
-                  return (
-                    <div
-                      key={set.resourceId}
-                      className="
-                        rounded-2xl
-                        border
-                        border-slate-200
-                        bg-slate-50
-                        p-6
-                        shadow-sm
-                        dark:border-slate-800
-                        dark:bg-slate-900/60
-                      "
-                    >
+                  <div
+                    className="
+                      flex
+                      flex-col
+                      gap-5
+                      sm:flex-row
+                      sm:items-center
+                      sm:justify-between
+                    "
+                  >
+
+                    <div className="min-w-0">
 
                       <div
                         className="
                           flex
-                          flex-col
-                          gap-5
-                          sm:flex-row
-                          sm:items-center
-                          sm:justify-between
+                          flex-wrap
+                          items-center
+                          gap-2
                         "
                       >
 
-                        <div className="min-w-0">
-
-                          <div
-                            className="
-                              flex
-                              flex-wrap
-                              items-center
-                              gap-2
-                            "
-                          >
-
-                            <p
-                              className="
-                                text-sm
-                                font-semibold
-                                text-blue-700
-                                dark:text-blue-400
-                              "
-                            >
-                              {set.setNumber !== null
-                                ? `Set ${set.setNumber}`
-                                : "Practice Set"}
-                            </p>
-
-                            <span
-                              className="
-                                rounded-full
-                                bg-purple-100
-                                px-2.5
-                                py-1
-                                text-xs
-                                font-semibold
-                                uppercase
-                                tracking-wide
-                                text-purple-700
-                                dark:bg-purple-950/50
-                                dark:text-purple-300
-                              "
-                            >
-                              Premium
-                            </span>
-
-                          </div>
-
-                          <h3
-                            className="
-                              mt-2
-                              text-xl
-                              font-bold
-                              text-slate-900
-                              dark:text-slate-100
-                            "
-                          >
-                            {set.title}
-                          </h3>
-
-                          {set.description && (
-                            <p
-                              className="
-                                mt-2
-                                max-w-2xl
-                                text-sm
-                                leading-6
-                                text-slate-500
-                                dark:text-slate-400
-                              "
-                            >
-                              {set.description}
-                            </p>
-                          )}
-
-                          <div
-                            className="
-                              mt-4
-                              flex
-                              flex-wrap
-                              gap-x-5
-                              gap-y-2
-                              text-sm
-                              text-slate-500
-                              dark:text-slate-400
-                            "
-                          >
-
-                            <span>
-                              {set.questionCount}{" "}
-                              {set.questionCount === 1
-                                ? "question"
-                                : "questions"}
-                            </span>
-
-                            <span>
-                              Premium access
-                            </span>
-
-                          </div>
-
-                        </div>
-
-
-                        <div
+                        <p
                           className="
-                            shrink-0
-                            self-start
-                            rounded-xl
-                            border
-                            border-slate-200
-                            bg-white
-                            px-4
-                            py-2.5
                             text-sm
                             font-semibold
-                            text-slate-500
-                            dark:border-slate-700
-                            dark:bg-slate-800
-                            dark:text-slate-400
-                            sm:self-auto
+                            text-blue-700
+                            dark:text-blue-400
                           "
                         >
-                          🔒 Locked
-                        </div>
+                          {set.setNumber !==
+                          null
+                            ? `Set ${set.setNumber}`
+                            : "Practice Set"}
+                        </p>
 
-                      </div>
-
-                    </div>
-                  );
-                }
-
-
-                /* =========================================
-                 * Accessible Set
-                 * ========================================= */
-
-                return (
-                  <Link
-                    key={set.resourceId}
-                    href={`/learning/resources/${set.resourceId}`}
-                    className="
-                      group
-                      rounded-2xl
-                      border
-                      border-slate-200
-                      bg-white
-                      p-6
-                      shadow-sm
-                      transition
-                      hover:-translate-y-0.5
-                      hover:border-blue-300
-                      hover:shadow-md
-                      dark:border-slate-800
-                      dark:bg-slate-900
-                      dark:shadow-none
-                      dark:hover:border-blue-800
-                    "
-                  >
-
-                    <div
-                      className="
-                        flex
-                        flex-col
-                        gap-5
-                        sm:flex-row
-                        sm:items-center
-                        sm:justify-between
-                      "
-                    >
-
-                      <div className="min-w-0">
-
-                        <div
-                          className="
-                            flex
-                            flex-wrap
-                            items-center
-                            gap-2
-                          "
-                        >
-
-                          <p
+                        {set.accessType ===
+                          "PREMIUM" && (
+                          <span
                             className="
-                              text-sm
+                              rounded-full
+                              bg-purple-100
+                              px-2.5
+                              py-1
+                              text-xs
                               font-semibold
-                              text-blue-700
-                              dark:text-blue-400
+                              uppercase
+                              tracking-wide
+                              text-purple-700
+                              dark:bg-purple-950/50
+                              dark:text-purple-300
                             "
                           >
-                            {set.setNumber !== null
-                              ? `Set ${set.setNumber}`
-                              : "Practice Set"}
-                          </p>
-
-                          {set.accessType ===
-                            "PREMIUM" && (
-                            <span
-                              className="
-                                rounded-full
-                                bg-purple-100
-                                px-2.5
-                                py-1
-                                text-xs
-                                font-semibold
-                                uppercase
-                                tracking-wide
-                                text-purple-700
-                                dark:bg-purple-950/50
-                                dark:text-purple-300
-                              "
-                            >
-                              Premium
-                            </span>
-                          )}
-
-                        </div>
-
-                        <h3
-                          className="
-                            mt-2
-                            text-xl
-                            font-bold
-                            text-slate-900
-                            dark:text-slate-100
-                          "
-                        >
-                          {set.title}
-                        </h3>
-
-                        {set.description && (
-                          <p
-                            className="
-                              mt-2
-                              max-w-2xl
-                              text-sm
-                              leading-6
-                              text-slate-500
-                              dark:text-slate-400
-                            "
-                          >
-                            {set.description}
-                          </p>
+                            Premium
+                          </span>
                         )}
 
-                        <div
+                      </div>
+
+                      <h3
+                        className="
+                          mt-2
+                          text-xl
+                          font-bold
+                          text-slate-900
+                          dark:text-slate-100
+                        "
+                      >
+                        {set.title}
+                      </h3>
+
+                      {set.description && (
+                        <p
                           className="
-                            mt-4
-                            flex
-                            flex-wrap
-                            gap-x-5
-                            gap-y-2
+                            mt-2
+                            max-w-2xl
                             text-sm
+                            leading-6
                             text-slate-500
                             dark:text-slate-400
                           "
                         >
+                          {set.description}
+                        </p>
+                      )}
 
-                          <span>
-                            {set.questionCount}{" "}
-                            {set.questionCount === 1
-                              ? "question"
-                              : "questions"}
-                          </span>
+                      <div
+                        className="
+                          mt-4
+                          flex
+                          flex-wrap
+                          gap-x-5
+                          gap-y-2
+                          text-sm
+                          text-slate-500
+                          dark:text-slate-400
+                        "
+                      >
 
-                          <span>
-                            {set.accessType ===
-                            "PREMIUM"
-                              ? "Premium access"
-                              : "Free access"}
-                          </span>
+                        <span>
+                          {set.questionCount}{" "}
+                          {set.questionCount ===
+                          1
+                            ? "question"
+                            : "questions"}
+                        </span>
 
-                        </div>
+                        <span>
+                          {set.accessType ===
+                          "PREMIUM"
+                            ? "Premium access"
+                            : "Free access"}
+                        </span>
 
                       </div>
 
-
-                      <span
-                        className="
-                          shrink-0
-                          self-start
-                          text-sm
-                          font-semibold
-                          text-blue-700
-                          transition-transform
-                          group-hover:translate-x-1
-                          dark:text-blue-400
-                          sm:self-auto
-                        "
-                      >
-                        Start Practice →
-                      </span>
-
                     </div>
 
-                  </Link>
-                );
-              }
+                    <span
+                      className="
+                        shrink-0
+                        self-start
+                        text-sm
+                        font-semibold
+                        text-blue-700
+                        transition-transform
+                        group-hover:translate-x-1
+                        dark:text-blue-400
+                        sm:self-auto
+                      "
+                    >
+                      Start Practice →
+                    </span>
+
+                  </div>
+
+                </Link>
+              )
             )}
 
           </div>
 
         </section>
-
 
         {/* =================================================
          * Bottom Navigation
@@ -615,7 +492,7 @@ export default async function Class9McqChapterPage({
               dark:hover:text-blue-400
             "
           >
-            ← Back to MCQ Chapters
+            ← Back to MCQ Practice
           </Link>
 
         </div>

@@ -6,6 +6,7 @@ import { setLearningProductPrice } from "@/app/lib/admin/access-pricing/learning
 
 type LearningProductPriceControlProps = {
   productId: string;
+  productType: "SUBJECT" | "CHAPTER";
   currentAmountPaise?: number | string | null;
   currency?: string | null;
 };
@@ -44,6 +45,7 @@ function formatCurrentPrice(
 
 export default function LearningProductPriceControl({
   productId,
+  productType,
   currentAmountPaise,
   currency,
 }: LearningProductPriceControlProps) {
@@ -51,6 +53,11 @@ export default function LearningProductPriceControl({
   const [message, setMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+
+  const productLabel =
+    productType === "SUBJECT"
+      ? "Subject Product"
+      : "Chapter Product";
 
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>
@@ -88,6 +95,10 @@ export default function LearningProductPriceControl({
     currency
   );
 
+  const hasCurrentPrice =
+    currentAmountPaise !== null &&
+    currentAmountPaise !== undefined;
+
   return (
     <div
       className="
@@ -102,7 +113,7 @@ export default function LearningProductPriceControl({
     >
       <div className="mb-5">
         <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-          Chapter Product Price
+          {productLabel} Price
         </p>
 
         <div className="mt-2 flex flex-wrap items-baseline gap-2">
@@ -110,12 +121,11 @@ export default function LearningProductPriceControl({
             {currentPrice}
           </span>
 
-          {currentAmountPaise !== null &&
-            currentAmountPaise !== undefined && (
-              <span className="text-xs text-slate-500 dark:text-slate-400">
-                active price
-              </span>
-            )}
+          {hasCurrentPrice && (
+            <span className="text-xs text-slate-500 dark:text-slate-400">
+              active price
+            </span>
+          )}
         </div>
       </div>
 
@@ -134,8 +144,7 @@ export default function LearningProductPriceControl({
             htmlFor={`learning-product-price-${productId}`}
             className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300"
           >
-            {currentAmountPaise !== null &&
-            currentAmountPaise !== undefined
+            {hasCurrentPrice
               ? "Update Price"
               : "Set Price"}
           </label>
@@ -197,8 +206,7 @@ export default function LearningProductPriceControl({
             >
               {isSaving
                 ? "Saving..."
-                : currentAmountPaise !== null &&
-                    currentAmountPaise !== undefined
+                : hasCurrentPrice
                   ? "Update Price"
                   : "Set Price"}
             </button>
@@ -226,9 +234,12 @@ export default function LearningProductPriceControl({
       </form>
 
       <p className="mt-4 text-xs leading-5 text-slate-400">
-        The new price becomes the active price for this
-        chapter product. Previous active pricing is
-        automatically deactivated by the database.
+        The new price becomes the active price for this{" "}
+        {productType === "SUBJECT"
+          ? "subject"
+          : "chapter"}{" "}
+        product. Previous active pricing is automatically
+        deactivated by the database.
       </p>
     </div>
   );

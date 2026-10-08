@@ -314,97 +314,61 @@ export default async function AdminSubjectiveSetDetailPage({
         </div>
 
         {/* =====================================================
-            PUBLISHING WORKSPACE
-        ===================================================== */}
+    PUBLISHING WORKSPACE
+===================================================== */}
 
-        {!isPublished ? (
-          <div
-            className="
-              rounded-2xl
-              border
-              border-blue-100
-              bg-blue-50/60
-              p-6
-              dark:border-blue-900
-              dark:bg-blue-950/20
-            "
-          >
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+{!isPublished ? (
+  <div
+    className="
+      rounded-2xl
+      border
+      border-blue-100
+      bg-blue-50/60
+      p-6
+      dark:border-blue-900
+      dark:bg-blue-950/20
+    "
+  >
+    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-700 dark:text-blue-400">
+      Publishing
+    </p>
 
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-700 dark:text-blue-400">
-                  Publishing
-                </p>
+    <h2 className="mt-2 text-lg font-bold text-slate-900 dark:text-white">
+      This set is ready to be published.
+    </h2>
 
-                <h2 className="mt-2 text-lg font-bold text-slate-900 dark:text-white">
-                  This set is ready to be published from this workspace.
-                </h2>
+    <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
+      Review the questions attached to this set and publish it
+      when the content is ready. The selected access type remains
+      part of the set configuration.
+    </p>
+  </div>
+) : (
+  <div
+    className="
+      rounded-2xl
+      border
+      border-emerald-100
+      bg-emerald-50/60
+      p-6
+      dark:border-emerald-900
+      dark:bg-emerald-950/20
+    "
+  >
+    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-400">
+      Published
+    </p>
 
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
-                  Complete the questions for this set and publish it when
-                  the content is ready. The selected access type remains
-                  part of the set configuration.
-                </p>
-              </div>
+    <h2 className="mt-2 text-lg font-bold text-slate-900 dark:text-white">
+      This Subjective Set is published.
+    </h2>
 
-              <form action={publishSubjectiveSet}>
-                <input
-                  type="hidden"
-                  name="set_id"
-                  value={set.id}
-                />
-
-                <button
-                  type="submit"
-                  className="
-                    inline-flex
-                    shrink-0
-                    items-center
-                    justify-center
-                    rounded-xl
-                    bg-blue-700
-                    px-5
-                    py-2.5
-                    text-sm
-                    font-semibold
-                    text-white
-                    transition
-                    hover:bg-blue-800
-                    dark:bg-blue-600
-                    dark:hover:bg-blue-500
-                  "
-                >
-                  Publish Set
-                </button>
-              </form>
-            </div>
-          </div>
-        ) : (
-          <div
-            className="
-              rounded-2xl
-              border
-              border-emerald-100
-              bg-emerald-50/60
-              p-6
-              dark:border-emerald-900
-              dark:bg-emerald-950/20
-            "
-          >
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-400">
-              Published
-            </p>
-
-            <h2 className="mt-2 text-lg font-bold text-slate-900 dark:text-white">
-              This Subjective Set is published.
-            </h2>
-
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
-              The set is now available according to its configured
-              access type.
-            </p>
-          </div>
-        )}
+    <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
+      The set is now available according to its configured
+      access type.
+    </p>
+  </div>
+)}
 
         {/* =====================================================
             QUESTIONS

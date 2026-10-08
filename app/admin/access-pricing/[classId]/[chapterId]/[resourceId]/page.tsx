@@ -1,7 +1,9 @@
 import Link from "next/link";
+
 import { notFound } from "next/navigation";
 
 import AdminPage from "@/app/admin/components/layout/AdminPage";
+
 import { getAccessPricingResource } from "@/app/lib/admin/access-pricing/access-pricing-resource.service";
 
 type ResourcePageProps = {
@@ -247,11 +249,57 @@ export default async function AccessPricingResourcePage({
 
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
             This learning resource does not control product pricing.
-            Paid access is determined by the Chapter Product or
-            Mathematics Subject Product associated with the curriculum.
+            Paid access is determined by the applicable Chapter Product
+            and Subject Product associated with the curriculum.
           </p>
 
-          <div className="mt-5 grid gap-4 md:grid-cols-2">
+          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {/* -------------------------------------------------
+                Subject Product
+            ------------------------------------------------- */}
+
+            <div className="rounded-xl border border-blue-100 bg-white p-5">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Subject Product
+              </p>
+
+              <p className="mt-2 font-semibold text-slate-900">
+                {resource.subject.name}
+              </p>
+
+              <p className="mt-1 text-sm leading-6 text-slate-500">
+                Subject-level paid access and pricing are managed from
+                the Subject Product workspace. This applies to the
+                current curriculum subject, regardless of its name.
+              </p>
+
+              <Link
+                href={`/admin/access-pricing/${resource.classInfo.id}/${resource.subject.id}`}
+                className="
+                  mt-4
+                  inline-flex
+                  items-center
+                  rounded-xl
+                  border
+                  border-slate-200
+                  bg-white
+                  px-4
+                  py-2
+                  text-sm
+                  font-semibold
+                  text-slate-700
+                  transition
+                  hover:bg-slate-50
+                "
+              >
+                Open Subject Product →
+              </Link>
+            </div>
+
+            {/* -------------------------------------------------
+                Chapter Product
+            ------------------------------------------------- */}
+
             <div className="rounded-xl border border-blue-100 bg-white p-5">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Chapter Product
@@ -286,6 +334,10 @@ export default async function AccessPricingResourcePage({
                 Open Chapter Product →
               </Link>
             </div>
+
+            {/* -------------------------------------------------
+                Resource Access Tag
+            ------------------------------------------------- */}
 
             <div className="rounded-xl border border-blue-100 bg-white p-5">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -440,9 +492,9 @@ export default async function AccessPricingResourcePage({
 
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
             This resource is a learning-content container mapped to a
-            curriculum chapter. Content creation, question management,
-            Subjective Set management, and product pricing remain
-            separate responsibilities.
+            curriculum chapter within the current subject. Content creation,
+            question management, Subjective Set management, and product
+            pricing remain separate responsibilities.
           </p>
 
           <div className="mt-5 flex flex-wrap gap-3">

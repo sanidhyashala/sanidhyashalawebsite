@@ -121,7 +121,30 @@ const content = {
     ],
 
     finalLine:
-      "SanidhyaShala — Learning deeply. Teaching thoughtfully. Reflecting honestly."
+      "SanidhyaShala — Learning deeply. Teaching thoughtfully. Reflecting honestly.",
+
+    withSanidhyaShalaTitle: "With SanidhyaShala",
+
+    withSanidhyaShala: [
+      "Perhaps SanidhyaShala did not begin on the day I started building it. In some way, it had been taking shape through all those days in which I learned something from someone, paused before a question, and allowed a new understanding to find its place within me.",
+
+      "How much of what exists here—the ideas, the knowledge, the questions, the words, and this longing to learn—can truly be called my own? Very little. Much of what I have received came from elsewhere: from teachers, students, books, questions, and experiences. I have only tried to listen to them in my own way, understand them, and bring them together in one place.",
+
+      "Perhaps, in that sense, I am less the founder of SanidhyaShala and more a fellow traveller with it.",
+
+      "I have only tried to open a door.",
+
+      "Who will walk through it, what they will learn, what questions they will carry, and what they will take with them—none of that is mine to decide. And perhaps that is one of the most beautiful things about it.",
+
+      "If SanidhyaShala helps a student see something difficult a little more clearly, gives a teacher an opportunity to look at their own subject anew, or gives someone a quiet space to pause and meet themselves for a while—then its existence has meaning.",
+
+      "Whatever I had was also given to me from somewhere. I have only tried to care for it a little and place it forward for someone else.",
+
+      "SanidhyaShala is not a place I have made, but a small continuation of the many touches through which I, too, have learned."
+    ],
+
+    withSanidhyaShalaSignature: "— Manas Mishra",
+    withSanidhyaShalaRole: "A fellow traveller with SanidhyaShala",
   },
 
   hi: {
@@ -239,7 +262,30 @@ const content = {
     ],
 
     finalLine:
-      "सानिध्यशाला — गहराई से सीखना। विचारशीलता से पढ़ाना। ईमानदारी से चिंतन करना।"
+      "सानिध्यशाला — गहराई से सीखना। विचारशीलता से पढ़ाना। ईमानदारी से चिंतन करना।",
+
+    withSanidhyaShalaTitle: "सानिध्यशाला के साथ",
+
+    withSanidhyaShala: [
+      "सानिध्यशाला की शुरुआत शायद उस दिन नहीं हुई जब मैंने इसे बनाना शुरू किया; वह तो उन सभी दिनों में कहीं न कहीं बनती रही, जिनमें मैंने किसी से कुछ सीखा, किसी प्रश्न पर ठहरा और किसी समझ को अपने भीतर जगह दी।",
+
+      "जो कुछ यहाँ है—विचार, ज्ञान, प्रश्न, शब्द और सीखने की यह आकांक्षा—उसमें मेरा अपना कितना है? बहुत कम। जो कुछ मिला, वह पहले कहीं और से आया; किसी शिक्षक से, किसी विद्यार्थी से, किसी पुस्तक से, किसी प्रश्न से, किसी अनुभव से। मैंने बस उन सबको अपने ढंग से सुना, समझा और एक जगह रखने का प्रयत्न किया है।",
+
+      "शायद इसी अर्थ में मैं सानिध्यशाला का संस्थापक कम और उसका एक सहयात्री अधिक हूँ।",
+
+      "मैंने केवल एक द्वार खोलने की कोशिश की है।",
+
+      "आगे इस द्वार से कौन गुज़रेगा, क्या सीखेगा, क्या प्रश्न करेगा और क्या अपने साथ लेकर जाएगा—यह मेरे अधिकार में नहीं है। और शायद यही इसकी सबसे सुंदर बात है।",
+
+      "यदि सानिध्यशाला किसी विद्यार्थी को किसी कठिन बात को थोड़ा और स्पष्ट देखने में सहायता दे, किसी शिक्षक को अपने ही विषय को नए सिरे से समझने का अवसर दे, या किसी मनुष्य को कुछ देर ठहरकर स्वयं से मिलने की जगह दे—तो इसका होना सार्थक है।",
+
+      "जो कुछ मेरे पास था, वह भी मुझे कहीं से मिला था। मैंने बस उसे थोड़ा सँभालकर आगे रखने की कोशिश की है।",
+
+      "सानिध्यशाला मेरी बनाई हुई जगह नहीं, बल्कि उन अनेक स्पर्शों की एक छोटी-सी निरंतरता है, जिनसे होकर मैं स्वयं सीखता आया हूँ।"
+    ],
+
+    withSanidhyaShalaSignature: "— मानस मिश्रा",
+    withSanidhyaShalaRole: "सानिध्यशाला का एक सहयात्री",
   }
 };
 
@@ -608,6 +654,39 @@ export default function AboutContent() {
         >
           {active.finalLine}
         </p>
+      </Section>
+
+      {/* With SanidhyaShala */}
+      <Section title={active.withSanidhyaShalaTitle}>
+        <Paragraphs paragraphs={active.withSanidhyaShala} />
+
+        <div className="mt-10">
+          <p
+            className="
+              text-lg
+              font-medium
+              leading-8
+              text-blue-900
+              dark:text-blue-400
+              md:text-xl
+            "
+          >
+            {active.withSanidhyaShalaSignature}
+          </p>
+
+          <p
+            className="
+              mt-1
+              text-sm
+              italic
+              text-slate-500
+              dark:text-slate-400
+              md:text-base
+            "
+          >
+            {active.withSanidhyaShalaRole}
+          </p>
+        </div>
       </Section>
     </>
   );

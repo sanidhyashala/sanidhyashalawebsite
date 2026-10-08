@@ -1,6 +1,10 @@
 import Link from "next/link";
 
-import { getLearningCurriculum } from "@/lib/learning/curriculum";
+import {
+  getLearningCurriculum,
+  getLearningSubjects,
+} from "@/lib/learning/curriculum";
+
 import { getLearningResourceHref } from "@/lib/learning/resource-routes";
 
 const resourceMeta = {
@@ -44,12 +48,26 @@ const resourceMeta = {
 export default async function Class12Page() {
   const classSlug = "class-12";
 
-  const chapters = await getLearningCurriculum(classSlug);
+  const { subjects } = await getLearningSubjects(classSlug);
+
+  const mathematicsSubject = subjects.find(
+    (subject) =>
+      subject.display_name.trim().toLowerCase() === "mathematics",
+  );
+
+  if (!mathematicsSubject) {
+    throw new Error(
+      "Mathematics subject is not available for Class XII.",
+    );
+  }
+
+  const chapters = await getLearningCurriculum(classSlug, {
+    parentNodeId: mathematicsSubject.id,
+  });
 
   return (
     <main className="px-6 py-12 sm:py-16">
       <div className="mx-auto max-w-5xl">
-
         {/* =====================================================
             Welcome
         ===================================================== */}
@@ -195,7 +213,6 @@ export default async function Class12Page() {
           </div>
 
           <div className="grid gap-5 md:grid-cols-2">
-
             {/* =================================================
                 MCQ Practice
             ================================================= */}
@@ -369,7 +386,6 @@ export default async function Class12Page() {
                 <span className="ml-2">→</span>
               </div>
             </Link>
-
           </div>
         </section>
 
@@ -424,18 +440,18 @@ export default async function Class12Page() {
             {chapters.map((chapter) => {
               const resources =
                 chapter.resource_curriculum_nodes?.flatMap(
-                  (mapping) => mapping.resources ?? []
+                  (mapping) => mapping.resources ?? [],
                 ) ?? [];
 
               const publishedResources = resources
                 .filter(
                   (resource) =>
-                    resource.status === "PUBLISHED"
+                    resource.status === "PUBLISHED",
                 )
                 .sort(
                   (a, b) =>
                     (a.display_order ?? 0) -
-                    (b.display_order ?? 0)
+                    (b.display_order ?? 0),
                 );
 
               return (
@@ -525,7 +541,7 @@ export default async function Class12Page() {
                             : getLearningResourceHref(
                                 classSlug,
                                 resource.resource_type,
-                                resource.slug
+                                resource.slug,
                               );
 
                         if (!href) {
@@ -637,7 +653,6 @@ export default async function Class12Page() {
             Learn one idea well, and let the next one follow.
           </p>
         </section>
-
       </div>
     </main>
   );

@@ -102,6 +102,6 @@ export async function setLearningProductPrice(
 
   return {
     success: true,
-    message: "Chapter product price updated successfully.",
+    message: "Learning product price updated successfully.",
   };
 }

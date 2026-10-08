@@ -2,8 +2,6 @@ import "server-only";
 
 import { createAdminSupabaseClient } from "@/app/lib/admin/supabase-admin";
 
-const SUBJECT_NAME = "Mathematics";
-
 const RESOURCE_TYPES = [
   "SUBJECTIVE",
   "MCQ",
@@ -31,10 +29,16 @@ type CurriculumVersionRow = {
 type CurriculumNodeRow = {
   id: string;
   curriculum_version_id: string;
+  canonical_node_id: string;
   parent_node_id: string | null;
   display_name: string;
   sequence_order: number | null;
   status: string;
+};
+
+type CanonicalNodeRow = {
+  id: string;
+  node_type: string;
 };
 
 type ResourceRow = {
@@ -113,8 +117,10 @@ function isValidResourceType(
  *
  * Important:
  * - This function is READ-ONLY.
- * - It verifies the complete hierarchy:
- *   Class → Curriculum Version → Mathematics → Chapter → Resource
+ * - It verifies the complete curriculum hierarchy:
+ *   Class → Curriculum Version → Subject → Chapter → Resource
+ * - Subject is discovered from the chapter's actual parent node.
+ * - No subject name is hardcoded.
  * - Resource-level pricing is intentionally NOT loaded here.
  * - Product pricing belongs to learning_products and
  *   learning_product_prices.
@@ -132,12 +138,14 @@ export async function getAccessPricingResource(
   // 1. Load class / program
   // ------------------------------------------------------------
 
-  const { data: program, error: programError } =
-    await supabase
-      .from("programs")
-      .select("id, name, slug, status")
-      .eq("id", classId)
-      .maybeSingle();
+  const {
+    data: program,
+    error: programError,
+  } = await supabase
+    .from("programs")
+    .select("id, name, slug, status")
+    .eq("id", classId)
+    .maybeSingle();
 
   if (programError) {
     throw new Error(
@@ -199,6 +207,7 @@ export async function getAccessPricingResource(
       `
         id,
         curriculum_version_id,
+        canonical_node_id,
         parent_node_id,
         display_name,
         sequence_order,
@@ -218,29 +227,14 @@ export async function getAccessPricingResource(
     (curriculumNodes ?? []) as CurriculumNodeRow[];
 
   // ------------------------------------------------------------
-  // 4. Find Mathematics subject node
-  // ------------------------------------------------------------
-
-  const mathematicsNode = typedNodes.find(
-    (node) =>
-      node.parent_node_id === null &&
-      node.display_name === SUBJECT_NAME
-  );
-
-  if (!mathematicsNode) {
-    throw new Error(
-      `Mathematics subject node was not found for class "${typedProgram.name}".`
-    );
-  }
-
-  // ------------------------------------------------------------
-  // 5. Verify requested chapter belongs to Mathematics
+  // 4. Find requested chapter
+  //
+  // We do NOT assume Mathematics.
+  // The chapter's actual parent will determine the Subject.
   // ------------------------------------------------------------
 
   const chapterNode = typedNodes.find(
-    (node) =>
-      node.id === chapterId &&
-      node.parent_node_id === mathematicsNode.id
+    (node) => node.id === chapterId
   );
 
   if (!chapterNode) {
@@ -248,7 +242,55 @@ export async function getAccessPricingResource(
   }
 
   // ------------------------------------------------------------
-  // 6. Load requested resource
+  // 5. Verify chapter has a parent Subject node
+  // ------------------------------------------------------------
+
+  if (!chapterNode.parent_node_id) {
+    return null;
+  }
+
+  const subjectNode = typedNodes.find(
+    (node) => node.id === chapterNode.parent_node_id
+  );
+
+  if (!subjectNode) {
+    return null;
+  }
+
+  // ------------------------------------------------------------
+  // 6. Verify the parent node is actually a SUBJECT
+  //
+  // This is intentionally resolved through canonical_nodes.
+  // No subject name is hardcoded.
+  // ------------------------------------------------------------
+
+  const {
+    data: subjectCanonicalNode,
+    error: subjectCanonicalNodeError,
+  } = await supabase
+    .from("canonical_nodes")
+    .select("id, node_type")
+    .eq("id", subjectNode.canonical_node_id)
+    .maybeSingle();
+
+  if (subjectCanonicalNodeError) {
+    throw new Error(
+      `Failed to load subject canonical node type: ${subjectCanonicalNodeError.message}`
+    );
+  }
+
+  const typedSubjectCanonicalNode =
+    (subjectCanonicalNode as CanonicalNodeRow | null) ?? null;
+
+  if (
+    !typedSubjectCanonicalNode ||
+    typedSubjectCanonicalNode.node_type !== "SUBJECT"
+  ) {
+    return null;
+  }
+
+  // ------------------------------------------------------------
+  // 7. Load requested resource
   // ------------------------------------------------------------
 
   const {
@@ -291,7 +333,7 @@ export async function getAccessPricingResource(
   }
 
   // ------------------------------------------------------------
-  // 7. Verify resource is actually mapped to this chapter
+  // 8. Verify resource is actually mapped to this chapter
   // ------------------------------------------------------------
 
   const {
@@ -315,13 +357,14 @@ export async function getAccessPricingResource(
   }
 
   // ------------------------------------------------------------
-  // 8. Load Subjective Sets only for Subjective resources
+  // 9. Load Subjective Sets only for Subjective resources
   //
   // These are read-only content metadata.
   // Access and publishing are NOT controlled here.
   // ------------------------------------------------------------
 
   let subjectiveSets: SubjectiveSetRow[] = [];
+
   let subjectiveSetQuestionCounts =
     new Map<string, number>();
 
@@ -357,7 +400,7 @@ export async function getAccessPricingResource(
       (sets ?? []) as SubjectiveSetRow[];
 
     // ----------------------------------------------------------
-    // 8A. Load question mappings for all Subjective Sets
+    // 9A. Load question mappings for all Subjective Sets
     // ----------------------------------------------------------
 
     const setIds = subjectiveSets.map(
@@ -380,8 +423,7 @@ export async function getAccessPricingResource(
       }
 
       const typedSetQuestions =
-        (setQuestions ??
-          []) as SubjectiveSetQuestionRow[];
+        (setQuestions ?? []) as SubjectiveSetQuestionRow[];
 
       subjectiveSetQuestionCounts =
         new Map<string, number>();
@@ -401,7 +443,7 @@ export async function getAccessPricingResource(
   }
 
   // ------------------------------------------------------------
-  // 9. Return normalized Access & Pricing model
+  // 10. Return normalized Access & Pricing model
   // ------------------------------------------------------------
 
   return {
@@ -423,8 +465,8 @@ export async function getAccessPricingResource(
     },
 
     subject: {
-      id: mathematicsNode.id,
-      name: mathematicsNode.display_name,
+      id: subjectNode.id,
+      name: subjectNode.display_name,
     },
 
     chapter: {

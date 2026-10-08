@@ -4,25 +4,16 @@ import AdminPage from "../../components/layout/AdminPage";
 
 import { getAdminLearningCurriculum } from "@/app/lib/admin/learning/learning-curriculum.service";
 import { createLearningResource } from "@/app/lib/admin/learning/learning-resource.actions";
+import LearningCurriculumSelector from "./LearningCurriculumSelector";
 
 type CurriculumNode = Awaited<
   ReturnType<typeof getAdminLearningCurriculum>
 >[number];
 
-/*
- * ---------------------------------------------------------
+/* =========================================================
  * Extract class number from the program slug.
- *
- * Examples:
- * class-9  → 9
- * class-10 → 10
- * class-11 → 11
- * class-12 → 12
- *
- * This is only presentation ordering.
- * Curriculum data itself remains database-driven.
- * ---------------------------------------------------------
- */
+ * ========================================================= */
+
 function getProgramOrder(slug: string) {
   const match = slug.match(/class-(\d+)/i);
 
@@ -33,28 +24,16 @@ function getProgramOrder(slug: string) {
   return Number(match[1]);
 }
 
+/* =========================================================
+ * Page
+ * ========================================================= */
+
 export default async function NewLearningResourcePage() {
   const curriculum = await getAdminLearningCurriculum();
 
-  /*
-   * -------------------------------------------------------
-   * Group chapters by curriculum version.
-   *
-   * Each curriculum version belongs to one program/class.
-   *
-   * Example:
-   *
-   * Class IX · 2026-27
-   *   Chapter 1
-   *   Chapter 2
-   *   ...
-   *
-   * Class X · 2026-27
-   *   Chapter 1
-   *   Chapter 2
-   *   ...
-   * -------------------------------------------------------
-   */
+  /* =======================================================
+   * Group curriculum by curriculum version.
+   * ======================================================= */
 
   const curriculumGroups = new Map<
     string,
@@ -91,67 +70,215 @@ export default async function NewLearningResourcePage() {
     });
   }
 
-  /*
-   * -------------------------------------------------------
+  /* =======================================================
    * Sort curriculum groups.
-   *
-   * Primary:
-   *   Class number
-   *
-   * Secondary:
-   *   Program name
-   *
-   * Tertiary:
-   *   Session
-   *
-   * No class names are hard-coded.
-   * -------------------------------------------------------
-   */
+   * ======================================================= */
 
-  const sortedGroups = Array.from(curriculumGroups.values()).sort(
-    (a, b) => {
-      const classOrderDifference =
-        getProgramOrder(a.programSlug) -
-        getProgramOrder(b.programSlug);
+  const sortedGroups = Array.from(
+    curriculumGroups.values(),
+  ).sort((a, b) => {
+    const classOrderDifference =
+      getProgramOrder(a.programSlug) -
+      getProgramOrder(b.programSlug);
 
-      if (classOrderDifference !== 0) {
-        return classOrderDifference;
-      }
+    if (classOrderDifference !== 0) {
+      return classOrderDifference;
+    }
 
-      const programNameDifference = a.programName.localeCompare(
+    const programNameDifference =
+      a.programName.localeCompare(
         b.programName,
         undefined,
         {
           numeric: true,
           sensitivity: "base",
-        }
+        },
       );
 
-      if (programNameDifference !== 0) {
-        return programNameDifference;
-      }
-
-      return a.session.localeCompare(b.session);
+    if (programNameDifference !== 0) {
+      return programNameDifference;
     }
-  );
 
-  /*
-   * -------------------------------------------------------
-   * Sort chapters inside each curriculum.
+    return a.session.localeCompare(b.session);
+  });
+
+  /* =======================================================
+   * Build curriculum hierarchy.
    *
-   * We create a new array instead of mutating the
-   * original service result.
-   * -------------------------------------------------------
-   */
+   * Mathematics:
+   *
+   *   Mathematics
+   *      └── Chapter
+   *
+   * Science:
+   *
+   *   Science
+   *      ├── Physics
+   *      │     └── Chapter
+   *      ├── Chemistry
+   *      │     └── Chapter
+   *      └── Biology
+   *            └── Chapter
+   *
+   * The hierarchy is determined from parent_node_id and
+   * child relationships. Nothing is hard-coded.
+   * ======================================================= */
 
-  const groupsWithSortedNodes = sortedGroups.map((group) => ({
-    ...group,
-    nodes: [...group.nodes].sort(
-      (a, b) =>
-        (a.sequence_order ?? 0) -
-        (b.sequence_order ?? 0)
-    ),
-  }));
+  const groupsWithSubjects = sortedGroups.map(
+    (group) => {
+      const subjectNodes = group.nodes
+        .filter(
+          (node) =>
+            node.node_type === "SUBJECT",
+        )
+        .sort(
+          (a, b) =>
+            (a.sequence_order ?? 0) -
+            (b.sequence_order ?? 0),
+        );
+
+      const subjectGroups = subjectNodes
+        .map((subject) => {
+          const directChildren = group.nodes
+            .filter(
+              (node) =>
+                node.parent_node_id ===
+                subject.id,
+            )
+            .sort(
+              (a, b) =>
+                (a.sequence_order ?? 0) -
+                (b.sequence_order ?? 0),
+            );
+
+          /* -------------------------------------------------
+           * Direct child with no children = Chapter
+           * Direct child with children = Branch
+           * ------------------------------------------------- */
+
+          const chapters = directChildren.filter(
+            (child) => {
+              const hasChildren =
+                group.nodes.some(
+                  (node) =>
+                    node.parent_node_id ===
+                    child.id,
+                );
+
+              return !hasChildren;
+            },
+          );
+
+          const branches = directChildren
+            .map((child) => {
+              const branchChapters =
+                group.nodes
+                  .filter(
+                    (node) =>
+                      node.parent_node_id ===
+                      child.id,
+                  )
+                  .sort(
+                    (a, b) =>
+                      (a.sequence_order ?? 0) -
+                      (b.sequence_order ?? 0),
+                  );
+
+              if (
+                branchChapters.length === 0
+              ) {
+                return null;
+              }
+
+              return {
+                id: child.id,
+                display_name:
+                  child.display_name,
+                sequence_order:
+                  child.sequence_order,
+                chapters:
+                  branchChapters,
+              };
+            })
+            .filter(
+              (
+                branch,
+              ): branch is NonNullable<
+                typeof branch
+              > => branch !== null,
+            );
+
+          return {
+            subject,
+            chapters,
+            branches,
+          };
+        })
+        .filter(
+          (subjectGroup) =>
+            subjectGroup.chapters.length > 0 ||
+            subjectGroup.branches.length > 0,
+        );
+
+      /* =====================================================
+       * Track all correctly mapped chapter IDs.
+       * ===================================================== */
+
+      const mappedChapterIds = new Set(
+        subjectGroups.flatMap(
+          (subjectGroup) => [
+            ...subjectGroup.chapters.map(
+              (chapter) =>
+                chapter.id,
+            ),
+
+            ...subjectGroup.branches.flatMap(
+              (branch) =>
+                branch.chapters.map(
+                  (chapter) =>
+                    chapter.id,
+                ),
+            ),
+          ],
+        ),
+      );
+
+      /* =====================================================
+       * Safety fallback for orphan chapter nodes.
+       * ===================================================== */
+
+      const chapterNodes =
+        group.nodes.filter(
+          (node) =>
+            node.node_type === "CHAPTER" &&
+            !group.nodes.some(
+              (child) =>
+                child.parent_node_id ===
+                node.id,
+            ),
+        );
+
+      const unmappedChapters =
+        chapterNodes
+          .filter(
+            (chapter) =>
+              !mappedChapterIds.has(
+                chapter.id,
+              ),
+          )
+          .sort(
+            (a, b) =>
+              (a.sequence_order ?? 0) -
+              (b.sequence_order ?? 0),
+          );
+
+      return {
+        ...group,
+        subjectGroups,
+        unmappedChapters,
+      };
+    },
+  );
 
   return (
     <AdminPage
@@ -164,14 +291,20 @@ export default async function NewLearningResourcePage() {
         action={createLearningResource}
         className="max-w-4xl space-y-8"
       >
-        {/* -------------------------------------------------
-         * Title
-         * ------------------------------------------------- */}
+        {/* =================================================
+            Title
+        ================================================= */}
 
         <div>
           <label
             htmlFor="title"
-            className="block text-sm font-semibold text-slate-800 dark:text-slate-200"
+            className="
+              block
+              text-sm
+              font-semibold
+              text-slate-800
+              dark:text-slate-200
+            "
           >
             Note Title
           </label>
@@ -206,14 +339,20 @@ export default async function NewLearningResourcePage() {
           />
         </div>
 
-        {/* -------------------------------------------------
-         * Description
-         * ------------------------------------------------- */}
+        {/* =================================================
+            Description
+        ================================================= */}
 
         <div>
           <label
             htmlFor="description"
-            className="block text-sm font-semibold text-slate-800 dark:text-slate-200"
+            className="
+              block
+              text-sm
+              font-semibold
+              text-slate-800
+              dark:text-slate-200
+            "
           >
             Description
           </label>
@@ -226,6 +365,7 @@ export default async function NewLearningResourcePage() {
             className="
               mt-2
               w-full
+              resize-none
               rounded-xl
               border
               border-slate-300
@@ -233,6 +373,7 @@ export default async function NewLearningResourcePage() {
               px-4
               py-3
               text-sm
+              leading-6
               text-slate-900
               outline-none
               transition
@@ -247,75 +388,58 @@ export default async function NewLearningResourcePage() {
           />
         </div>
 
-        {/* -------------------------------------------------
-         * Curriculum
-         * ------------------------------------------------- */}
+        {/* =================================================
+            Curriculum Mapping
+        ================================================= */}
 
         <div>
-          <label
-            htmlFor="curriculum_node_id"
-            className="block text-sm font-semibold text-slate-800 dark:text-slate-200"
-          >
-            Curriculum Chapter
-          </label>
+          <div className="mb-3">
+            <p
+              className="
+                text-sm
+                font-semibold
+                text-slate-800
+                dark:text-slate-200
+              "
+            >
+              Curriculum Mapping
+            </p>
 
-          <select
-            id="curriculum_node_id"
-            name="curriculum_node_id"
-            required
-            defaultValue=""
-            className="
-              mt-2
-              w-full
-              rounded-xl
-              border
-              border-slate-300
-              bg-white
-              px-4
-              py-3
-              text-sm
-              text-slate-900
-              outline-none
-              focus:border-blue-500
-              focus:ring-2
-              focus:ring-blue-100
-              dark:border-slate-700
-              dark:bg-slate-950
-              dark:text-white
-            "
-          >
-            <option value="" disabled>
-              Select a class and chapter
-            </option>
+            <p
+              className="
+                mt-1
+                text-xs
+                leading-5
+                text-slate-500
+                dark:text-slate-400
+              "
+            >
+              Select the exact class, subject,
+              branch when applicable, and chapter
+              for this note.
+            </p>
+          </div>
 
-            {groupsWithSortedNodes.map((group) => (
-              <optgroup
-                key={group.curriculumVersionId}
-                label={`${group.programName} · ${group.session}`}
-              >
-                {group.nodes.map((node) => (
-                  <option
-                    key={node.id}
-                    value={node.id}
-                  >
-                    Chapter {node.sequence_order}:{" "}
-                    {node.display_name}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
-
-          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-            Select the exact class, session and chapter for this note.
-          </p>
+          <LearningCurriculumSelector
+            groups={groupsWithSubjects}
+          />
         </div>
 
-        {/* -------------------------------------------------
-         * Actions
-         * ------------------------------------------------- */}
+        {/* =================================================
+            Actions
+        ================================================= */}
 
-        <div className="flex items-center gap-3 border-t border-slate-200 pt-6 dark:border-slate-800">
+        <div
+          className="
+            flex
+            items-center
+            gap-3
+            border-t
+            border-slate-200
+            pt-6
+            dark:border-slate-800
+          "
+        >
           <button
             type="submit"
             className="

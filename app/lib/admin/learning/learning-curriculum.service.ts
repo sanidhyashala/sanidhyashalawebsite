@@ -10,6 +10,7 @@ export async function getAdminLearningCurriculum() {
     .select(
       `
         id,
+        parent_node_id,
         display_name,
         description,
         sequence_order,
@@ -36,28 +37,12 @@ export async function getAdminLearningCurriculum() {
         )
       `
     )
-    .eq(
-      "canonical_nodes.node_type",
-      "CHAPTER"
-    )
-    .eq(
-      "canonical_nodes.status",
-      "ACTIVE"
-    )
-    .eq(
-      "curriculum_versions.status",
-      "PUBLISHED"
-    )
-    .eq(
-      "curriculum_versions.programs.status",
-      "PUBLISHED"
-    )
-    .order(
-      "sequence_order",
-      {
-        ascending: true,
-      }
-    );
+    .eq("canonical_nodes.status", "ACTIVE")
+    .eq("curriculum_versions.status", "PUBLISHED")
+    .eq("curriculum_versions.programs.status", "PUBLISHED")
+    .order("sequence_order", {
+      ascending: true,
+    });
 
   if (error) {
     throw new Error(
@@ -66,89 +51,117 @@ export async function getAdminLearningCurriculum() {
   }
 
   /*
-   * -------------------------------------------------------
+   * ---------------------------------------------------------
    * Normalize Supabase relation data
-   * -------------------------------------------------------
+   * ---------------------------------------------------------
    *
-   * curriculum_versions is a collection.
-   * programs is a related single program.
+   * We intentionally keep the complete curriculum hierarchy:
    *
-   * The admin UI should not have to know or depend on
-   * Supabase's nested relation shape.
+   * Mathematics
+   *   └── Chapter
+   *
+   * Science
+   *   ├── Physics
+   *   │   └── Chapter
+   *   ├── Chemistry
+   *   │   └── Chapter
+   *   └── Biology
+   *       └── Chapter
+   *
+   * The UI can therefore build the correct hierarchy
+   * without hardcoding subject names.
+   * ---------------------------------------------------------
    */
 
-  const normalized =
-    (data ?? [])
-      .map((node) => {
-        const version =
-          Array.isArray(node.curriculum_versions)
-            ? node.curriculum_versions[0]
-            : node.curriculum_versions;
+  const normalized = (data ?? [])
+    .map((node) => {
+      const version = Array.isArray(node.curriculum_versions)
+        ? node.curriculum_versions[0]
+        : node.curriculum_versions;
 
-        if (!version) {
-          return null;
-        }
+      if (!version) {
+        return null;
+      }
 
-        const program =
-          Array.isArray(version.programs)
-            ? version.programs[0]
-            : version.programs;
+      const program = Array.isArray(version.programs)
+        ? version.programs[0]
+        : version.programs;
 
-        if (!program) {
-          return null;
-        }
+      if (!program) {
+        return null;
+      }
 
-        return {
-          id: node.id,
-          display_name: node.display_name,
-          description: node.description,
-          sequence_order: node.sequence_order,
-          status: node.status,
+      const canonicalNode = Array.isArray(node.canonical_nodes)
+        ? node.canonical_nodes[0]
+        : node.canonical_nodes;
 
-          curriculum_version: {
-            id: version.id,
-            session: version.session,
-            slug: version.slug,
-            status: version.status,
-          },
+      if (!canonicalNode) {
+        return null;
+      }
 
-          program: {
-            id: program.id,
-            name: program.name,
-            slug: program.slug,
-            status: program.status,
-          },
-        };
-      })
-      .filter(
-        (
-          node
-        ): node is NonNullable<typeof node> =>
-          node !== null
-      );
+      return {
+        id: node.id,
+        parent_node_id: node.parent_node_id,
+        display_name: node.display_name,
+        description: node.description,
+        sequence_order: node.sequence_order,
+        status: node.status,
+
+        node_type: canonicalNode.node_type,
+
+        curriculum_version: {
+          id: version.id,
+          session: version.session,
+          slug: version.slug,
+          status: version.status,
+        },
+
+        program: {
+          id: program.id,
+          name: program.name,
+          slug: program.slug,
+          status: program.status,
+        },
+      };
+    })
+    .filter(
+      (
+        node
+      ): node is NonNullable<typeof node> =>
+        node !== null
+    );
 
   /*
-   * -------------------------------------------------------
+   * ---------------------------------------------------------
    * Sort
-   * -------------------------------------------------------
+   * ---------------------------------------------------------
    *
    * First by class/program,
-   * then by chapter sequence.
+   * then by curriculum hierarchy sequence.
+   * ---------------------------------------------------------
    */
 
   normalized.sort((a, b) => {
-    const programCompare =
-      a.program.name.localeCompare(
-        b.program.name,
-        undefined,
-        {
-          numeric: true,
-          sensitivity: "base",
-        }
-      );
+    const programCompare = a.program.name.localeCompare(
+      b.program.name,
+      undefined,
+      {
+        numeric: true,
+        sensitivity: "base",
+      }
+    );
 
     if (programCompare !== 0) {
       return programCompare;
+    }
+
+    const sessionCompare =
+      a.curriculum_version.session.localeCompare(
+        b.curriculum_version.session
+      );
+
+    if (sessionCompare !== 0) {
+      return sessionCompare;
     }
 
     return (

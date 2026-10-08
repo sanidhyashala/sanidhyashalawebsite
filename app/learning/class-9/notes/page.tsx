@@ -1,6 +1,10 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 
-import { getLearningCurriculum } from "@/lib/learning/curriculum";
+import {
+  getLearningCurriculum,
+  getLearningSubjects,
+} from "@/lib/learning/curriculum";
 
 type NoteAccessResource = {
   id: string;
@@ -22,29 +26,133 @@ function normalizeResources(
     | undefined,
 ): NoteAccessResource[] {
   if (!resource) return [];
-
-  if (Array.isArray(resource)) {
-    return resource;
-  }
-
+  if (Array.isArray(resource)) return resource;
   return [resource];
 }
 
-export default async function NotesPage() {
-  const chapters = await getLearningCurriculum("class-9", {
-    includeLockedNotes: true,
-  });
+type NotesPageProps = {
+  searchParams?: Promise<{
+    subject?: string | string[];
+  }>;
+};
+
+export default async function NotesPage({
+  searchParams,
+}: NotesPageProps) {
+  const { subjects } = await getLearningSubjects("class-9");
+
+  const requestedSubjectValue = searchParams
+    ? (await searchParams).subject
+    : undefined;
+
+  const requestedSubject = Array.isArray(requestedSubjectValue)
+    ? requestedSubjectValue[0] ?? null
+    : requestedSubjectValue ?? null;
+
+  const normalizedSubject =
+    requestedSubject?.trim().toLowerCase() || "mathematics";
+
+  const findSubject = (name: string) =>
+    subjects.find(
+      (subject) =>
+        subject.display_name.trim().toLowerCase() ===
+        name.trim().toLowerCase(),
+    ) ?? null;
+
+  const mathematicsSubject = findSubject("Mathematics");
+  const scienceSubject = findSubject("Science");
+
+  if (!mathematicsSubject) {
+    throw new Error("Mathematics subject not found for Class IX.");
+  }
+
+  /*
+   * ---------------------------------------------------------
+   * Subject-specific Notes hierarchy
+   * ---------------------------------------------------------
+   *
+   * Mathematics:
+   *   Mathematics → Chapters → Notes
+   *
+   * Science:
+   *   Science → Physics/Chemistry/Biology → Chapters → Notes
+   *
+   * IMPORTANT:
+   * We NEVER fall back to Mathematics when an explicit
+   * science subject is requested. This prevents cross-subject
+   * content leakage.
+   * ---------------------------------------------------------
+   */
+
+  let selectedSubjectLabel = "Mathematics";
+  let selectedSubjectDescription =
+    "Chapter-wise notes designed to build conceptual clarity, strengthen understanding, and help you learn mathematics with depth.";
+
+  let backHref = "/learning?subject=mathematics";
+  let chapters: Awaited<
+    ReturnType<typeof getLearningCurriculum>
+  > = [];
+
+  if (normalizedSubject === "mathematics") {
+    chapters = await getLearningCurriculum("class-9", {
+      parentNodeId: mathematicsSubject.id,
+      includeLockedNotes: true,
+    });
+  } else if (
+    normalizedSubject === "physics" ||
+    normalizedSubject === "chemistry" ||
+    normalizedSubject === "biology"
+  ) {
+    if (!scienceSubject) {
+      throw new Error("Science subject not found for Class IX.");
+    }
+
+    const scienceBranches = await getLearningCurriculum("class-9", {
+      parentNodeId: scienceSubject.id,
+      includeLockedNotes: true,
+    });
+
+    const selectedBranch = scienceBranches.find(
+      (branch) =>
+        branch.display_name.trim().toLowerCase() ===
+        normalizedSubject,
+    );
+
+    if (!selectedBranch) {
+      notFound();
+    }
+
+    chapters = await getLearningCurriculum("class-9", {
+      parentNodeId: selectedBranch.id,
+      includeLockedNotes: true,
+    });
+
+    selectedSubjectLabel = selectedBranch.display_name;
+
+    selectedSubjectDescription =
+      selectedBranch.description ??
+      `Chapter-wise ${selectedBranch.display_name.toLowerCase()} notes designed for conceptual clarity, understanding and revision.`;
+
+    backHref = `/learning?subject=${encodeURIComponent(
+      normalizedSubject,
+    )}`;
+  } else {
+    /*
+     * An explicit unknown subject must never silently expose
+     * Mathematics content.
+     */
+    notFound();
+  }
 
   return (
     <main className="px-6 py-12 sm:px-8 sm:py-16">
       <div className="mx-auto max-w-5xl">
         {/* =====================================================
-         * Back to Learning
+         * Back to Subject Hub
          * ===================================================== */}
-
         <div className="mb-8">
           <Link
-            href="/learning"
+            href={backHref}
             className="
               inline-flex
               items-center
@@ -58,14 +166,13 @@ export default async function NotesPage() {
               dark:hover:text-blue-300
             "
           >
-            ← Back to Learning
+            ← Back to {selectedSubjectLabel}
           </Link>
         </div>
 
         {/* =====================================================
          * Notes Header
          * ===================================================== */}
-
         <header className="mb-10">
           <p
             className="
@@ -78,7 +185,7 @@ export default async function NotesPage() {
               dark:text-blue-400
             "
           >
-            Class IX · Mathematics · 2026–27
+            Class IX · {selectedSubjectLabel} · 2026–27
           </p>
 
           <h1
@@ -91,7 +198,7 @@ export default async function NotesPage() {
               sm:text-5xl
             "
           >
-            Class IX Notes
+            Class IX {selectedSubjectLabel} Notes
           </h1>
 
           <p
@@ -105,16 +212,13 @@ export default async function NotesPage() {
               sm:text-lg
             "
           >
-            Chapter-wise notes designed to build conceptual clarity,
-            strengthen understanding, and help you learn mathematics
-            with depth.
+            {selectedSubjectDescription}
           </p>
         </header>
 
         {/* =====================================================
          * Notes Overview
          * ===================================================== */}
-
         <section
           className="
             mb-10
@@ -175,7 +279,6 @@ export default async function NotesPage() {
         {/* =====================================================
          * Chapter-wise Notes
          * ===================================================== */}
-
         <section>
           <div className="mb-5">
             <p
@@ -207,17 +310,8 @@ export default async function NotesPage() {
           <div className="grid gap-4">
             {chapters.map((chapter) => {
               /*
-               * IMPORTANT:
                * A chapter can have multiple NOTE resources.
-               *
-               * Example:
-               * Chapter 1
-               *   ├── Note A — FREE
-               *   ├── Note B — PREMIUM
-               *   └── Note C — PREMIUM
-               *
-               * Do NOT use .find() here.
-               * We collect every NOTE resource instead.
+               * We intentionally collect every NOTE resource.
                */
               const noteResources = chapter.resource_curriculum_nodes
                 ?.flatMap((mapping) =>
@@ -251,17 +345,8 @@ export default async function NotesPage() {
                     dark:hover:border-blue-800
                   "
                 >
-                  <div
-                    className="
-                      flex
-                      flex-col
-                      gap-5
-                    "
-                  >
-                    {/* =================================================
-                     * Chapter Information
-                     * ================================================= */}
-
+                  <div className="flex flex-col gap-5">
+                    {/* Chapter Information */}
                     <div className="min-w-0">
                       <p
                         className="
@@ -302,10 +387,7 @@ export default async function NotesPage() {
                       )}
                     </div>
 
-                    {/* =================================================
-                     * Notes inside this Chapter
-                     * ================================================= */}
-
+                    {/* Notes inside this Chapter */}
                     {noteResources && noteResources.length > 0 ? (
                       <div className="grid gap-3">
                         {noteResources.map((noteResource) => {
@@ -346,10 +428,7 @@ export default async function NotesPage() {
                                   sm:justify-between
                                 "
                               >
-                                {/* =================================================
-                                 * Note Information
-                                 * ================================================= */}
-
+                                {/* Note Information */}
                                 <div className="min-w-0">
                                   <div className="flex flex-wrap items-center gap-2">
                                     <p
@@ -405,10 +484,7 @@ export default async function NotesPage() {
                                   </h4>
                                 </div>
 
-                                {/* =================================================
-                                 * Note Action
-                                 * ================================================= */}
-
+                                {/* Note Action */}
                                 <div className="shrink-0">
                                   {isLocked ? (
                                     <span
@@ -432,7 +508,9 @@ export default async function NotesPage() {
                                   ) : isPublished &&
                                     noteResource.slug ? (
                                     <Link
-                                      href={`/learning/class-9/notes/${noteResource.slug}`}
+                                      href={`/learning/class-9/notes/${noteResource.slug}?subject=${encodeURIComponent(
+                                        normalizedSubject,
+                                      )}`}
                                       className="
                                         inline-flex
                                         items-center
@@ -502,38 +580,6 @@ export default async function NotesPage() {
             })}
           </div>
         </section>
-
-        {/* =====================================================
-         * Bottom Navigation
-         * ===================================================== */}
-
-        <div
-          className="
-            mt-10
-            border-t
-            border-slate-200
-            pt-6
-            dark:border-slate-800
-          "
-        >
-          <Link
-            href="/learning"
-            className="
-              inline-flex
-              items-center
-              gap-2
-              text-sm
-              font-semibold
-              text-slate-600
-              transition
-              hover:text-blue-700
-              dark:text-slate-400
-              dark:hover:text-blue-400
-            "
-          >
-            ← Return to your Learning Space
-          </Link>
-        </div>
       </div>
     </main>
   );

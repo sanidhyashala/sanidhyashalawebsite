@@ -24,8 +24,9 @@ interface Props {
   }>;
 }
 
+
 const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.sanidhyashala.com";
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://sanidhyashala.com";
 
 function getArticleData(
   slug: string

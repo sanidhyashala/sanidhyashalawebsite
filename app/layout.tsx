@@ -28,7 +28,7 @@ export const metadata: Metadata = {
   description:
     "A space to learn, teach and reflect. Mathematics, education, philosophy and thoughtful learning.",
 
-  applicationName: "Sanidhyashala",
+  applicationName: "SanidhyaShala",
 
   manifest: "/site.webmanifest",
 

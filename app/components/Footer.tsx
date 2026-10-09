@@ -229,7 +229,7 @@ export default function Footer() {
             dark:text-slate-600
           "
         >
-          © {new Date().getFullYear()} Sanidhyashala. All Rights Reserved.
+          © {new Date().getFullYear()} SanidhyaShala. All Rights Reserved.
         </p>
       </div>
     </footer>

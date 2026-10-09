@@ -58,7 +58,7 @@ export async function generateMetadata(
     keywords: [
       ...meta.tags,
       ...meta.categories,
-      "Sanidhyashala",
+      "SanidhyaShala",
       "Education",
       "Mathematics",
     ],
@@ -69,7 +69,7 @@ export async function generateMetadata(
       title: meta.seoTitle,
       description: meta.seoDescription,
       type: "article",
-      authors: ["Sanidhyashala"],
+      authors: ["SanidhyaShala"],
       images: [
         {
           url: `${SITE_URL}/journal/${slug}/opengraph-image`,
@@ -163,11 +163,11 @@ articleSection: meta.categories,
 
     author: {
       "@type": "Organization",
-      name: "Sanidhyashala",
+      name: "SanidhyaShala",
     },
     publisher: {
       "@type": "Organization",
-      name: "Sanidhyashala",
+      name: "SanidhyaShala",
       logo: {
         "@type": "ImageObject",
         url: `${SITE_URL}/favicon.ico`, 

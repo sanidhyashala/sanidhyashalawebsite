@@ -69,7 +69,7 @@ languages: getLanguages(
       ],
 
       seoTitle:
-        "Why Mathematics is More Than Numbers | Sanidhyashala",
+        "Why Mathematics is More Than Numbers | SanidhyaShala",
 
       seoDescription:
         "Mathematics is not merely a subject. It is one of humanity's deepest attempts to understand reality.",
@@ -113,7 +113,7 @@ languages: getLanguages(
       ],
 
       seoTitle:
-        "When the Language of the Universe Falls Silent | Sanidhyashala",
+        "When the Language of the Universe Falls Silent | SanidhyaShala",
 
       seoDescription:
         "Is mathematics discovered or invented? A journey through philosophy, science and the search for truth.",
@@ -158,7 +158,7 @@ languages: getLanguages(
       ],
 
       seoTitle:
-        "Learning and Swadharma | Sanidhyashala",
+        "Learning and Swadharma | SanidhyaShala",
 
       seoDescription:
         "An exploration of learning, purpose, education and Swadharma through the lens of consciousness and self-discovery.",

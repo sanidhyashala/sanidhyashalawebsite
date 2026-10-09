@@ -70,7 +70,7 @@ export default async function Image({
             opacity: 0.9,
           }}
         >
-          Sanidhyashala
+          SanidhyaShala
         </div>
 
         <div

@@ -144,7 +144,7 @@ export async function sendSubjectiveEvaluationEmail({
                         letter-spacing: -0.3px;
                       "
                     >
-                      सानिध्यशाला
+                      सान्निध्यशाला
                     </div>
 
                     <div

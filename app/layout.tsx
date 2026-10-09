@@ -23,7 +23,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL("https://sanidhyashala.com"),
 
-  title: "सानिध्यशाला | From Clarity to Mastery",
+  title: "सान्निध्यशाला | From Clarity to Mastery",
 
   description:
     "A space to learn, teach and reflect. Mathematics, education, philosophy and thoughtful learning.",

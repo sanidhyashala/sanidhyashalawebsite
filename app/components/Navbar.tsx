@@ -95,7 +95,7 @@ export default function Navbar() {
             />
 
             <span className="select-none text-lg font-bold tracking-wide text-slate-900 dark:text-slate-100 sm:text-xl">
-              सानिध्यशाला
+              सान्निध्यशाला
             </span>
           </Link>
 

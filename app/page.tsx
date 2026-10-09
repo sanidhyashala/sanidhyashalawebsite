@@ -320,7 +320,7 @@ export default function Home() {
           </p>
 
           <h1 className="mb-5 text-6xl font-bold tracking-tight text-blue-900 dark:text-blue-400 md:text-7xl lg:text-8xl">
-            सानिध्यशाला
+            सान्निध्यशाला
           </h1>
 
           <p className="mb-5 text-xl font-medium text-slate-600 dark:text-slate-300 md:text-2xl">

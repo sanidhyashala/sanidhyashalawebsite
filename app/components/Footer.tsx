@@ -40,7 +40,7 @@ export default function Footer() {
             dark:text-blue-400
           "
         >
-          सानिध्यशाला
+          सान्निध्यशाला
         </h3>
 
         <p

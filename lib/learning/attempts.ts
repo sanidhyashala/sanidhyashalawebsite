@@ -1,3 +1,4 @@
+
 import { createLearningSupabaseClient } from "./supabase-learning";
 import { requireLearningAuth } from "./learning-auth";
 
@@ -10,6 +11,12 @@ export async function startLearningTestAttempt(
 ) {
   await requireLearningAuth();
 
+  const normalizedTestId = testId.trim();
+
+  if (!normalizedTestId) {
+    throw new Error("Test ID is required.");
+  }
+
   const supabase =
     await createLearningSupabaseClient();
 
@@ -19,7 +26,7 @@ export async function startLearningTestAttempt(
   } = await supabase.rpc(
     "start_test_attempt",
     {
-      p_test_id: testId,
+      p_test_id: normalizedTestId,
     }
   );
 
@@ -32,31 +39,16 @@ export async function startLearningTestAttempt(
   return data;
 }
 
-
 /* =========================================================
  * Get Current Learning Test Attempt
- * =========================================================
- *
- * Resolves:
- *
- *   attemptId
- *       ↓
- *   current authenticated user's attempt
- *       ↓
- *   testId
- *
- * The authenticated Supabase client is used deliberately.
- * Therefore the database/RLS layer remains responsible for
- * ensuring that a student can only access their own attempt.
  * ========================================================= */
 
 export async function getLearningTestAttempt(
   attemptId: string
 ) {
-  await requireLearningAuth();
+  const { userId } = await requireLearningAuth();
 
-  const normalizedAttemptId =
-    attemptId.trim();
+  const normalizedAttemptId = attemptId.trim();
 
   if (!normalizedAttemptId) {
     return null;
@@ -74,16 +66,15 @@ export async function getLearningTestAttempt(
       `
         id,
         test_id,
+        user_id,
         attempt_number,
         status,
         started_at,
         submitted_at
       `
     )
-    .eq(
-      "id",
-      normalizedAttemptId
-    )
+    .eq("id", normalizedAttemptId)
+    .eq("user_id", userId)
     .maybeSingle();
 
   if (error) {

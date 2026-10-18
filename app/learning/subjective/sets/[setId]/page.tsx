@@ -10,6 +10,13 @@ import { getStudentProfile } from "@/lib/learning/student-profile";
 
 import { getLearningCurriculum } from "@/lib/learning/curriculum";
 
+import {
+  getLearningAccessProducts,
+  type LearningAccessProduct,
+} from "@/lib/learning/access-products";
+
+import ChapterAccessCard from "@/components/learning/ChapterAccessCard";
+
 import { createLearningSupabaseClient } from "@/lib/learning/supabase-learning";
 
 
@@ -624,226 +631,94 @@ export default async function SubjectiveSetPage({
   }
 
   /* =====================================================
-
-   * Access Type
-
+   * Explicit Set-Level Access Check
    * ===================================================== */
 
+  const isPremium = subjectiveSet.access_type === "PREMIUM";
+  let canAccessSet = !isPremium;
 
-
-  const isPremium =
-
-    subjectiveSet.access_type === "PREMIUM";
-
-
-
-  /* =====================================================
-
-   * Load Set Questions
-
-   *
-
-   * IMPORTANT:
-
-   *
-
-   * The existing RLS policy on subjective_set_questions
-
-   * remains the final access boundary.
-
-   *
-
-   * FREE:
-
-   *   Published questions can be returned.
-
-   *
-
-   * PREMIUM without entitlement:
-
-   *   RLS returns no question rows.
-
-   *
-
-   * PREMIUM with entitlement:
-
-   *   Published questions are returned normally.
-
-   * ===================================================== */
-
-
-
-  const {
-
-    data: setQuestions,
-
-    error: questionError,
-
-  } = await supabase
-
-    .from("subjective_set_questions")
-
-    .select(
-
-      `
-
-        question_id,
-
-        question_revision_id,
-
-        question_order,
-
-        marks
-
-      `
-
-    )
-
-    .eq("set_id", subjectiveSet.id)
-
-    .order("question_order", {
-
-      ascending: true,
-
-    });
-
-
-
-  if (questionError) {
-
-    throw new Error(
-
-      `Failed to load Subjective set questions: ${questionError.message}`
-
+  if (isPremium) {
+    const { data: accessResult, error: accessError } = await supabase.rpc(
+      "user_has_learning_product_access_for_subjective_set",
+      { p_set_id: subjectiveSet.id },
     );
 
-  }
-
-
-
-  const questions =
-
-    (setQuestions ?? []) as SubjectiveSetQuestion[];
-
-
-
-  /*
-
-   * For FREE Sets, access is automatically available.
-
-   *
-
-   * For PREMIUM Sets, the existing question-level RLS
-
-   * determines whether the authenticated student can
-
-   * actually see the question rows.
-
-   *
-
-   * A published PREMIUM Set with zero questions returned
-
-   * therefore represents a locked state for this page.
-
-   *
-
-   * Premium Sets are protected again at attempt-start time
-
-   * by the existing server action / DB RPC.
-
-   */
-
-  const hasPremiumContentAccess =
-
-    !isPremium || questions.length > 0;
-
-
-
-  const canAccessSet =
-
-    !isPremium || hasPremiumContentAccess;
-
-
-
-  /* =====================================================
-
-   * Load Existing Student Attempts
-
-   *
-
-   * Attempts are only loaded when the student actually
-
-   * has access to the Set.
-
-   * ===================================================== */
-
-
-
-  let attempts: SubjectiveAttempt[] = [];
-
-
-
-  if (canAccessSet) {
-
-    const {
-
-      data: existingAttempts,
-
-      error: attemptsError,
-
-    } = await supabase
-
-      .from("subjective_attempts")
-
-      .select(
-
-        `
-
-          id,
-
-          set_id,
-
-          attempt_number,
-
-          attempt_type,
-
-          status
-
-        `
-
-      )
-
-      .eq("set_id", subjectiveSet.id)
-
-      .eq("user_id", userId)
-
-      .order("attempt_number", {
-
-        ascending: false,
-
-      });
-
-
-
-    if (attemptsError) {
-
+    if (accessError) {
       throw new Error(
-
-        `Failed to load Subjective attempts: ${attemptsError.message}`
-
+        `Failed to verify Subjective set access: ${accessError.message}`,
       );
-
     }
 
-
-
-    attempts =
-
-      (existingAttempts ?? []) as SubjectiveAttempt[];
-
+    canAccessSet = accessResult === true;
   }
 
+  /* Load questions only after explicit access is confirmed. */
+  let questions: SubjectiveSetQuestion[] = [];
 
+  if (canAccessSet) {
+    const { data: setQuestions, error: questionError } = await supabase
+      .from("subjective_set_questions")
+      .select(`
+        question_id,
+        question_revision_id,
+        question_order,
+        marks
+      `)
+      .eq("set_id", subjectiveSet.id)
+      .order("question_order", { ascending: true });
+
+    if (questionError) {
+      throw new Error(
+        `Failed to load Subjective set questions: ${questionError.message}`,
+      );
+    }
+
+    questions = (setQuestions ?? []) as SubjectiveSetQuestion[];
+
+    if (questions.length === 0) {
+      throw new Error(
+        "This published Subjective set has no questions configured.",
+      );
+    }
+  }
+
+  /*
+   * Always load this student's own attempts. Existing IN_PROGRESS
+   * attempts and completed results remain available if entitlement
+   * later expires or is revoked.
+   */
+  const { data: existingAttempts, error: attemptsError } = await supabase
+    .from("subjective_attempts")
+    .select(`
+      id,
+      set_id,
+      attempt_number,
+      attempt_type,
+      status
+    `)
+    .eq("set_id", subjectiveSet.id)
+    .eq("user_id", userId)
+    .order("attempt_number", { ascending: false });
+
+  if (attemptsError) {
+    throw new Error(
+      `Failed to load Subjective attempts: ${attemptsError.message}`,
+    );
+  }
+
+  const attempts = (existingAttempts ?? []) as SubjectiveAttempt[];
+
+  const chapterProducts = isPremium && !canAccessSet
+    ? await getLearningAccessProducts({
+        curriculumNodeIds: [matchedChapter.id],
+        productType: "CHAPTER",
+      })
+    : new Map<string, LearningAccessProduct>();
+
+  const chapterAccessProduct = chapterProducts.get(matchedChapter.id);
+  const returnTo = `/learning/subjective/chapter-wise/${encodeURIComponent(
+    subjectiveSet.resource_id,
+  )}`;
 
   const latestAttempt = attempts[0] ?? null;
 
@@ -1028,41 +903,25 @@ export default async function SubjectiveSetPage({
 
 
   /*
-
-   * Priority:
-
-   *
-
-   * 1. Premium without entitlement -> Locked
-
-   * 2. IN_PROGRESS -> Continue
-
-   * 3. Premium Attempt 1 complete -> Retry
-
-   * 4. Completed -> Review
-
-   * 5. No attempt -> Start
-
+   * Existing attempts stay accessible after entitlement changes.
+   * New attempts still require current access (enforced by the RPC).
    */
-
-
-
-  if (isPremium && !canAccessSet) {
-
-    primaryAction = "LOCKED";
-
-    primaryLabel = "Unlock Premium Practice";
-
-  } else if (isAttemptInProgress) {
-
+  if (isAttemptInProgress) {
     primaryAction = "CONTINUE";
-
     primaryLabel = "Continue Practice";
-
-    primaryAttemptId =
-
-      latestAttempt?.id ?? null;
-
+    primaryAttemptId = latestAttempt?.id ?? null;
+  } else if (
+    isPremium &&
+    !canAccessSet &&
+    latestAttempt &&
+    isCompletedStatus(latestAttempt.status)
+  ) {
+    primaryAction = "REVIEW";
+    primaryLabel = "Review Submitted Answer";
+    primaryAttemptId = latestAttempt.id;
+  } else if (isPremium && !canAccessSet) {
+    primaryAction = "LOCKED";
+    primaryLabel = "Unlock Premium Practice";
   } else if (isPremiumRetryAvailable) {
 
     primaryAction = "RETRY";
@@ -2091,6 +1950,13 @@ export default async function SubjectiveSetPage({
 
             </div>
 
+            <div className="mt-6">
+              <ChapterAccessCard
+                product={chapterAccessProduct}
+                returnTo={returnTo}
+              />
+            </div>
+
           </section>
 
         )}
@@ -2289,7 +2155,7 @@ export default async function SubjectiveSetPage({
 
               <Link
 
-                href="/learning"
+                href={returnTo}
 
                 className="
 

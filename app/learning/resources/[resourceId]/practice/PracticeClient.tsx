@@ -19,16 +19,15 @@ type PracticeOption = {
   display_order: number;
 };
 
+
 type PracticeRevision = {
   id: string;
   revision_number: number;
   question_text: string;
-  solution_text: string | null;
-  mistake_insight: string | null;
   status: string;
-
   question_revision_options: PracticeOption[];
 };
+
 
 type PracticeQuestion = {
   question_id: string;

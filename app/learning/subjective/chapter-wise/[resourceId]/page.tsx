@@ -10,6 +10,13 @@ import { getStudentProfile } from "@/lib/learning/student-profile";
 
 import { getLearningCurriculum } from "@/lib/learning/curriculum";
 
+import {
+  getLearningAccessProducts,
+  type LearningAccessProduct,
+} from "@/lib/learning/access-products";
+
+import ChapterAccessCard from "@/components/learning/ChapterAccessCard";
+
 import { createLearningSupabaseClient } from "@/lib/learning/supabase-learning";
 
 
@@ -47,6 +54,9 @@ type SubjectiveSet = {
   status: string;
 
   access_type: "FREE" | "PREMIUM";
+
+  /** Result of the set-level entitlement RPC. */
+  has_access: boolean;
 
 };
 
@@ -647,69 +657,69 @@ export default async function SubjectiveResourcePage({
 
 
 
-  const publishedSets =
+  const rawPublishedSets = (sets ?? []) as Omit<
+    SubjectiveSet,
+    "has_access"
+  >[];
 
-    (sets ?? []) as SubjectiveSet[];
+  // The set-level RPC is the authority for subjective-set access.
+  // Resource access alone is not enough because a resource can contain
+  // both FREE and PREMIUM sets.
+  const publishedSets: SubjectiveSet[] = await Promise.all(
+    rawPublishedSets.map(async (set) => {
+      const { data: hasAccess, error: accessError } = await supabase.rpc(
+        "user_has_learning_product_access_for_subjective_set",
+        { p_set_id: set.id },
+      );
 
+      if (accessError) {
+        throw new Error(
+          `Failed to check access for subjective set ${set.id}: ${accessError.message}`,
+        );
+      }
 
+      return {
+        ...set,
+        has_access: hasAccess === true,
+      };
+    }),
+  );
+
+  const hasLockedPremiumSet = publishedSets.some(
+    (set) => set.access_type === "PREMIUM" && !set.has_access,
+  );
+
+  const chapterProducts = hasLockedPremiumSet
+    ? await getLearningAccessProducts({
+        curriculumNodeIds: [matchedChapter.id],
+        productType: "CHAPTER",
+      })
+    : new Map<string, LearningAccessProduct>();
+
+  const chapterAccessProduct = chapterProducts.get(matchedChapter.id);
+  const returnTo = `/learning/subjective/chapter-wise/${resourceId}`;
 
   /* =====================================================
-
    * Group Sets by Category
-
    * ===================================================== */
 
+  const categoryOrder: SubjectiveSet["category"][] = [
+    "UNDERSTAND_APPLY",
+    "THINK_SOLVE",
+    "CASE_BASED",
+  ];
 
-
-  const categoryOrder:
-
-    SubjectiveSet["category"][] =
-
-    [
-
-      "UNDERSTAND_APPLY",
-
-      "THINK_SOLVE",
-
-      "CASE_BASED",
-
-    ];
-
-
-
-  const groupedSets =
-
-    categoryOrder.map((category) => ({
-
-      category,
-
-      meta: CATEGORY_META[category],
-
-      sets: publishedSets
-
-        .filter(
-
-          (set) =>
-
-            set.category === category
-
-        )
-
-        .sort(
-
-          (a, b) =>
-
-            (a.display_order ?? 0) -
-
-              (b.display_order ?? 0) ||
-
-            a.set_number -
-
-              b.set_number
-
-        ),
-
-    }));
+  const groupedSets = categoryOrder.map((category) => ({
+    category,
+    meta: CATEGORY_META[category],
+    sets: publishedSets
+      .filter((set) => set.category === category)
+      .sort(
+        (a, b) =>
+          (a.display_order ?? 0) - (b.display_order ?? 0) ||
+          a.set_number - b.set_number,
+      ),
+  }));
 
 
 
@@ -1462,321 +1472,71 @@ export default async function SubjectiveResourcePage({
                       <div className="grid gap-4 sm:grid-cols-2">
 
                         {sets.map((set) => {
+                          const isPremium = set.access_type === "PREMIUM";
+                          const isLocked = isPremium && !set.has_access;
+                          const cardClassName = `
+                            group rounded-3xl border p-6 shadow-sm
+                            ${
+                              isLocked
+                                ? "border-amber-200 bg-amber-50/40 dark:border-amber-900 dark:bg-amber-950/10"
+                                : "border-slate-200 bg-white transition-all duration-300 hover:-translate-y-1 hover:border-blue-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-700"
+                            }
+                          `;
 
-                          const isPremium =
-
-                            set.access_type ===
-
-                            "PREMIUM";
-
-
-
-                          return (
-
-                            <Link
-
-                              key={set.id}
-
-                              href={`/learning/subjective/sets/${set.id}`}
-
-                              className="
-
-                                group
-
-                                rounded-3xl
-
-                                border
-
-                                border-slate-200
-
-                                bg-white
-
-                                p-6
-
-                                shadow-sm
-
-                                transition-all
-
-                                duration-300
-
-                                hover:-translate-y-1
-
-                                hover:border-blue-300
-
-                                hover:shadow-md
-
-                                dark:border-slate-800
-
-                                dark:bg-slate-900
-
-                                dark:shadow-none
-
-                                dark:hover:border-blue-700
-
-                              "
-
-                            >
-
-                              <div
-
-                                className="
-
-                                  flex
-
-                                  items-start
-
-                                  justify-between
-
-                                  gap-4
-
-                                "
-
-                              >
-
-                                <div
-
-                                  className="
-
-                                    flex
-
-                                    h-10
-
-                                    w-10
-
-                                    shrink-0
-
-                                    items-center
-
-                                    justify-center
-
-                                    rounded-xl
-
-                                    bg-blue-50
-
-                                    text-sm
-
-                                    font-bold
-
-                                    text-blue-700
-
-                                    dark:bg-blue-500/10
-
-                                    dark:text-blue-400
-
-                                  "
-
-                                >
-
+                          const cardContent = (
+                            <>
+                              <div className="flex items-start justify-between gap-4">
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-sm font-bold text-blue-700 dark:bg-blue-500/10 dark:text-blue-400">
                                   {set.set_number}
-
                                 </div>
 
-
-
                                 {isPremium ? (
-
-                                  <span
-
-                                    className="
-
-                                      rounded-full
-
-                                      bg-amber-50
-
-                                      px-3
-
-                                      py-1
-
-                                      text-xs
-
-                                      font-semibold
-
-                                      text-amber-700
-
-                                      dark:bg-amber-500/10
-
-                                      dark:text-amber-400
-
-                                    "
-
-                                  >
-
+                                  <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">
                                     Premium
-
                                   </span>
-
                                 ) : (
-
-                                  <span
-
-                                    className="
-
-                                      rounded-full
-
-                                      bg-emerald-50
-
-                                      px-3
-
-                                      py-1
-
-                                      text-xs
-
-                                      font-semibold
-
-                                      text-emerald-700
-
-                                      dark:bg-emerald-500/10
-
-                                      dark:text-emerald-400
-
-                                    "
-
-                                  >
-
+                                  <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
                                     Free
-
                                   </span>
-
                                 )}
-
                               </div>
 
-
-
-                              <h4
-
-                                className="
-
-                                  mt-5
-
-                                  text-xl
-
-                                  font-bold
-
-                                  text-slate-900
-
-                                  transition-colors
-
-                                  group-hover:text-blue-700
-
-                                  dark:text-slate-100
-
-                                  dark:group-hover:text-blue-400
-
-                                "
-
-                              >
-
+                              <h4 className={`mt-5 text-xl font-bold text-slate-900 dark:text-slate-100 ${!isLocked ? "transition-colors group-hover:text-blue-700 dark:group-hover:text-blue-400" : ""}`}>
                                 {set.title}
-
                               </h4>
 
-
-
                               {set.description && (
-
-                                <p
-
-                                  className="
-
-                                    mt-3
-
-                                    text-sm
-
-                                    leading-6
-
-                                    text-slate-500
-
-                                    dark:text-slate-400
-
-                                  "
-
-                                >
-
+                                <p className="mt-3 text-sm leading-6 text-slate-500 dark:text-slate-400">
                                   {set.description}
-
                                 </p>
-
                               )}
 
-
-
-                              <div
-
-                                className="
-
-                                  mt-6
-
-                                  flex
-
-                                  items-center
-
-                                  justify-between
-
-                                  border-t
-
-                                  border-slate-100
-
-                                  pt-5
-
-                                  dark:border-slate-800
-
-                                "
-
-                              >
-
-                                <span
-
-                                  className="
-
-                                    text-sm
-
-                                    font-semibold
-
-                                    text-blue-700
-
-                                    dark:text-blue-400
-
-                                  "
-
-                                >
-
-                                  Start Practice
-
+                              <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-5 dark:border-slate-800">
+                                <span className={`text-sm font-semibold ${isLocked ? "text-amber-700 dark:text-amber-400" : "text-blue-700 dark:text-blue-400"}`}>
+                                  {isLocked ? "Chapter access required" : "Start Practice"}
                                 </span>
 
-
-
-                                <span
-
-                                  className="
-
-                                    text-blue-700
-
-                                    transition-transform
-
-                                    duration-300
-
-                                    group-hover:translate-x-1
-
-                                    dark:text-blue-400
-
-                                  "
-
-                                >
-
-                                  →
-
+                                <span className={isLocked ? "text-amber-700 dark:text-amber-400" : "text-blue-700 transition-transform duration-300 group-hover:translate-x-1 dark:text-blue-400"}>
+                                  {isLocked ? "🔒" : "→"}
                                 </span>
-
                               </div>
-
-                            </Link>
-
+                            </>
                           );
 
+                          return isLocked ? (
+                            <div key={set.id} className={cardClassName} aria-disabled="true">
+                              {cardContent}
+                            </div>
+                          ) : (
+                            <Link
+                              key={set.id}
+                              href={`/learning/subjective/sets/${set.id}`}
+                              className={cardClassName}
+                            >
+                              {cardContent}
+                            </Link>
+                          );
                         })}
-
                       </div>
 
                     </section>
@@ -1789,6 +1549,15 @@ export default async function SubjectiveResourcePage({
 
             </div>
 
+          )}
+
+          {hasLockedPremiumSet && (
+            <div className="mt-8">
+              <ChapterAccessCard
+                product={chapterAccessProduct}
+                returnTo={returnTo}
+              />
+            </div>
           )}
 
         </section>

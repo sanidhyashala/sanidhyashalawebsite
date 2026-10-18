@@ -29,21 +29,21 @@ export default async function McqResourcePage({
   const { resourceId } = await params;
 
   /* =======================================================
-   * 1. Validate published student resource
+   * 1. Require authenticated learning user
+   * ======================================================= */
+
+   await requireLearningAuth();
+
+  /* =======================================================
+   * 2.Validate published student resource
    * ======================================================= */
 
   const resource =
-    await getStudentMcqResource(resourceId);
+  await getStudentMcqResource(resourceId);
 
-  if (!resource) {
-    notFound();
-  }
-
-  /* =======================================================
-   * 2. Require authenticated learning user
-   * ======================================================= */
-
-  await requireLearningAuth();
+if (!resource) {
+  notFound();
+}
 
   /* =======================================================
    * 3. Resolve CURRENT student access

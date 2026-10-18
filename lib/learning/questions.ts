@@ -1,6 +1,8 @@
+
 import "server-only";
 
 import { createAdminSupabaseClient } from "@/app/lib/admin/supabase-admin";
+import { createLearningSupabaseClient } from "./supabase-learning";
 import { requireLearningAuth } from "./learning-auth";
 
 /* =========================================================
@@ -18,10 +20,7 @@ export type LearningPracticeRevision = {
   id: string;
   revision_number: number;
   question_text: string;
-  solution_text: string | null;
-  mistake_insight: string | null;
   status: string;
-
   question_revision_options: LearningPracticeOption[];
 };
 
@@ -30,35 +29,78 @@ export type LearningPracticeQuestion = {
   question_order: number;
   marks: number | null;
   question_revision_id: string;
-
   question_revisions: LearningPracticeRevision[];
 };
 
 /* =========================================================
- * Get questions for authenticated learning attempt
+ * Get questions for an authenticated active attempt
+ *
+ * Security:
+ * - Verify current user owns the attempt.
+ * - Require IN_PROGRESS status.
+ * - Derive testId from the verified attempt.
+ * - Never return solution_text, mistake_insight or is_correct.
  * ========================================================= */
 
 export async function getLearningTestQuestions(
-  testId: string
+  attemptId: string
 ): Promise<LearningPracticeQuestion[]> {
-  await requireLearningAuth();
+  const { userId } = await requireLearningAuth();
 
-  const normalizedTestId = testId.trim();
+  const normalizedAttemptId = attemptId.trim();
 
-  if (!normalizedTestId) {
+  if (!normalizedAttemptId) {
     return [];
   }
 
-  const supabase = createAdminSupabaseClient();
+  /* -------------------------------------------------------
+   * 1. Verify attempt through the authenticated client
+   * ------------------------------------------------------- */
+
+  const learningSupabase =
+    await createLearningSupabaseClient();
+
+  const {
+    data: attempt,
+    error: attemptError,
+  } = await learningSupabase
+    .from("test_attempts")
+    .select("id, test_id, user_id, status")
+    .eq("id", normalizedAttemptId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (attemptError) {
+    throw new Error(
+      `Failed to verify learning attempt: ${attemptError.message}`
+    );
+  }
+
+  if (
+    !attempt ||
+    attempt.user_id !== userId ||
+    attempt.status !== "IN_PROGRESS"
+  ) {
+    return [];
+  }
 
   /* -------------------------------------------------------
-   * 1. Load test questions
+   * 2. Derive test ID from the verified attempt
+   * ------------------------------------------------------- */
+
+  const verifiedTestId = attempt.test_id;
+
+  const adminSupabase =
+    createAdminSupabaseClient();
+
+  /* -------------------------------------------------------
+   * 3. Load questions for this exact test
    * ------------------------------------------------------- */
 
   const {
     data: testQuestions,
     error: testQuestionsError,
-  } = await supabase
+  } = await adminSupabase
     .from("test_questions")
     .select(
       `
@@ -68,7 +110,7 @@ export async function getLearningTestQuestions(
         question_revision_id
       `
     )
-    .eq("test_id", normalizedTestId)
+    .eq("test_id", verifiedTestId)
     .order("question_order", {
       ascending: true,
     });
@@ -84,7 +126,7 @@ export async function getLearningTestQuestions(
   }
 
   /* -------------------------------------------------------
-   * 2. Collect exact revision IDs
+   * 4. Collect exact revision IDs
    * ------------------------------------------------------- */
 
   const revisionIds = [
@@ -96,13 +138,15 @@ export async function getLearningTestQuestions(
   ];
 
   /* -------------------------------------------------------
-   * 3. Load exact published revisions
+   * 5. Load exact published revisions
+   *
+   * Deliberately exclude solution_text and mistake_insight.
    * ------------------------------------------------------- */
 
   const {
     data: revisions,
     error: revisionsError,
-  } = await supabase
+  } = await adminSupabase
     .from("question_revisions")
     .select(
       `
@@ -110,8 +154,6 @@ export async function getLearningTestQuestions(
         revision_number,
         question_id,
         question_text,
-        solution_text,
-        mistake_insight,
         status
       `
     )
@@ -129,13 +171,15 @@ export async function getLearningTestQuestions(
   }
 
   /* -------------------------------------------------------
-   * 4. Load options for exact revisions
+   * 6. Load options for exact revisions
+   *
+   * Do not select is_correct.
    * ------------------------------------------------------- */
 
   const {
     data: revisionOptions,
     error: revisionOptionsError,
-  } = await supabase
+  } = await adminSupabase
     .from("question_revision_options")
     .select(
       `
@@ -158,7 +202,7 @@ export async function getLearningTestQuestions(
   }
 
   /* -------------------------------------------------------
-   * 5. Typed local structures
+   * 7. Typed local structures
    * ------------------------------------------------------- */
 
   type RevisionRow = {
@@ -166,8 +210,6 @@ export async function getLearningTestQuestions(
     revision_number: number;
     question_id: string;
     question_text: string;
-    solution_text: string | null;
-    mistake_insight: string | null;
     status: string;
   };
 
@@ -180,19 +222,16 @@ export async function getLearningTestQuestions(
   };
 
   const typedRevisions =
-    (revisions ?? []) as RevisionRow[];
+    revisions as RevisionRow[];
 
   const typedRevisionOptions =
     (revisionOptions ?? []) as RevisionOptionRow[];
 
   /* -------------------------------------------------------
-   * 6. Build revision lookup
+   * 8. Build revision lookup
    * ------------------------------------------------------- */
 
-  const revisionById = new Map<
-    string,
-    RevisionRow
-  >(
+  const revisionById = new Map<string, RevisionRow>(
     typedRevisions.map((revision) => [
       revision.id,
       revision,
@@ -200,7 +239,7 @@ export async function getLearningTestQuestions(
   );
 
   /* -------------------------------------------------------
-   * 7. Build revision-option lookup
+   * 9. Build options lookup
    * ------------------------------------------------------- */
 
   const optionsByRevisionId = new Map<
@@ -210,20 +249,14 @@ export async function getLearningTestQuestions(
 
   for (const option of typedRevisionOptions) {
     const existing =
-      optionsByRevisionId.get(
-        option.revision_id
-      ) ?? [];
+      optionsByRevisionId.get(option.revision_id) ?? [];
 
     existing.push(option);
-
-    optionsByRevisionId.set(
-      option.revision_id,
-      existing
-    );
+    optionsByRevisionId.set(option.revision_id, existing);
   }
 
   /* -------------------------------------------------------
-   * 8. Normalize test questions
+   * 10. Normalize questions
    * ------------------------------------------------------- */
 
   const result: LearningPracticeQuestion[] = [];
@@ -233,25 +266,12 @@ export async function getLearningTestQuestions(
       testQuestion.question_revision_id
     );
 
-    /*
-     * The test_questions row explicitly points
-     * to the revision belonging to this test.
-     *
-     * Never silently fall back to another revision.
-     */
-
     if (!revision) {
       continue;
     }
 
-    /*
-     * Make sure the revision belongs to
-     * the same question attached to the test.
-     */
-
     if (
-      revision.question_id !==
-      testQuestion.question_id
+      revision.question_id !== testQuestion.question_id
     ) {
       continue;
     }
@@ -261,78 +281,32 @@ export async function getLearningTestQuestions(
         testQuestion.question_revision_id
       ) ?? [];
 
-    /*
-     * MCQ practice requires exactly four options.
-     */
-
     if (revisionOptions.length !== 4) {
       continue;
     }
 
-    /*
-     * IMPORTANT:
-     *
-     * attempt_answers.selected_option_id
-     * references:
-     *
-     *     question_revision_options.id
-     *
-     * Therefore we preserve the exact
-     * question_revision_options.id here.
-     *
-     * Do NOT replace it with
-     * question_mcq_options.id.
-     */
-
     const normalizedOptions: LearningPracticeOption[] =
       revisionOptions.map((option) => ({
         id: option.id,
-
-        option_key:
-          option.option_key,
-
-        option_text:
-          option.option_text,
-
-        display_order:
-          option.display_order,
+        option_key: option.option_key,
+        option_text: option.option_text,
+        display_order: option.display_order,
       }));
 
     result.push({
-      question_id:
-        testQuestion.question_id,
-
-      question_order:
-        testQuestion.question_order,
-
-      marks:
-        testQuestion.marks,
-
+      question_id: testQuestion.question_id,
+      question_order: testQuestion.question_order,
+      marks: testQuestion.marks,
       question_revision_id:
         testQuestion.question_revision_id,
 
       question_revisions: [
         {
-          id:
-            revision.id,
-
-          revision_number:
-            revision.revision_number,
-
-          question_text:
-            revision.question_text,
-
-          solution_text:
-            revision.solution_text,
-
-          mistake_insight:
-            revision.mistake_insight,
-
-          status:
-            revision.status,
-
-          question_revision_options:
-            normalizedOptions,
+          id: revision.id,
+          revision_number: revision.revision_number,
+          question_text: revision.question_text,
+          status: revision.status,
+          question_revision_options: normalizedOptions,
         },
       ],
     });

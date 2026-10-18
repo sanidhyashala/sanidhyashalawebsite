@@ -30,12 +30,22 @@ export default async function McqResultPage({
     await getLearningTestResult(attemptId);
 
   if (!result) {
-    notFound();
-  }
+  notFound();
+}
 
-  if (result.status !== "SUBMITTED") {
-    notFound();
-  }
+if (result.status !== "SUBMITTED") {
+  notFound();
+}
+
+/* The URL resource must match the attempt's resource. */
+if (result.resourceId !== resourceId) {
+  notFound();
+}
+
+/* Only an MCQ result belongs on this page. */
+if (result.test?.testType !== "MCQ") {
+  notFound();
+}
 
   return (
     <main className="px-6 py-12">

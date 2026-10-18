@@ -1,6 +1,11 @@
+
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import ChapterAccessCard from "@/components/learning/ChapterAccessCard";
+import {
+  getLearningAccessProducts,
+} from "@/lib/learning/access-products";
 import {
   getLearningCurriculum,
   getLearningSubjects,
@@ -67,21 +72,13 @@ export default async function NotesPage({
   }
 
   /*
-   * ---------------------------------------------------------
-   * Subject-specific Notes hierarchy
-   * ---------------------------------------------------------
+   * Subject-specific Notes hierarchy:
    *
-   * Mathematics:
-   *   Mathematics → Chapters → Notes
+   * Mathematics → Chapters → Notes
+   * Science → Physics/Chemistry/Biology → Chapters → Notes
    *
-   * Science:
-   *   Science → Physics/Chemistry/Biology → Chapters → Notes
-   *
-   * IMPORTANT:
-   * We NEVER fall back to Mathematics when an explicit
-   * science subject is requested. This prevents cross-subject
-   * content leakage.
-   * ---------------------------------------------------------
+   * Never fall back to Mathematics when an explicit Science
+   * subject is requested.
    */
 
   let selectedSubjectLabel = "Mathematics";
@@ -89,6 +86,7 @@ export default async function NotesPage({
     "Chapter-wise notes designed to build conceptual clarity, strengthen understanding, and help you learn mathematics with depth.";
 
   let backHref = "/learning?subject=mathematics";
+
   let chapters: Awaited<
     ReturnType<typeof getLearningCurriculum>
   > = [];
@@ -137,52 +135,47 @@ export default async function NotesPage({
       normalizedSubject,
     )}`;
   } else {
-    /*
-     * An explicit unknown subject must never silently expose
-     * Mathematics content.
-     */
+    // Never expose Mathematics content for an unknown subject.
     notFound();
   }
+
+  /*
+   * Resolve chapter products and prices from the existing database
+   * resolver. No product price is hardcoded in this page.
+   */
+  const chapterAccessProducts = await getLearningAccessProducts({
+    curriculumNodeIds: chapters.map((chapter) => chapter.id),
+    productType: "CHAPTER",
+  });
+
+  const notesReturnTo =
+    `/learning/class-9/notes?subject=${encodeURIComponent(
+      normalizedSubject,
+    )}`;
 
   return (
     <main className="px-6 py-12 sm:px-8 sm:py-16">
       <div className="mx-auto max-w-5xl">
-        {/* =====================================================
-         * Back to Subject Hub
-         * ===================================================== */}
+        {/* Back to Subject Hub */}
         <div className="mb-8">
           <Link
             href={backHref}
             className="
-              inline-flex
-              items-center
-              gap-2
-              text-sm
-              font-semibold
-              text-blue-700
-              transition
-              hover:text-blue-900
-              dark:text-blue-400
-              dark:hover:text-blue-300
+              inline-flex items-center gap-2 text-sm font-semibold
+              text-blue-700 transition hover:text-blue-900
+              dark:text-blue-400 dark:hover:text-blue-300
             "
           >
             ← Back to {selectedSubjectLabel}
           </Link>
         </div>
 
-        {/* =====================================================
-         * Notes Header
-         * ===================================================== */}
+        {/* Notes Header */}
         <header className="mb-10">
           <p
             className="
-              mb-3
-              text-sm
-              font-semibold
-              uppercase
-              tracking-widest
-              text-blue-700
-              dark:text-blue-400
+              mb-3 text-sm font-semibold uppercase tracking-widest
+              text-blue-700 dark:text-blue-400
             "
           >
             Class IX · {selectedSubjectLabel} · 2026–27
@@ -190,12 +183,8 @@ export default async function NotesPage({
 
           <h1
             className="
-              text-4xl
-              font-bold
-              tracking-tight
-              text-blue-900
-              dark:text-blue-400
-              sm:text-5xl
+              text-4xl font-bold tracking-tight text-blue-900
+              dark:text-blue-400 sm:text-5xl
             "
           >
             Class IX {selectedSubjectLabel} Notes
@@ -203,45 +192,27 @@ export default async function NotesPage({
 
           <p
             className="
-              mt-4
-              max-w-3xl
-              text-base
-              leading-7
-              text-slate-600
-              dark:text-slate-400
-              sm:text-lg
+              mt-4 max-w-3xl text-base leading-7 text-slate-600
+              dark:text-slate-400 sm:text-lg
             "
           >
             {selectedSubjectDescription}
           </p>
         </header>
 
-        {/* =====================================================
-         * Notes Overview
-         * ===================================================== */}
+        {/* Notes Overview */}
         <section
           className="
-            mb-10
-            rounded-3xl
-            border
-            border-blue-100
-            bg-blue-50/70
-            p-6
-            dark:border-blue-900
-            dark:bg-blue-950/30
-            sm:p-7
+            mb-10 rounded-3xl border border-blue-100 bg-blue-50/70
+            p-6 dark:border-blue-900 dark:bg-blue-950/30 sm:p-7
           "
         >
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p
                 className="
-                  text-sm
-                  font-semibold
-                  uppercase
-                  tracking-wider
-                  text-blue-700
-                  dark:text-blue-400
+                  text-sm font-semibold uppercase tracking-wider
+                  text-blue-700 dark:text-blue-400
                 "
               >
                 Learn chapter by chapter
@@ -249,10 +220,7 @@ export default async function NotesPage({
 
               <h2
                 className="
-                  mt-2
-                  text-xl
-                  font-bold
-                  text-blue-950
+                  mt-2 text-xl font-bold text-blue-950
                   dark:text-blue-200
                 "
               >
@@ -261,34 +229,25 @@ export default async function NotesPage({
 
               <p
                 className="
-                  mt-2
-                  max-w-2xl
-                  text-sm
-                  leading-6
-                  text-blue-800
+                  mt-2 max-w-2xl text-sm leading-6 text-blue-800
                   dark:text-blue-200
                 "
               >
-                Published notes can be opened directly. New chapters
-                will become available here as they are published.
+                Published notes can be opened according to your
+                access. New chapters will appear here as they
+                are published.
               </p>
             </div>
           </div>
         </section>
 
-        {/* =====================================================
-         * Chapter-wise Notes
-         * ===================================================== */}
+        {/* Chapter-wise Notes */}
         <section>
           <div className="mb-5">
             <p
               className="
-                text-sm
-                font-semibold
-                uppercase
-                tracking-widest
-                text-blue-700
-                dark:text-blue-400
+                text-sm font-semibold uppercase tracking-widest
+                text-blue-700 dark:text-blue-400
               "
             >
               Chapters
@@ -296,10 +255,7 @@ export default async function NotesPage({
 
             <h2
               className="
-                mt-2
-                text-2xl
-                font-bold
-                text-slate-900
+                mt-2 text-2xl font-bold text-slate-900
                 dark:text-slate-100
               "
             >
@@ -311,7 +267,7 @@ export default async function NotesPage({
             {chapters.map((chapter) => {
               /*
                * A chapter can have multiple NOTE resources.
-               * We intentionally collect every NOTE resource.
+               * Collect all NOTE resources and preserve their order.
                */
               const noteResources = chapter.resource_curriculum_nodes
                 ?.flatMap((mapping) =>
@@ -326,22 +282,26 @@ export default async function NotesPage({
                     (b.display_order ?? Number.MAX_SAFE_INTEGER),
                 );
 
+              const hasLockedPremiumNotes = (
+                noteResources ?? []
+              ).some(
+                (resource) =>
+                  resource.status === "PUBLISHED" &&
+                  resource.access_type === "PREMIUM" &&
+                  resource.has_access !== true,
+              );
+
+              const chapterProduct =
+                chapterAccessProducts.get(chapter.id);
+
               return (
                 <article
                   key={chapter.id}
                   className="
-                    rounded-2xl
-                    border
-                    border-slate-200
-                    bg-white
-                    p-5
-                    shadow-sm
-                    transition
-                    hover:border-blue-200
-                    hover:shadow-md
-                    dark:border-slate-800
-                    dark:bg-slate-900
-                    dark:shadow-none
+                    rounded-2xl border border-slate-200 bg-white p-5
+                    shadow-sm transition hover:border-blue-200
+                    hover:shadow-md dark:border-slate-800
+                    dark:bg-slate-900 dark:shadow-none
                     dark:hover:border-blue-800
                   "
                 >
@@ -350,9 +310,7 @@ export default async function NotesPage({
                     <div className="min-w-0">
                       <p
                         className="
-                          text-sm
-                          font-medium
-                          text-slate-500
+                          text-sm font-medium text-slate-500
                           dark:text-slate-400
                         "
                       >
@@ -361,10 +319,7 @@ export default async function NotesPage({
 
                       <h3
                         className="
-                          mt-1
-                          text-xl
-                          font-bold
-                          text-blue-900
+                          mt-1 text-xl font-bold text-blue-900
                           dark:text-blue-400
                         "
                       >
@@ -374,12 +329,8 @@ export default async function NotesPage({
                       {chapter.description && (
                         <p
                           className="
-                            mt-2
-                            max-w-3xl
-                            text-sm
-                            leading-6
-                            text-slate-600
-                            dark:text-slate-400
+                            mt-2 max-w-3xl text-sm leading-6
+                            text-slate-600 dark:text-slate-400
                           "
                         >
                           {chapter.description}
@@ -409,23 +360,15 @@ export default async function NotesPage({
                             <div
                               key={noteResource.id}
                               className="
-                                rounded-xl
-                                border
-                                border-slate-200
-                                bg-slate-50
-                                p-4
-                                dark:border-slate-700
+                                rounded-xl border border-slate-200
+                                bg-slate-50 p-4 dark:border-slate-700
                                 dark:bg-slate-800/60
                               "
                             >
                               <div
                                 className="
-                                  flex
-                                  flex-col
-                                  gap-4
-                                  sm:flex-row
-                                  sm:items-center
-                                  sm:justify-between
+                                  flex flex-col gap-4 sm:flex-row
+                                  sm:items-center sm:justify-between
                                 "
                               >
                                 {/* Note Information */}
@@ -433,8 +376,7 @@ export default async function NotesPage({
                                   <div className="flex flex-wrap items-center gap-2">
                                     <p
                                       className="
-                                        text-sm
-                                        font-medium
+                                        text-sm font-medium
                                         text-slate-500
                                         dark:text-slate-400
                                       "
@@ -444,26 +386,12 @@ export default async function NotesPage({
 
                                     <span
                                       className={`
-                                        inline-flex
-                                        rounded-full
-                                        px-3
-                                        py-1
-                                        text-xs
-                                        font-semibold
+                                        inline-flex rounded-full px-3 py-1
+                                        text-xs font-semibold
                                         ${
                                           accessType === "PREMIUM"
-                                            ? `
-                                                bg-amber-50
-                                                text-amber-700
-                                                dark:bg-amber-950/40
-                                                dark:text-amber-300
-                                              `
-                                            : `
-                                                bg-blue-50
-                                                text-blue-700
-                                                dark:bg-blue-950/40
-                                                dark:text-blue-300
-                                              `
+                                            ? "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
+                                            : "bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300"
                                         }
                                       `}
                                     >
@@ -473,9 +401,7 @@ export default async function NotesPage({
 
                                   <h4
                                     className="
-                                      mt-1
-                                      text-lg
-                                      font-semibold
+                                      mt-1 text-lg font-semibold
                                       text-slate-900
                                       dark:text-slate-100
                                     "
@@ -489,15 +415,10 @@ export default async function NotesPage({
                                   {isLocked ? (
                                     <span
                                       className="
-                                        inline-flex
-                                        items-center
-                                        justify-center
-                                        rounded-full
-                                        bg-amber-50
-                                        px-5
-                                        py-2.5
-                                        text-sm
-                                        font-semibold
+                                        inline-flex items-center
+                                        justify-center rounded-full
+                                        bg-amber-50 px-5 py-2.5
+                                        text-sm font-semibold
                                         text-amber-700
                                         dark:bg-amber-950/40
                                         dark:text-amber-300
@@ -512,20 +433,12 @@ export default async function NotesPage({
                                         normalizedSubject,
                                       )}`}
                                       className="
-                                        inline-flex
-                                        items-center
-                                        justify-center
-                                        rounded-full
-                                        bg-blue-700
-                                        px-5
-                                        py-2.5
-                                        text-sm
-                                        font-semibold
-                                        text-white
-                                        shadow-sm
-                                        transition
-                                        hover:bg-blue-800
-                                        hover:shadow
+                                        inline-flex items-center
+                                        justify-center rounded-full
+                                        bg-blue-700 px-5 py-2.5
+                                        text-sm font-semibold text-white
+                                        shadow-sm transition
+                                        hover:bg-blue-800 hover:shadow
                                         dark:bg-blue-600
                                         dark:hover:bg-blue-500
                                       "
@@ -535,15 +448,10 @@ export default async function NotesPage({
                                   ) : (
                                     <span
                                       className="
-                                        inline-flex
-                                        items-center
-                                        justify-center
-                                        rounded-full
-                                        bg-slate-100
-                                        px-5
-                                        py-2.5
-                                        text-sm
-                                        font-medium
+                                        inline-flex items-center
+                                        justify-center rounded-full
+                                        bg-slate-100 px-5 py-2.5
+                                        text-sm font-medium
                                         text-slate-600
                                         dark:bg-slate-800
                                         dark:text-slate-300
@@ -561,18 +469,21 @@ export default async function NotesPage({
                     ) : (
                       <div
                         className="
-                          rounded-xl
-                          bg-slate-50
-                          px-4
-                          py-3
-                          text-sm
-                          text-slate-500
-                          dark:bg-slate-800
-                          dark:text-slate-400
+                          rounded-xl bg-slate-50 px-4 py-3
+                          text-sm text-slate-500
+                          dark:bg-slate-800 dark:text-slate-400
                         "
                       >
                         No notes published for this chapter yet.
                       </div>
+                    )}
+
+                    {/* Shared chapter purchase component */}
+                    {hasLockedPremiumNotes && (
+                      <ChapterAccessCard
+                        product={chapterProduct}
+                        returnTo={notesReturnTo}
+                      />
                     )}
                   </div>
                 </article>

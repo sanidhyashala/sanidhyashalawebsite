@@ -7,6 +7,8 @@ import { getStudentProfile } from "@/lib/learning/student-profile";
 import { getStudentDashboard } from "@/lib/learning/dashboard";
 import { getStudentSubjectiveEvaluations } from "@/lib/learning/subjective/student-evaluations";
 import PageAtmosphere from "@/app/components/backgrounds/PageAtmosphere";
+import { getLearningAccessProducts } from "@/lib/learning/access-products";
+import { createAdminSupabaseClient } from "@/app/lib/admin/supabase-admin";
 
 export const dynamic = "force-dynamic";
 
@@ -141,6 +143,48 @@ export default async function LearningPage({
   const scienceBranches = scienceSubject
     ? await getLearningCurriculum(classSlug, { parentNodeId: scienceSubject.id })
     : [];
+
+  const accessProductsByNodeId = await getLearningAccessProducts({
+    curriculumNodeIds: [
+      ...subjects.map((subject) => subject.id),
+      ...scienceBranches.map((branch) => branch.id),
+    ],
+    productType: "SUBJECT",
+  });
+
+  /*
+   * Check which of the displayed subject products the student
+   * already owns. This controls the card button only; checkout
+   * APIs must also enforce entitlement checks server-side.
+   */
+  const accessProductIds = [
+    ...new Set(
+      Array.from(accessProductsByNodeId.values()).map((product) => product.id),
+    ),
+  ];
+
+  const ownedProductIds = new Set<string>();
+
+  if (accessProductIds.length > 0) {
+    const supabase = createAdminSupabaseClient();
+    const now = new Date().toISOString();
+
+    const { data: entitlements, error: entitlementError } = await supabase
+      .from("learning_product_entitlements")
+      .select("product_id")
+      .eq("user_id", userId)
+      .eq("status", "ACTIVE")
+      .in("product_id", accessProductIds)
+      .or(`expires_at.is.null,expires_at.gt.${now}`);
+
+    if (entitlementError) {
+      throw new Error("Unable to check learning product access.");
+    }
+
+    for (const entitlement of entitlements ?? []) {
+      ownedProductIds.add(entitlement.product_id);
+    }
+  }
 
   const selectedScienceBranch =
     normalizedRequestedSubject === "physics" ||
@@ -279,74 +323,166 @@ export default async function LearningPage({
                   : "Build understanding through notes, practise what you know, or express your mathematical thinking through written practice."}
               </p>
             </div>
+{subjectHubMode && (
+  <div className="grid gap-5 md:grid-cols-2">
+    {subjects.map((subject) => {
+      const key = subject.display_name.trim().toLowerCase();
+      const isMath = key === "mathematics";
+      const accessProduct = accessProductsByNodeId.get(subject.id);
+      const hasAccess = accessProduct
+        ? ownedProductIds.has(accessProduct.id)
+        : false;
+      const exploreHref = `/learning?subject=${encodeURIComponent(key)}`;
 
-            {subjectHubMode && (
-              <div className="grid gap-5 md:grid-cols-2">
-                {subjects.map((subject) => {
-                  const key = subject.display_name.trim().toLowerCase();
-                  const isMath = key === "mathematics";
-                  return (
-                    <Link
-                      key={subject.id}
-                      href={`/learning?subject=${encodeURIComponent(key)}`}
-                      className="group flex min-h-[230px] flex-col rounded-3xl border border-slate-200 bg-white p-7 shadow-sm transition-all hover:-translate-y-1 hover:border-blue-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 dark:shadow-none dark:hover:border-blue-700"
-                    >
-                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-xl font-bold text-blue-700 dark:bg-blue-500/10 dark:text-blue-400">
-                        {isMath ? "∑" : "⚗"}
-                      </div>
-                      <p className="mt-6 text-xs font-semibold uppercase tracking-widest text-blue-700 dark:text-blue-400">
-                        Subject
-                      </p>
-                      <h3 className="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100">
-                        {subject.display_name}
-                      </h3>
-                      <p className="mt-3 flex-1 text-sm leading-6 text-slate-600 dark:text-slate-400">
-                        {subject.description ??
-                          (isMath
-                            ? "Continue with the existing Mathematics learning engine."
-                            : "Explore the branches of Science through the same learning engine.")}
-                      </p>
-                      <span className="mt-6 inline-flex items-center text-sm font-semibold text-blue-700 transition group-hover:gap-2 dark:text-blue-400">
-                        Open {subject.display_name}
-                        <span className="ml-1">→</span>
-                      </span>
-                    </Link>
-                  );
-                })}
-              </div>
+      return (
+        <div
+          key={subject.id}
+          className="flex min-h-[250px] flex-col rounded-3xl border border-slate-200 bg-white p-7 shadow-sm transition-all hover:border-blue-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 dark:shadow-none dark:hover:border-blue-700"
+        >
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-xl font-bold text-blue-700 dark:bg-blue-500/10 dark:text-blue-400">
+            {isMath ? "∑" : "⚗"}
+          </div>
+
+          <p className="mt-6 text-xs font-semibold uppercase tracking-widest text-blue-700 dark:text-blue-400">
+            Subject
+          </p>
+
+          <h3 className="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100">
+            {subject.display_name}
+          </h3>
+
+          <p className="mt-3 flex-1 text-sm leading-6 text-slate-600 dark:text-slate-400">
+            {subject.description ??
+              (isMath
+                ? "Continue with the existing Mathematics learning engine."
+                : "Explore the branches of Science through the same learning engine.")}
+          </p>
+
+          {accessProduct && (
+            <p className="mt-5 text-sm font-semibold text-slate-800 dark:text-slate-200">
+              Access price:{" "}
+              {(accessProduct.amountPaise / 100).toLocaleString("en-IN", {
+                style: "currency",
+                currency: accessProduct.currency,
+                maximumFractionDigits: 2,
+              })}
+            </p>
+          )}
+
+          <div className="mt-5 flex flex-wrap items-center gap-3">
+            <Link
+              href={`/learning?subject=${encodeURIComponent(key)}`}
+              className="inline-flex items-center justify-center rounded-xl bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-500"
+            >
+              Explore learning
+            </Link>
+
+            {accessProduct && (
+              <Link
+                href={
+                  hasAccess
+                    ? exploreHref
+                    : `/learning/access?productId=${encodeURIComponent(
+                        accessProduct.id,
+                      )}&returnTo=${encodeURIComponent("/learning")}`
+                }
+                className="inline-flex items-center justify-center rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-blue-400 hover:text-blue-700 dark:border-slate-700 dark:text-slate-200 dark:hover:border-blue-500 dark:hover:text-blue-400"
+              >
+                {hasAccess ? "Continue learning →" : "Go deeper →"}
+              </Link>
             )}
+          </div>
+
+          <p className="mt-3 text-xs leading-5 text-slate-500 dark:text-slate-400">
+            You can continue exploring available free resources without purchasing access.
+          </p>
+        </div>
+      );
+    })}
+  </div>
+)}
 
             {isScience && scienceSubject && (
-              <div className="grid gap-5 md:grid-cols-3">
-                {scienceBranches.map((branch) => {
-                  const key = branch.display_name.trim().toLowerCase();
-                  return (
-                    <Link
-                      key={branch.id}
-                      href={`/learning?subject=${encodeURIComponent(key)}`}
-                      className="group flex min-h-[220px] flex-col rounded-3xl border border-slate-200 bg-white p-7 shadow-sm transition-all hover:-translate-y-1 hover:border-blue-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 dark:shadow-none dark:hover:border-blue-700"
-                    >
-                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-xl font-bold text-blue-700 dark:bg-blue-500/10 dark:text-blue-400">
-                        {branch.display_name.charAt(0)}
-                      </div>
-                      <p className="mt-6 text-xs font-semibold uppercase tracking-widest text-blue-700 dark:text-blue-400">
-                        Science
-                      </p>
-                      <h3 className="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100">
-                        {branch.display_name}
-                      </h3>
-                      <p className="mt-3 flex-1 text-sm leading-6 text-slate-600 dark:text-slate-400">
-                        {branch.description ?? `Explore ${branch.display_name} chapter by chapter.`}
-                      </p>
-                      <span className="mt-6 inline-flex items-center text-sm font-semibold text-blue-700 transition group-hover:gap-2 dark:text-blue-400">
-                        Explore {branch.display_name}
-                        <span className="ml-1">→</span>
-                      </span>
-                    </Link>
-                  );
-                })}
-              </div>
+  <div className="grid gap-5 md:grid-cols-3">
+    {scienceBranches.map((branch) => {
+      const key = branch.display_name.trim().toLowerCase();
+      const accessProduct = accessProductsByNodeId.get(branch.id);
+      const hasAccess = accessProduct
+        ? ownedProductIds.has(accessProduct.id)
+        : false;
+      const exploreHref = `/learning?subject=${encodeURIComponent(key)}`;
+
+      const formattedPrice = accessProduct
+        ? (accessProduct.amountPaise / 100).toLocaleString("en-IN", {
+            style: "currency",
+            currency: accessProduct.currency,
+            maximumFractionDigits: 2,
+          })
+        : null;
+
+      return (
+        <div
+          key={branch.id}
+          className="flex min-h-[250px] flex-col rounded-3xl border border-slate-200 bg-white p-7 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:shadow-none"
+        >
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-xl font-bold text-blue-700 dark:bg-blue-500/10 dark:text-blue-400">
+            {branch.display_name.charAt(0)}
+          </div>
+
+          <p className="mt-6 text-xs font-semibold uppercase tracking-widest text-blue-700 dark:text-blue-400">
+            Science
+          </p>
+
+          <h3 className="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100">
+            {branch.display_name}
+          </h3>
+
+          <p className="mt-3 flex-1 text-sm leading-6 text-slate-600 dark:text-slate-400">
+            {branch.description ??
+              `Explore ${branch.display_name} chapter by chapter.`}
+          </p>
+
+          {formattedPrice && (
+            <p className="mt-5 text-lg font-semibold text-slate-900 dark:text-slate-100">
+              {formattedPrice}
+            </p>
+          )}
+
+          <div className="mt-5 flex flex-wrap items-center gap-3">
+            <Link
+              href={`/learning?subject=${encodeURIComponent(key)}`}
+              className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
+            >
+              Explore {branch.display_name}
+              <span className="ml-1">→</span>
+            </Link>
+
+            {accessProduct && (
+              <Link
+                href={
+                  hasAccess
+                    ? exploreHref
+                    : `/learning/access?productId=${encodeURIComponent(
+                        accessProduct.id,
+                      )}&returnTo=${encodeURIComponent(
+                        "/learning?subject=science",
+                      )}`
+                }
+                className="inline-flex items-center justify-center rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-blue-400 hover:text-blue-700 dark:border-slate-700 dark:text-slate-200 dark:hover:border-blue-500 dark:hover:text-blue-400"
+              >
+                {hasAccess ? "Continue learning →" : "Go deeper →"}
+              </Link>
             )}
+          </div>
+
+          <p className="mt-3 text-xs leading-5 text-slate-500 dark:text-slate-400">
+            You can continue exploring the available learning resources without purchasing access.
+          </p>
+        </div>
+      );
+    })}
+  </div>
+)}
 
             {isMathematics && (
               <>

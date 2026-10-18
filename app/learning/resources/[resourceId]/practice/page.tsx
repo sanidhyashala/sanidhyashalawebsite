@@ -1,3 +1,4 @@
+
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -6,16 +7,16 @@ import {
 } from "@/app/lib/learning/resource.service";
 
 import {
+  requireLearningAuth,
+} from "@/lib/learning/learning-auth";
+
+import {
   getLearningTestAttempt,
 } from "@/lib/learning/attempts";
 
 import {
   getLearningTestQuestions,
 } from "@/lib/learning/questions";
-
-import {
-  createLearningSupabaseClient,
-} from "@/lib/learning/supabase-learning";
 
 import PracticeClient from "./PracticeClient";
 
@@ -42,15 +43,24 @@ export default async function McqPracticePage({
   } = await searchParams;
 
   /* -------------------------------------------------------
-   * 1. Attempt ID is required
+   * 1. Require authentication before loading practice data
    * ------------------------------------------------------- */
 
-  if (!attemptId) {
+  await requireLearningAuth();
+
+  /* -------------------------------------------------------
+   * 2. Attempt ID is required
+   * ------------------------------------------------------- */
+
+  if (
+    !attemptId ||
+    !attemptId.trim()
+  ) {
     notFound();
   }
 
   /* -------------------------------------------------------
-   * 2. Load the published MCQ resource
+   * 3. Load the published MCQ resource
    * ------------------------------------------------------- */
 
   const resource =
@@ -63,11 +73,11 @@ export default async function McqPracticePage({
   }
 
   /* -------------------------------------------------------
-   * 3. Load the current student's attempt
+   * 4. Load the current student's attempt
    *
    * getLearningTestAttempt() uses the authenticated
-   * learning client, so the attempt belongs to the
-   * current authenticated student.
+   * learning client and must return only an attempt
+   * accessible to the current student.
    * ------------------------------------------------------- */
 
   const attempt =
@@ -80,88 +90,50 @@ export default async function McqPracticePage({
   }
 
   /* -------------------------------------------------------
-   * 4. Attempt must still be IN_PROGRESS
+   * 5. Only an active attempt may be resumed
    * ------------------------------------------------------- */
 
   if (
-    attempt.status !==
-    "IN_PROGRESS"
+    attempt.status !== "IN_PROGRESS"
   ) {
     notFound();
   }
 
   /* -------------------------------------------------------
-   * 5. Critical integrity check
+   * 6. Critical integrity check
    *
-   * The attempt must belong to THIS resource.
-   *
-   * Prevents:
-   *
-   * resource A
-   * +
-   * attempt from resource B
-   * =
-   * questions from resource B
+   * The attempt must belong to this resource's test.
+   * An attempt from another resource must never be used
+   * to load questions here.
    * ------------------------------------------------------- */
 
   if (
-    attempt.test_id !==
-    resource.testId
+    attempt.test_id !== resource.testId
   ) {
     notFound();
   }
 
   /* -------------------------------------------------------
-   * 6. Resolve current student access
+   * 7. Do NOT recheck Premium entitlement here
    *
-   * FREE:
-   *   always accessible
+   * Policy:
+   * - A valid entitlement is required to start a NEW
+   *   Premium attempt.
+   * - An existing IN_PROGRESS attempt may be resumed
+   *   and completed after entitlement expiry/revocation.
    *
-   * PREMIUM:
-   *   requires active Chapter or Subject entitlement
-   *
-   * The RPC reads the authenticated Clerk/Supabase
-   * identity from auth.jwt()->>'sub'.
+   * Authentication, attempt ownership, status and
+   * resource/test binding checks remain mandatory.
    * ------------------------------------------------------- */
 
-  if (
-    resource.accessType ===
-    "PREMIUM"
-  ) {
-    const learningSupabase =
-      await createLearningSupabaseClient();
-
-    const {
-      data: hasAccess,
-      error: accessError,
-    } =
-      await learningSupabase.rpc(
-        "user_has_learning_product_access",
-        {
-          p_resource_id:
-            resourceId,
-        }
-      );
-
-    if (accessError) {
-      throw new Error(
-        `Failed to resolve MCQ access: ${accessError.message}`
-      );
-    }
-
-    if (hasAccess !== true) {
-      notFound();
-    }
-  }
-
   /* -------------------------------------------------------
-   * 7. Load questions ONLY after all access checks pass
+   * 8. Load questions only after integrity checks pass
    * ------------------------------------------------------- */
 
   const questions =
-    await getLearningTestQuestions(
-      attempt.test_id
-    );
+  await getLearningTestQuestions(
+    attempt.id
+  );
 
   if (
     !questions ||
@@ -171,7 +143,7 @@ export default async function McqPracticePage({
   }
 
   /* -------------------------------------------------------
-   * 8. Render practice
+   * 9. Render practice
    * ------------------------------------------------------- */
 
   return (

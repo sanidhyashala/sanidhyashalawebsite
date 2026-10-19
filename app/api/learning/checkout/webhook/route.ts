@@ -468,12 +468,21 @@ async function processRefundWebhook(
     return jsonError("Invalid refund amount or currency.", 400);
   }
 
+  // Razorpay can deliver refund.created after the refund entity has already
+  // advanced to `processed`. Treat that as a valid out-of-order event and
+  // finalize it below instead of rejecting a confirmed full refund.
   if (
     (event === "refund.created" &&
-      !["created", "pending"].includes(refund.status)) ||
+      !["created", "pending", "processed"].includes(refund.status)) ||
     (event === "refund.processed" && refund.status !== "processed") ||
     (event === "refund.failed" && refund.status !== "failed")
   ) {
+    console.error("Refund event/status mismatch.", {
+      eventId,
+      event,
+      refundId: refund.id,
+      refundStatus: refund.status,
+    });
     return jsonError("Refund event and status do not match.", 409);
   }
 
@@ -738,7 +747,10 @@ async function processRefundWebhook(
     });
   }
 
-  if (event === "refund.created") {
+  // A refund.created notification whose entity is still created/pending is
+  // informational only. If Razorpay already reports `processed`, continue
+  // into the same terminal finalization path as refund.processed.
+  if (event === "refund.created" && refund.status !== "processed") {
     if (record?.status === "REFUNDED") {
       return NextResponse.json({
         success: true,
@@ -965,6 +977,79 @@ async function processRefundWebhook(
       "Purchase status is not eligible for refund finalization.",
       409
     );
+  }
+
+  // The refund can be issued manually in the Razorpay dashboard before our
+  // app has created a reconciliation row. The SQL finalizer intentionally
+  // requires that row, so create a validated REFUND_PENDING record first.
+  // This does not issue another refund; it only records the provider's
+  // already-confirmed refund identity for atomic database finalization.
+  if (!record) {
+    const refundPayload = { event, event_id: eventId, refund };
+    const { error: reconciliationInsertError } = await supabase
+      .from("razorpay_payment_reconciliations")
+      .insert({
+        purchase_id: purchase.id,
+        provider_order_id: purchase.provider_order_id,
+        provider_payment_id: refund.payment_id,
+        amount_paise: expectedAmountPaise,
+        currency: "INR",
+        reason: "FULL_REFUND_FOR_PURCHASE",
+        status: "REFUND_PENDING",
+        provider_refund_id: refund.id,
+        refund_idempotency_key: `sanidhyashala-refund-${refund.payment_id}`,
+        payment_payload: {
+          source: "razorpay_refund_webhook",
+          payment_id: refund.payment_id,
+          order_id: purchase.provider_order_id,
+        },
+        refund_payload: refundPayload,
+        updated_at: now,
+      });
+
+    if (reconciliationInsertError) {
+      // A concurrent webhook may have created the row. Verify the full
+      // identity rather than assuming every insert conflict is harmless.
+      const { data: concurrentRecord, error: concurrentLookupError } =
+        await supabase
+          .from("razorpay_payment_reconciliations")
+          .select(
+            "purchase_id, provider_order_id, provider_payment_id, amount_paise, currency, status, provider_refund_id"
+          )
+          .eq("provider_payment_id", refund.payment_id)
+          .maybeSingle();
+
+      if (concurrentLookupError || !concurrentRecord) {
+        console.error("Could not create or verify refund reconciliation.", {
+          eventId,
+          purchaseId: purchase.id,
+          paymentId: refund.payment_id,
+          error: reconciliationInsertError.message,
+          lookupError: concurrentLookupError?.message,
+        });
+        return jsonError("Refund reconciliation requires retry.", 503);
+      }
+
+      if (
+        concurrentRecord.purchase_id !== purchase.id ||
+        concurrentRecord.provider_order_id !== purchase.provider_order_id ||
+        concurrentRecord.provider_payment_id !== refund.payment_id ||
+        Number(concurrentRecord.amount_paise) !== expectedAmountPaise ||
+        concurrentRecord.currency !== "INR" ||
+        (concurrentRecord.provider_refund_id &&
+          concurrentRecord.provider_refund_id !== refund.id) ||
+        concurrentRecord.status === "REVIEW_REQUIRED"
+      ) {
+        console.error("Concurrent refund reconciliation identity conflict.", {
+          eventId,
+          purchaseId: purchase.id,
+          paymentId: refund.payment_id,
+          refundId: refund.id,
+          reconciliationStatus: concurrentRecord.status,
+        });
+        return jsonError("Refund reconciliation requires manual review.", 409);
+      }
+    }
   }
 
   const { data: finalized, error: finalizeError } = await supabase.rpc(

@@ -414,10 +414,71 @@ async function handleRefundWebhook(
     return response;
   }
 
+  
+  // Resolve the purchase associated with this refund before marking
+  // the webhook event as processed.
+  const refundPaymentId = body.payload?.refund?.entity?.payment_id;
+
+  if (typeof refundPaymentId !== "string" || !refundPaymentId.trim()) {
+    console.error("Refund payment ID missing after successful processing.", {
+      eventId,
+      event,
+    });
+    return jsonError("Could not link refund event to purchase.", 503);
+  }
+
+  const { data: matchedPurchase, error: purchaseLookupError } = await supabase
+    .from("purchases")
+    .select("id")
+    .eq("payment_provider", "razorpay")
+    .eq("provider_payment_id", refundPaymentId)
+    .maybeSingle();
+
+  if (purchaseLookupError) {
+    console.error("Could not resolve purchase for refund event.", {
+      eventId,
+      error: purchaseLookupError.message,
+    });
+    return jsonError("Could not link refund event to purchase.", 503);
+  }
+
+  let purchaseId = matchedPurchase?.id ?? null;
+
+  // Fallback for purchases resolved through reconciliation, such as
+  // cancelled purchases whose payment details may differ.
+  if (!purchaseId) {
+    const { data: reconciliation, error: reconciliationLookupError } =
+      await supabase
+        .from("razorpay_payment_reconciliations")
+        .select("purchase_id")
+        .eq("provider_payment_id", refundPaymentId)
+        .maybeSingle();
+
+    if (reconciliationLookupError) {
+      console.error("Could not resolve refund reconciliation for event.", {
+        eventId,
+        error: reconciliationLookupError.message,
+      });
+      return jsonError("Could not link refund event to purchase.", 503);
+    }
+
+    purchaseId = reconciliation?.purchase_id ?? null;
+  }
+
+  if (!purchaseId) {
+    console.error("No purchase found for successfully handled refund event.", {
+      eventId,
+      paymentId: refundPaymentId,
+    });
+    return jsonError("Refund event purchase link requires retry.", 503);
+  }
+
   const processedAt = new Date().toISOString();
+
   const { error: updateError } = await supabase
     .from("payment_events")
     .update({
+      purchase_id: purchaseId,
       status: "PROCESSED",
       processed_at: processedAt,
       updated_at: processedAt,
@@ -435,6 +496,7 @@ async function handleRefundWebhook(
     });
     return jsonError("Refund was handled but event logging needs retry.", 503);
   }
+
 
   return response;
 }

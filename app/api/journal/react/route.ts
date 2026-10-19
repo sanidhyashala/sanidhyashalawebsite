@@ -62,15 +62,16 @@ export async function POST(request: Request) {
         })
         .select();
 
-    console.error("INSERT DATA:", data);
-    console.error("INSERT ERROR:", insertError);
-
     if (insertError) {
+      console.error("INSERT ERROR:", insertError);
+
       return NextResponse.json(
         { error: insertError.message },
         { status: 500 }
       );
     }
+
+    console.info("INSERT SUCCESS:", data);
 
     return NextResponse.json({
       reacted: true,

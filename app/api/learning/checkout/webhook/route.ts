@@ -71,6 +71,191 @@ function jsonError(message: string, status: number) {
   );
 }
 
+/**
+ * Records a verified Razorpay payment.failed event.
+ *
+ * Important:
+ * - A failed payment event does not automatically fail the purchase.
+ * - This function never grants entitlements.
+ * - The Razorpay event ID makes delivery idempotent.
+ */
+async function handleFailedPaymentWebhook(
+  body: RazorpayWebhookPayload,
+  eventId: string
+) {
+  const payment = body.payload?.payment?.entity;
+
+  if (
+    typeof payment?.id !== "string" ||
+    !payment.id.trim() ||
+    typeof payment.order_id !== "string" ||
+    !payment.order_id.trim() ||
+    typeof payment.amount !== "number" ||
+    typeof payment.currency !== "string" ||
+    payment.status !== "failed"
+  ) {
+    return jsonError("Invalid failed payment webhook payload.", 400);
+  }
+
+  if (
+    !Number.isSafeInteger(payment.amount) ||
+    payment.amount <= 0 ||
+    payment.currency !== "INR"
+  ) {
+    return jsonError("Invalid failed payment amount or currency.", 400);
+  }
+
+  const supabase = createAdminSupabaseClient();
+
+  const { data: purchase, error: purchaseError } = await supabase
+    .from("purchases")
+    .select(
+      "id, product_id, resource_id, amount, currency, status, payment_provider, provider_order_id"
+    )
+    .eq("provider_order_id", payment.order_id)
+    .eq("payment_provider", "razorpay")
+    .maybeSingle();
+
+  if (purchaseError) {
+    console.error("Could not look up failed-payment purchase.", {
+      eventId,
+      orderId: payment.order_id,
+      paymentId: payment.id,
+    });
+
+    return jsonError("Unable to look up purchase.", 503);
+  }
+
+  // Keep the event retryable if the order is not visible yet.
+  if (!purchase) {
+    console.error("Purchase not found for failed-payment event.", {
+      eventId,
+      orderId: payment.order_id,
+      paymentId: payment.id,
+    });
+
+    return jsonError("Purchase not found yet.", 503);
+  }
+
+  if (
+    !purchase.product_id ||
+    purchase.resource_id !== null ||
+    purchase.provider_order_id !== payment.order_id
+  ) {
+    return jsonError(
+      "Failed payment does not match a product purchase.",
+      409
+    );
+  }
+
+  const expectedAmountPaise = Math.round(Number(purchase.amount) * 100);
+
+  if (
+    purchase.currency !== "INR" ||
+    !Number.isSafeInteger(expectedAmountPaise) ||
+    expectedAmountPaise !== payment.amount
+  ) {
+    console.error("Failed-payment amount mismatch.", {
+      eventId,
+      purchaseId: purchase.id,
+      orderId: payment.order_id,
+      paymentId: payment.id,
+    });
+
+    return jsonError(
+      "Failed payment amount or currency does not match the purchase.",
+      409
+    );
+  }
+
+  const now = new Date().toISOString();
+
+  const eventPayload = {
+    ...body,
+    processing_context: {
+      source: "razorpay_webhook",
+      outcome: "payment_failed",
+      access_granted: false,
+    },
+  } as unknown as Record<string, unknown>;
+
+  const { error: insertError } = await supabase
+    .from("payment_events")
+    .insert({
+      purchase_id: purchase.id,
+      payment_provider: "razorpay",
+      provider_event_id: eventId,
+      event_type: "payment.failed",
+      event_payload: eventPayload,
+      status: "PROCESSED",
+      processed_at: now,
+    });
+
+  if (insertError?.code === "23505") {
+    // A duplicate delivery is safe only when the existing event
+    // refers to the same purchase and event type.
+    const { data: existing, error: existingError } = await supabase
+      .from("payment_events")
+      .select("purchase_id, event_type, status")
+      .eq("payment_provider", "razorpay")
+      .eq("provider_event_id", eventId)
+      .maybeSingle();
+
+    if (existingError || !existing) {
+      console.error("Could not verify duplicate payment event.", {
+        eventId,
+        purchaseId: purchase.id,
+      });
+
+      return jsonError("Could not verify duplicate event.", 503);
+    }
+
+    if (
+      existing.purchase_id !== purchase.id ||
+      existing.event_type !== "payment.failed"
+    ) {
+      console.error("Duplicate webhook event identity mismatch.", {
+        eventId,
+        purchaseId: purchase.id,
+      });
+
+      return jsonError("Webhook event identity mismatch.", 409);
+    }
+
+    return NextResponse.json({
+      success: true,
+      duplicate: true,
+      event: "payment.failed",
+      eventStatus: existing.status,
+      purchaseStatus: purchase.status,
+      accessGranted: false,
+    });
+  }
+
+  if (insertError) {
+    console.error("Could not record failed payment event.", {
+      eventId,
+      purchaseId: purchase.id,
+      orderId: payment.order_id,
+      paymentId: payment.id,
+      error: insertError.message,
+    });
+
+    return jsonError("Could not record failed payment event.", 503);
+  }
+
+  // Do not update purchases.status here. A failed payment attempt
+  // must not block a later successful payment for the same purchase.
+  // This handler never calls the entitlement-granting RPC.
+  return NextResponse.json({
+    success: true,
+    event: "payment.failed",
+    eventStatus: "PROCESSED",
+    purchaseStatus: purchase.status,
+    accessGranted: false,
+  });
+}
+
 async function recordCancelledPayment(input: {
   purchaseId: string;
   orderId: string;
@@ -107,8 +292,6 @@ async function recordCancelledPayment(input: {
     return inserted as ReconciliationRecord;
   }
 
-  // Checkout verification and webhook delivery can race.
-  // The unique provider_payment_id makes this lookup idempotent.
   if (insertError?.code === "23505") {
     const { data: existing, error: existingError } = await supabase
       .from("razorpay_payment_reconciliations")
@@ -157,7 +340,6 @@ async function recordCancelledPayment(input: {
   return null;
 }
 
-
 async function handleRefundWebhook(
   event: "refund.created" | "refund.processed" | "refund.failed",
   body: RazorpayWebhookPayload,
@@ -184,6 +366,7 @@ async function handleRefundWebhook(
   }
 
   const supabase = createAdminSupabaseClient();
+
   const { data: record, error: lookupError } = await supabase
     .from("razorpay_payment_reconciliations")
     .select(
@@ -197,8 +380,6 @@ async function handleRefundWebhook(
     return jsonError("Unable to look up refund reconciliation.", 503);
   }
 
-  // This endpoint may receive refunds unrelated to cancelled learning
-  // purchases. Acknowledge those events without mutating unrelated data.
   if (!record) {
     return NextResponse.json({ success: true, ignored: true, event });
   }
@@ -212,7 +393,8 @@ async function handleRefundWebhook(
       .from("razorpay_payment_reconciliations")
       .update({
         status: "REVIEW_REQUIRED",
-        refund_error: "Refund webhook identifiers, amount, or currency do not match the reconciliation record.",
+        refund_error:
+          "Refund webhook identifiers, amount, or currency do not match the reconciliation record.",
         refund_payload: { event, event_id: eventId, refund },
         updated_at: new Date().toISOString(),
       })
@@ -229,9 +411,8 @@ async function handleRefundWebhook(
     });
   }
 
-  // Never let a delayed created/failed event downgrade a refund already
-  // confirmed as processed. Webhook deliveries can arrive out of order.
   let nextStatus: "REFUNDED" | "REFUND_PENDING" | "REFUND_FAILED";
+
   if (record.status === "REFUNDED") {
     nextStatus = "REFUNDED";
   } else if (
@@ -239,11 +420,13 @@ async function handleRefundWebhook(
     event !== "refund.processed" &&
     refund.status !== "processed"
   ) {
-    // Ignore delayed created events after a terminal failure.
     nextStatus = "REFUND_FAILED";
   } else if (event === "refund.failed" || refund.status === "failed") {
     nextStatus = "REFUND_FAILED";
-  } else if (refund.status === "processed" || event === "refund.processed") {
+  } else if (
+    refund.status === "processed" ||
+    event === "refund.processed"
+  ) {
     nextStatus = "REFUNDED";
   } else if (
     refund.status === "created" ||
@@ -256,6 +439,7 @@ async function handleRefundWebhook(
   }
 
   const now = new Date().toISOString();
+
   const { error: updateError } = await supabase
     .from("razorpay_payment_reconciliations")
     .update({
@@ -320,6 +504,11 @@ export async function POST(request: Request) {
       body.event === "refund.failed"
     ) {
       return await handleRefundWebhook(body.event, body, eventId);
+    }
+
+    // Handle failed payment attempts separately. Never grant access here.
+    if (body.event === "payment.failed") {
+      return await handleFailedPaymentWebhook(body, eventId);
     }
 
     if (body.event !== "payment.captured") {
@@ -434,16 +623,12 @@ export async function POST(request: Request) {
       });
 
       if (!reconciliation) {
-        // Do not acknowledge a captured payment whose reconciliation
-        // record could not be persisted or safely retrieved.
         return jsonError(
           "Payment reconciliation could not be persisted.",
           503
         );
       }
 
-      // A cancelled purchase must never grant access. Persist the captured
-      // payment first, then attempt the idempotent refund workflow.
       let refundResult:
         | Awaited<ReturnType<typeof processCancelledPaymentRefund>>
         | null = null;
@@ -462,16 +647,12 @@ export async function POST(request: Request) {
               : "Unknown refund-processing error",
         });
 
-        // The reconciliation record is already durable. Return 503 so
-        // Razorpay may retry delivery; never grant access in this branch.
         return jsonError(
           "Payment was recorded, but refund processing needs retry.",
           503
         );
       }
 
-      // A successful webhook response acknowledges receipt, not necessarily
-      // a completed refund. The reconciliation table remains authoritative.
       return NextResponse.json({
         success: true,
         needsReconciliation: refundResult.status !== "REFUNDED",
@@ -498,8 +679,6 @@ export async function POST(request: Request) {
         }
       );
 
-      // Do not grant access or falsely report that a refund occurred.
-      // These exceptional states require separate reconciliation.
       return jsonError(
         "Captured payment requires manual reconciliation.",
         503

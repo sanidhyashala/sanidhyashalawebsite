@@ -365,47 +365,132 @@ async function handleRefundWebhook(
     status: "RECEIVED",
   });
 
-  if (insertError?.code === "23505") {
-    const { data: existing, error: existingError } = await supabase
-      .from("payment_events")
-      .select("event_type, status")
-      .eq("payment_provider", "razorpay")
-      .eq("provider_event_id", eventId)
-      .maybeSingle();
+  
+if (insertError?.code === "23505") {
+  const { data: existing, error: existingError } = await supabase
+    .from("payment_events")
+    .select("purchase_id, event_type, status")
+    .eq("payment_provider", "razorpay")
+    .eq("provider_event_id", eventId)
+    .maybeSingle();
 
-    if (existingError || !existing) {
-      console.error("Could not verify duplicate refund webhook event.", {
-        eventId,
-        event,
-      });
-      return jsonError("Could not verify duplicate refund event.", 503);
-    }
-
-    if (existing.event_type !== event) {
-      console.error("Refund webhook event identity mismatch.", {
-        eventId,
-        receivedEvent: event,
-        recordedEvent: existing.event_type,
-      });
-      return jsonError("Webhook event identity mismatch.", 409);
-    }
-
-    if (existing.status === "PROCESSED") {
-      return NextResponse.json({
-        success: true,
-        duplicate: true,
-        event,
-        eventStatus: "PROCESSED",
-      });
-    }
-  } else if (insertError) {
-    console.error("Could not record refund webhook event.", {
+  if (existingError || !existing) {
+    console.error("Could not verify duplicate refund webhook event.", {
       eventId,
       event,
-      error: insertError.message,
     });
-    return jsonError("Could not record refund webhook event.", 503);
+    return jsonError("Could not verify duplicate refund event.", 503);
   }
+
+  if (existing.event_type !== event) {
+    console.error("Refund webhook event identity mismatch.", {
+      eventId,
+      receivedEvent: event,
+      recordedEvent: existing.event_type,
+    });
+    return jsonError("Webhook event identity mismatch.", 409);
+  }
+
+  if (existing.status === "PROCESSED" && existing.purchase_id) {
+    return NextResponse.json({
+      success: true,
+      duplicate: true,
+      event,
+      eventStatus: "PROCESSED",
+    });
+  }
+
+  // Recover an older processed event whose purchase link is missing.
+  if (existing.status === "PROCESSED" && !existing.purchase_id) {
+    const refundPaymentId = body.payload?.refund?.entity?.payment_id;
+
+    if (
+      typeof refundPaymentId !== "string" ||
+      !refundPaymentId.trim()
+    ) {
+      return jsonError("Could not recover refund event purchase link.", 503);
+    }
+
+    const { data: matchedPurchase, error: lookupError } = await supabase
+      .from("purchases")
+      .select("id")
+      .eq("payment_provider", "razorpay")
+      .eq("provider_payment_id", refundPaymentId)
+      .maybeSingle();
+
+    if (lookupError) {
+      console.error("Could not recover duplicate refund event purchase.", {
+        eventId,
+        error: lookupError.message,
+      });
+      return jsonError("Could not recover refund event purchase link.", 503);
+    }
+
+    let purchaseId = matchedPurchase?.id ?? null;
+
+    if (!purchaseId) {
+      const {
+        data: reconciliation,
+        error: reconciliationError,
+      } = await supabase
+        .from("razorpay_payment_reconciliations")
+        .select("purchase_id")
+        .eq("provider_payment_id", refundPaymentId)
+        .maybeSingle();
+
+      if (reconciliationError) {
+        console.error("Could not recover refund reconciliation.", {
+          eventId,
+          error: reconciliationError.message,
+        });
+        return jsonError("Could not recover refund event purchase link.", 503);
+      }
+
+      purchaseId = reconciliation?.purchase_id ?? null;
+    }
+
+    if (!purchaseId) {
+      return jsonError("Refund event purchase link requires review.", 503);
+    }
+
+    const { error: recoveryError } = await supabase
+      .from("payment_events")
+      .update({
+        purchase_id: purchaseId,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("payment_provider", "razorpay")
+      .eq("provider_event_id", eventId)
+      .eq("event_type", event)
+      .eq("status", "PROCESSED")
+      .is("purchase_id", null);
+
+    if (recoveryError) {
+      console.error("Could not recover duplicate refund event link.", {
+        eventId,
+        error: recoveryError.message,
+      });
+      return jsonError("Refund event link recovery requires retry.", 503);
+    }
+
+    return NextResponse.json({
+      success: true,
+      duplicate: true,
+      recoveredPurchaseLink: true,
+      event,
+      eventStatus: "PROCESSED",
+      purchaseId,
+    });
+  }
+} else if (insertError) {
+  console.error("Could not record refund webhook event.", {
+    eventId,
+    event,
+    error: insertError.message,
+  });
+  return jsonError("Could not record refund webhook event.", 503);
+}
+
 
   const response = await processRefundWebhook(event, body, eventId);
 
